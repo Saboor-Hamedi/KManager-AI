@@ -4,6 +4,24 @@ CLASSIFICATION REPORTS (Threshold = 0.5)
 
 
 ==================================================
+GNN
+==================================================
+              precision    recall  f1-score   support
+
+    Low Risk       0.88      1.00      0.94       264
+   High Risk       0.00      0.00      0.00        36
+
+    accuracy                           0.88       300
+   macro avg       0.44      0.50      0.47       300
+weighted avg       0.77      0.88      0.82       300
+
+Confusion Matrix:
+[[264   0]
+ [ 36   0]]
+
+ROC-AUC: 0.4445
+
+==================================================
 Logistic_Regression
 ==================================================
               precision    recall  f1-score   support
@@ -74,21 +92,3 @@ Confusion Matrix:
  [ 25  11]]
 
 ROC-AUC: 0.5851
-
-==================================================
-GNN
-==================================================
-              precision    recall  f1-score   support
-
-    Low Risk       0.88      1.00      0.94       264
-   High Risk       0.00      0.00      0.00        36
-
-    accuracy                           0.88       300
-   macro avg       0.44      0.50      0.47       300
-weighted avg       0.77      0.88      0.82       300
-
-Confusion Matrix:
-[[264   0]
- [ 36   0]]
-
-ROC-AUC: 0.4319

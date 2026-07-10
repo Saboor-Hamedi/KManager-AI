@@ -44,16 +44,16 @@ const AnalyticView = ({
     <div className="flex items-center justify-between border-b border-gray-800 pb-6">
       <div className="flex items-center gap-3">
         <Icon size={20} className="text-blue-500" />
-        <h2 className="text-xl font-black uppercase italic text-white tracking-tight">{title}</h2>
+        <h2 className="text-xl font-black text-white tracking-tight">{title}</h2>
       </div>
       <div className="flex items-center gap-4">
         {extraAction}
         <div className="bg-blue-500/5 border border-blue-500/20 px-4 py-2 rounded max-w-md">
           <div className="flex items-center gap-2 mb-1">
             <Info size={12} className="text-blue-500" />
-            <span className="text-[8px] font-black uppercase text-blue-500">Forensic Context</span>
+            <span className="text-[8px] font-black text-blue-500">Forensic Context</span>
           </div>
-          <p className="text-[9px] text-gray-500 font-bold uppercase leading-tight">
+          <p className="text-[9px] text-gray-500 font-bold leading-tight">
             {explanation}
           </p>
         </div>
@@ -79,7 +79,7 @@ const AnalyticView = ({
                   {columns.map((col) => (
                     <th
                       key={col}
-                      className="p-3 text-[8px] font-black text-gray-600 uppercase tracking-widest border-b border-gray-800"
+                      className="p-3 text-[8px] font-black text-gray-600 tracking-widest border-b border-gray-800"
                     >
                       {col}
                     </th>
@@ -277,7 +277,7 @@ const VisualAnalytics = ({
       >
         <div className="flex flex-col items-center justify-center h-[400px] bg-blue-900/10 border border-blue-500/20 rounded-lg p-10 text-center">
           <Target size={48} className="text-blue-500 mb-6" />
-          <h3 className="text-xl font-black uppercase tracking-widest text-white mb-4">
+          <h3 className="text-xl font-black tracking-widest text-white mb-4">
             Counterfactual Projection
           </h3>
           <p className="text-sm text-gray-300 max-w-2xl leading-relaxed">
@@ -466,7 +466,7 @@ const VisualAnalytics = ({
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 opacity-50">
               <Activity size={32} className="mb-2" />
-              <p className="text-[10px] uppercase font-bold tracking-widest">Awaiting Audit...</p>
+              <p className="text-[10px] font-bold tracking-widest">Awaiting Audit...</p>
             </div>
           )}
         </div>
@@ -547,10 +547,10 @@ const VisualAnalytics = ({
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 opacity-50">
               <Activity size={32} className="mb-2" />
-              <p className="text-[10px] uppercase font-bold tracking-widest">
+              <p className="text-[10px] font-bold tracking-widest">
                 Generating Trajectories...
               </p>
-              <p className="text-[8px] uppercase tracking-wider mt-2">
+              <p className="text-[8px] tracking-wider mt-2">
                 Requires patient input prediction
               </p>
             </div>
@@ -564,7 +564,7 @@ const VisualAnalytics = ({
     return (
       <div className="flex flex-col items-center justify-center h-[400px] gap-4">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em]">
+        <p className="text-[10px] font-black text-gray-500 tracking-[0.3em]">
           Retrieving Forensic Metrics...
         </p>
       </div>
@@ -748,13 +748,13 @@ const VisualAnalytics = ({
           <div className="flex gap-4 w-full max-w-[500px]">
             <div className="flex-1 aspect-square bg-blue-600/10 border-2 border-blue-500/20 flex flex-col items-center justify-center rounded-xl shadow-inner">
               <span className="text-5xl font-black text-white">{cm[0][0]}</span>
-              <span className="text-[10px] font-black text-blue-500 uppercase mt-2">
+              <span className="text-[10px] font-black text-blue-500 mt-2">
                 True Negative
               </span>
             </div>
             <div className="flex-1 aspect-square bg-red-600/5 border-2 border-red-500/10 flex flex-col items-center justify-center rounded-xl">
               <span className="text-5xl font-black text-white">{cm[0][1]}</span>
-              <span className="text-[10px] font-black text-red-500 uppercase mt-2">
+              <span className="text-[10px] font-black text-red-500 mt-2">
                 False Positive
               </span>
             </div>
@@ -762,19 +762,19 @@ const VisualAnalytics = ({
           <div className="flex gap-4 w-full max-w-[500px]">
             <div className="flex-1 aspect-square bg-red-600/5 border-2 border-red-500/10 flex flex-col items-center justify-center rounded-xl">
               <span className="text-5xl font-black text-white">{cm[1][0]}</span>
-              <span className="text-[10px] font-black text-red-500 uppercase mt-2">
+              <span className="text-[10px] font-black text-red-500 mt-2">
                 False Negative
               </span>
             </div>
             <div className="flex-1 aspect-square bg-green-600/20 border-2 border-green-500/30 flex flex-col items-center justify-center rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.1)]">
               <span className="text-5xl font-black text-white">{cm[1][1]}</span>
-              <span className="text-[10px] font-black text-green-500 uppercase mt-2">
+              <span className="text-[10px] font-black text-green-500 mt-2">
                 True Positive
               </span>
             </div>
           </div>
         </div>
-        <div className="mt-8 grid grid-cols-2 gap-4 text-[8px] font-bold uppercase tracking-widest text-gray-500 max-w-[500px] mx-auto">
+        <div className="mt-8 grid grid-cols-2 gap-4 text-[8px] font-bold tracking-widest text-gray-500 max-w-[500px] mx-auto">
           <div className="text-center">Actual Negative</div>
           <div className="text-center">Actual Positive</div>
         </div>
@@ -802,7 +802,7 @@ const VisualAnalytics = ({
             <button
               onClick={() => setTsneView('standard')}
               className={cn(
-                'px-4 py-1.5 text-[7px] font-black uppercase rounded-full transition-all flex items-center gap-2',
+                'px-4 py-1.5 text-[7px] font-black rounded-full transition-all flex items-center gap-2',
                 tsneView === 'standard'
                   ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]'
                   : 'text-gray-500 hover:text-gray-300'
@@ -814,7 +814,7 @@ const VisualAnalytics = ({
             <button
               onClick={() => setTsneView('audit')}
               className={cn(
-                'px-4 py-1.5 text-[7px] font-black uppercase rounded-full transition-all flex items-center gap-2',
+                'px-4 py-1.5 text-[7px] font-black rounded-full transition-all flex items-center gap-2',
                 tsneView === 'audit'
                   ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.5)]'
                   : 'text-gray-500 hover:text-gray-300'
@@ -846,12 +846,12 @@ const VisualAnalytics = ({
                       const data = payload[0].payload
                       return (
                         <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-4 rounded-lg shadow-2xl">
-                          <p className="text-[10px] font-black text-blue-400 uppercase mb-3 tracking-widest">
+                          <p className="text-[10px] font-black text-blue-400 mb-3 tracking-widest">
                             Diagnostic Profile
                           </p>
                           <div className="space-y-2">
                             <div className="flex justify-between gap-8">
-                              <span className="text-[8px] text-gray-500 font-bold uppercase">
+                              <span className="text-[8px] text-gray-500 font-bold">
                                 Sample ID
                               </span>
                               <span className="text-[8px] text-white font-mono">
@@ -859,12 +859,12 @@ const VisualAnalytics = ({
                               </span>
                             </div>
                             <div className="flex justify-between gap-8">
-                              <span className="text-[8px] text-gray-500 font-bold uppercase">
+                              <span className="text-[8px] text-gray-500 font-bold">
                                 Clinical
                               </span>
                               <span
                                 className={cn(
-                                  'text-[8px] font-black uppercase',
+                                  'text-[8px] font-black',
                                   data.true_label === 0 ? 'text-blue-500' : 'text-red-500'
                                 )}
                               >
@@ -872,7 +872,7 @@ const VisualAnalytics = ({
                               </span>
                             </div>
                             <div className="flex justify-between gap-8 border-t border-white/5 pt-2">
-                              <span className="text-[8px] text-gray-500 font-bold uppercase">
+                              <span className="text-[8px] text-gray-500 font-bold">
                                 Risk Score
                               </span>
                               <span className="text-[8px] text-white font-black">
@@ -918,7 +918,7 @@ const VisualAnalytics = ({
             {/* Plot 1: t-SNE by True Label */}
             <div className="bg-black/30 p-6 rounded-2xl border border-white/5 relative">
               <div className="flex items-center justify-between mb-6">
-                <div className="text-[8px] font-black text-blue-500 uppercase tracking-widest">
+                <div className="text-[8px] font-black text-blue-500 tracking-widest">
                   t-SNE: Clinical Ground Truth
                 </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent ml-4" />
@@ -942,7 +942,7 @@ const VisualAnalytics = ({
                           const data = payload[0].payload
                           return (
                             <div className="bg-black/90 border border-white/10 p-2 rounded shadow-xl">
-                              <p className="text-[7px] font-black text-blue-500 uppercase tracking-tighter">
+                              <p className="text-[7px] font-black text-blue-500 tracking-tighter">
                                 Sample: {data.sample_id}
                               </p>
                             </div>
@@ -968,7 +968,7 @@ const VisualAnalytics = ({
             {/* Plot 2: t-SNE by Best Model Prediction */}
             <div className="bg-black/30 p-6 rounded-2xl border border-white/5 relative">
               <div className="flex items-center justify-between mb-6">
-                <div className="text-[8px] font-black text-purple-500 uppercase tracking-widest">
+                <div className="text-[8px] font-black text-purple-500 tracking-widest">
                   t-SNE: {tsneData?.best_model || 'Best Model'} Consensus
                 </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-purple-500/20 to-transparent ml-4" />
@@ -992,7 +992,7 @@ const VisualAnalytics = ({
                           const data = payload[0].payload
                           return (
                             <div className="bg-black/90 border border-white/10 p-2 rounded shadow-xl">
-                              <p className="text-[7px] font-black text-purple-500 uppercase tracking-tighter">
+                              <p className="text-[7px] font-black text-purple-500 tracking-tighter">
                                 Neural Verdict
                               </p>
                             </div>
@@ -1018,7 +1018,7 @@ const VisualAnalytics = ({
             {/* Plot 3: PCA (Linear Proj) */}
             <div className="bg-black/30 p-6 rounded-2xl border border-white/5 relative">
               <div className="flex items-center justify-between mb-6">
-                <div className="text-[8px] font-black text-yellow-500 uppercase tracking-widest">
+                <div className="text-[8px] font-black text-yellow-500 tracking-widest">
                   PCA: Linear Variance (
                   {(tsneData?.pca_explained_variance?.reduce((a, b) => a + b, 0) * 100)?.toFixed(1)}
                   %)
@@ -1044,7 +1044,7 @@ const VisualAnalytics = ({
                           const data = payload[0].payload
                           return (
                             <div className="bg-black/90 border border-white/10 p-2 rounded shadow-xl">
-                              <p className="text-[7px] font-black text-yellow-500 uppercase tracking-tighter">
+                              <p className="text-[7px] font-black text-yellow-500 tracking-tighter">
                                 Linear Projection
                               </p>
                             </div>
@@ -1070,7 +1070,7 @@ const VisualAnalytics = ({
             {/* Plot 4: Risk Heatmap (t-SNE colored by probability) */}
             <div className="bg-black/30 p-6 rounded-2xl border border-white/5 relative">
               <div className="flex items-center justify-between mb-6">
-                <div className="text-[8px] font-black text-teal-500 uppercase tracking-widest">
+                <div className="text-[8px] font-black text-teal-500 tracking-widest">
                   t-SNE: Neural Risk Topography
                 </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-teal-500/20 to-transparent ml-4" />
@@ -1094,10 +1094,10 @@ const VisualAnalytics = ({
                           const data = payload[0].payload
                           return (
                             <div className="bg-black/90 border border-white/10 p-2 rounded shadow-xl">
-                              <p className="text-[7px] font-black text-teal-500 uppercase tracking-tighter">
+                              <p className="text-[7px] font-black text-teal-500 tracking-tighter">
                                 Risk Gradient
                               </p>
-                              <p className="text-[7px] text-white/50 font-bold uppercase">
+                              <p className="text-[7px] text-white/50 font-bold">
                                 Score: {(data.probability * 100).toFixed(1)}%
                               </p>
                             </div>
@@ -1184,7 +1184,7 @@ const VisualAnalytics = ({
               .filter(([_, data]) => Array.isArray(data))
               .map(([key, data]) => (
                 <div key={key} className="h-[180px] relative">
-                  <div className="absolute top-0 left-0 text-[8px] font-black uppercase text-blue-500 mb-2">
+                  <div className="absolute top-0 left-0 text-[8px] font-black text-blue-500 mb-2">
                     {key.replace(/_/g, ' ')} Density
                   </div>
                   <ResponsiveContainer width="100%" height="100%">
@@ -1273,7 +1273,7 @@ const VisualAnalytics = ({
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Panel 1: Model Calibration Curves */}
           <div className="space-y-3">
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">
+            <p className="text-[9px] font-black tracking-[0.2em] text-blue-500">
               Model Calibration Curves
             </p>
             <div className="h-[260px]">
@@ -1342,7 +1342,7 @@ const VisualAnalytics = ({
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] uppercase font-bold">
+                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] font-bold">
                   Audit Required
                 </div>
               )}
@@ -1351,7 +1351,7 @@ const VisualAnalytics = ({
 
           {/* Panel 2: Risk Distribution */}
           <div className="space-y-3">
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">
+            <p className="text-[9px] font-black tracking-[0.2em] text-blue-500">
               {calData?.riskDistribution?.bestModel || 'Best Model'} — Risk Distribution
             </p>
             <div className="h-[260px]">
@@ -1413,7 +1413,7 @@ const VisualAnalytics = ({
                   )
                 })()
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] uppercase font-bold">
+                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] font-bold">
                   Audit Required
                 </div>
               )}
@@ -1423,11 +1423,11 @@ const VisualAnalytics = ({
           {/* Panel 3: Threshold Optimization */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-[9px] font-black tracking-[0.2em] text-blue-500">
                 Threshold Optimization
               </p>
               {calData?.optimalThreshold !== undefined && (
-                <span className="text-[8px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-black uppercase">
+                <span className="text-[8px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-black">
                   Optimal: {calData.optimalThreshold}
                 </span>
               )}
@@ -1499,7 +1499,7 @@ const VisualAnalytics = ({
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] uppercase font-bold">
+                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] font-bold">
                   Audit Required
                 </div>
               )}
@@ -1508,14 +1508,14 @@ const VisualAnalytics = ({
 
           {/* Panel 4: Risk Stratification Summary */}
           <div className="space-y-3">
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">
+            <p className="text-[9px] font-black tracking-[0.2em] text-blue-500">
               Risk Stratification Summary
             </p>
             <div className="h-[260px] flex flex-col justify-end gap-3 pb-8">
               {strat ? (
                 stratBars.map((bar) => (
                   <div key={bar.label} className="space-y-1">
-                    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest">
+                    <div className="flex justify-between text-[8px] font-black tracking-widest">
                       <span style={{ color: bar.color }}>{bar.label}</span>
                       <span className="text-white font-mono">{bar.count}</span>
                     </div>
@@ -1532,7 +1532,7 @@ const VisualAnalytics = ({
                   </div>
                 ))
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] uppercase font-bold">
+                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[9px] font-bold">
                   Audit Required
                 </div>
               )}

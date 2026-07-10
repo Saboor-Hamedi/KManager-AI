@@ -78,7 +78,7 @@ const ChatBot = ({ appState }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/40 rounded-t-lg">
           <div className="flex items-center gap-2">
             <Bot size={18} className="text-blue-500" />
-            <h3 className="text-sm font-black uppercase tracking-widest text-white">Forensic Co-Pilot</h3>
+            <h3 className="text-sm font-black tracking-widest text-white">Forensic Co-Pilot</h3>
           </div>
           <button 
             onClick={() => setIsOpen(false)}

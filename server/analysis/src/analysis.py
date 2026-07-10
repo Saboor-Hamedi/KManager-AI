@@ -4,37 +4,38 @@
 # In[1]:
 
 
-import pandas as pd
-import numpy as np
 import pickle
-import matplotlib.pyplot as plt
-import seaborn as sns
 import warnings
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
-from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.linear_model import LogisticRegression
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from xgboost import XGBClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_recall_curve,
     precision_score,
     recall_score,
-    f1_score,
     roc_auc_score,
-    confusion_matrix,
-    classification_report,
     roc_curve,
-    precision_recall_curve,
 )
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.preprocessing import RobustScaler, StandardScaler
+from sklearn.svm import SVC
 from sklearn.utils.class_weight import compute_class_weight
+from xgboost import XGBClassifier
 
 warnings.filterwarnings("ignore")
 print("✅ Libraries imported successfully")
 
 
 # ### Load Data
-# 
+#
 
 # In[2]:
 
@@ -156,11 +157,11 @@ classes = np.unique(y_train)
 weights = compute_class_weight("balanced", classes=classes, y=y_train)
 class_weight_dict = dict(zip(classes, weights))
 
+from gnn_model import train_gnn
 from logistic_model import get_logistic_model
 from random_forest_model import get_random_forest_model
 from svm_model import get_svm_model
 from xgboost_model import get_xgboost_model
-from gnn_model import train_gnn
 
 models = {
     "Logistic_Regression": get_logistic_model(),
@@ -175,7 +176,7 @@ for name in models.keys():
 
 
 # ### Graph Neural Network (GNN) Classifier
-# 
+#
 
 # GNN training is imported from gnn_model.py
 
@@ -189,15 +190,17 @@ if gnn_res and gnn_mod:
     # ── CLINICAL DASHBOARD INTEGRATION ──
     # Wrap and save the trained GNN
     try:
-        import os, pickle
+        import os
+        import pickle
+
         import torch
 
         save_dir = "../models/"
         os.makedirs(save_dir, exist_ok=True)
         gnn_path = os.path.join(save_dir, "gnn_model.pkl")
-        
+
         print(f"  Attempting to save GNN model to {gnn_path}...")
-        
+
         # Build the package first to ensure no errors before file creation
         edge_index = torch.LongTensor([[0, 1], [1, 0]]).t().contiguous()
         gnn_package = {
@@ -205,12 +208,12 @@ if gnn_res and gnn_mod:
             "feature_names": feature_columns,
             "edge_index": edge_index
         }
-        
+
         with open(gnn_path, "wb") as file:
             pickle.dump(gnn_package, file)
             file.flush()
             os.fsync(file.fileno())
-            
+
         if os.path.getsize(gnn_path) > 0:
             print(f"  ✓ Saved compatible GNN to {gnn_path} ({os.path.getsize(gnn_path)} bytes)")
         else:
@@ -345,7 +348,7 @@ else:
 
 
 # ### Clinical Risk Stratification Summary
-# 
+#
 
 # In[10]:
 
@@ -429,7 +432,7 @@ if results[best_model_name]['accuracy'] < 0.5:
 # ### Confusion Matrices Visualization
 
 # ### Updated Model Comparison (Including GNN)
-# 
+#
 
 # In[11]:
 
@@ -476,6 +479,7 @@ print("\n✓ Updated model comparison saved to 'model_comparison_with_gnn.csv'")
 
 
 import math
+
 num_models = len(results)
 cols = 2
 rows = math.ceil(num_models / cols)
@@ -505,6 +509,7 @@ for idx in range(num_models, len(axes)):
     axes[idx].set_visible(False)
 
 import os
+
 os.makedirs("../figure", exist_ok=True)
 
 plt.tight_layout()
@@ -594,14 +599,14 @@ print("✓ Feature importance saved as '../figure/feature_importance.png'")
 
 
 # ### Advanced Visualizations: t-SNE & Dimensionality Reduction
-# 
+#
 
 # In[16]:
 
 
 # t-SNE Visualization (dimensionality reduction for high-dimensional data)
-from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 print("Computing t-SNE visualization (this may take a moment)...")
 # Use PCA first to speed up t-SNE
@@ -719,12 +724,13 @@ print("✓ t-SNE / PCA visualization saved as '../figure/tsne_pca_visualization.
 
 
 # ### Biomarker Trajectory & Feature Space Analysis
-# 
+#
 
 # In[17]:
 
 import torch
 import torch.nn.functional as F
+
 # CONVERT y FROM TENSOR TO PANDAS SERIES
 print("Converting y from tensor to pandas Series...")
 
@@ -801,7 +807,7 @@ print(f"  Match: {X_scaled.shape[0] == len(y)}")
 
 
 # ### Model Performance Heatmap & Comparison Visualization
-# 
+#
 
 # In[19]:
 
@@ -930,7 +936,7 @@ print("✓ Model comparison saved as '../figure/model_performance_comparison.png
 
 
 # ### Correlation & Prediction Error Analysis
-# 
+#
 
 # In[20]:
 
@@ -1009,7 +1015,7 @@ print("✓ Correlation error analysis saved as '../figure/correlation_error_anal
 
 
 # ### Calibration Curves & Risk Distribution
-# 
+#
 
 # In[21]:
 
@@ -1183,7 +1189,7 @@ else:
 print(f"y restored: type={type(y)}, shape={y.shape}")
 
 # 3. Run cross-validation
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 best_model = trained_models[best_model_name]
