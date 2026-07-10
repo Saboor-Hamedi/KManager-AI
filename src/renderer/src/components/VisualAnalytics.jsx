@@ -41,29 +41,25 @@ const AnalyticView = ({
   extraAction
 }) => (
   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-    <div className="flex items-center justify-between border-b border-gray-800 pb-6">
-      <div className="flex items-center gap-3">
-        <Icon size={20} className="text-blue-500" />
+    <div className="flex items-end justify-between border-b border-gray-800 pb-6">
+      <div className="flex flex-col gap-2">
         <h2 className="text-xl font-black text-white tracking-tight">{title}</h2>
-      </div>
-      <div className="flex items-center gap-4">
-        {extraAction}
-        <div className="bg-blue-500/5 border border-blue-500/20 px-4 py-2 rounded max-w-md">
-          <div className="flex items-center gap-2 mb-1">
-            <Info size={12} className="text-blue-500" />
-            <span className="text-[8px] font-black text-blue-500">Forensic Context</span>
-          </div>
-          <p className="text-[9px] text-gray-500 font-bold leading-tight">
+        <div className="flex items-center gap-2">
+          <Info size={12} className="text-blue-500" />
+          <p className="text-[10px] text-gray-500 font-bold leading-tight max-w-2xl">
             {explanation}
           </p>
         </div>
       </div>
+      <div className="flex items-center gap-4">
+        {extraAction}
+      </div>
     </div>
 
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
       <div
         className={cn(
-          'bg-[#0d1117] border border-gray-800 rounded-lg p-8',
+          'bg-[#0d1117] border border-gray-800 rounded-lg p-8 min-h-[500px]',
           columns && tableData ? 'xl:col-span-8' : 'xl:col-span-12'
         )}
       >
@@ -71,34 +67,32 @@ const AnalyticView = ({
       </div>
 
       {columns && tableData && (
-        <div className="xl:col-span-4 space-y-6">
-          <div className="bg-[#0d1117] border border-gray-800 rounded-lg overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-black/50">
-                <tr>
-                  {columns.map((col) => (
-                    <th
-                      key={col}
-                      className="p-3 text-[8px] font-black text-gray-600 tracking-widest border-b border-gray-800"
-                    >
-                      {col}
-                    </th>
+        <div className="xl:col-span-4 h-[500px] overflow-y-auto custom-scrollbar bg-[#0d1117] border border-gray-800 rounded-lg">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="bg-black/90 backdrop-blur-md sticky top-0 z-10">
+              <tr>
+                {columns.map((col) => (
+                  <th
+                    key={col}
+                    className="p-3 text-[8px] font-black text-gray-600 tracking-widest border-b border-gray-800"
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800/50">
+              {tableData.map((row, i) => (
+                <tr key={i} className="hover:bg-white/5 transition-colors">
+                  {Object.values(row).map((val, j) => (
+                    <td key={j} className="p-3 text-[10px] font-mono font-bold text-gray-300">
+                      {val}
+                    </td>
                   ))}
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800/50">
-                {tableData.map((row, i) => (
-                  <tr key={i} className="hover:bg-white/5 transition-colors">
-                    {Object.values(row).map((val, j) => (
-                      <td key={j} className="p-3 text-[10px] font-mono font-bold text-gray-300">
-                        {val}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -267,10 +261,18 @@ const VisualAnalytics = ({
         : [],
     [distributionData, inputs]
   )
+  const distEntries = useMemo(
+    () =>
+      distributionData && !distributionData.error
+        ? Object.entries(distributionData).filter(([_, data]) => Array.isArray(data))
+        : [],
+    [distributionData]
+  )
 
-  if (activeTab === 'counterfactual') {
-    return (
-      <AnalyticView
+  return (
+    <>
+      <div className={activeTab === 'counterfactual' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="What-If Engine"
         icon={ShieldCheck}
         explanation="Simulates counterfactual scenarios to determine the exact biomarker shifts required to alter the neural network's decision boundary."
@@ -286,12 +288,10 @@ const VisualAnalytics = ({
           </p>
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'heatmap') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'heatmap' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Model Consensus Matrix"
         icon={Target}
         explanation="A correlation heatmap cross-referencing model agreement across the entire cohort. High values indicate models that share identical decision logic."
@@ -326,12 +326,10 @@ const VisualAnalytics = ({
           )}
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'boundaries') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'boundaries' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Topographic Decision Map"
         icon={Search}
         explanation="Visualizes the physical borders where the AI switches its verdict. The map charts AFP vs CA125, glowing red in danger zones."
@@ -394,12 +392,10 @@ const VisualAnalytics = ({
           )}
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'shap') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'shap' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="SHAP Waterfall (Patient Logic)"
         icon={BarChartIcon}
         explanation="Deconstructs the mathematical journey of the current patient's prediction. Red bars push the risk higher; green bars pull it down."
@@ -471,12 +467,10 @@ const VisualAnalytics = ({
           )}
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'trajectory') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'trajectory' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Neural Risk Trajectories (PSA Sweep)"
         icon={Activity}
         explanation="This visualizes Partial Dependence Waves. We sweep the PSA biomarker from 0 to 20 while holding others constant, revealing the precise danger thresholds for each model in the ensemble."
@@ -557,23 +551,12 @@ const VisualAnalytics = ({
           )}
         </div>
       </AnalyticView>
-    )
-  }
-
-  if (!metrics && ['roc', 'pr', 'cm', 'importance', 'distribution'].includes(activeTab)) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-[10px] font-black text-gray-500 tracking-[0.3em]">
-          Retrieving Forensic Metrics...
-        </p>
       </div>
-    )
-  }
 
-  if (activeTab === 'roc') {
-    return (
-      <AnalyticView
+
+
+      <div className={activeTab === 'roc' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="ROC Performance"
         icon={Target}
         explanation="The ROC Curve (Receiver Operating Characteristic) measures model discrimination ability. Higher curves toward the top-left indicate superior sensitivity and specificity."
@@ -614,12 +597,10 @@ const VisualAnalytics = ({
           </ResponsiveContainer>
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'pr') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'pr' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Precision-Recall"
         icon={Zap}
         explanation="Precision-Recall curves are critical for imbalanced clinical data. They show the trade-off between identifying true cases and avoiding false alarms."
@@ -649,12 +630,10 @@ const VisualAnalytics = ({
           </ResponsiveContainer>
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'calibration') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'calibration' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Model Calibration (Reliability Diagram)"
         icon={Target}
         explanation="Calibration curves show how closely the predicted probabilities align with the true fraction of positive cases. A perfectly calibrated model follows the diagonal line."
@@ -728,16 +707,16 @@ const VisualAnalytics = ({
           </ResponsiveContainer>
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'cm') {
-    const cm = metrics?.cm || [
-      [0, 0],
-      [0, 0]
-    ]
-    return (
-      <AnalyticView
+      <div className={activeTab === 'cm' ? 'block' : 'hidden'}>
+      {(() => {
+        const cm = metrics?.cm || [
+          [0, 0],
+          [0, 0]
+        ]
+        return (
+          <AnalyticView
         title="Confusion Matrix"
         icon={ShieldCheck}
         explanation="The Confusion Matrix identifies classification errors. TN and TP are successes, while FP and FN represent misdiagnoses requiring further audit."
@@ -779,19 +758,21 @@ const VisualAnalytics = ({
           <div className="text-center">Actual Positive</div>
         </div>
       </AnalyticView>
-    )
-  }
+        );
+      })()}
+      </div>
 
-  if (activeTab === 'tsne') {
-    const getProbColor = (p) => {
-      if (p < 0.25) return `rgb(68, 1, 84)`
-      if (p < 0.5) return `rgb(49, 104, 142)`
-      if (p < 0.75) return `rgb(53, 183, 121)`
-      return `rgb(253, 231, 37)`
-    }
+      <div className={activeTab === 'tsne' ? 'block' : 'hidden'}>
+      {(() => {
+        const getProbColor = (p) => {
+          if (p < 0.25) return `rgb(68, 1, 84)`
+          if (p < 0.5) return `rgb(49, 104, 142)`
+          if (p < 0.75) return `rgb(53, 183, 121)`
+          return `rgb(253, 231, 37)`
+        }
 
-    return (
-      <AnalyticView
+        return (
+          <AnalyticView
         title="Latent Space Diagnostics"
         icon={Search}
         explanation="Multi-dimensional projection of high-fidelity biomarker signatures."
@@ -1122,66 +1103,49 @@ const VisualAnalytics = ({
           </div>
         )}
       </AnalyticView>
-    )
-  }
+        )
+      })()}
+      </div>
 
-  if (activeTab === 'importance') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'importance' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Biomarker Influence"
         icon={Zap}
         explanation="Feature Importance quantifies the contribution of each biomarker to the final neural verdict. Higher values indicate greater diagnostic weight."
         tableData={importanceTableData}
         columns={['Model', 'Biomarker', 'Neural Weight']}
       >
-        <div className="h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              layout="vertical"
-              data={importanceChartData}
-              margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#1f2937"
-                horizontal={true}
-                vertical={false}
-              />
-              <XAxis type="number" stroke="#4b5563" fontSize={10} domain={[0, 1]} />
-              <YAxis dataKey="name" type="category" stroke="#4b5563" fontSize={10} width={100} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#000', border: '1px solid #374151' }}
-                formatter={(value) => [`${(value * 100).toFixed(1)}%`, 'Weight']}
-              />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {importanceChartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={index === importanceChartData.length - 1 ? '#3b82f6' : '#1d4ed8'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="h-[450px] overflow-y-auto custom-scrollbar pr-4 space-y-6">
+          {importanceChartData.sort((a, b) => b.value - a.value).map(({ name, value }, i) => (
+            <div key={i} className="space-y-3">
+              <div className="flex justify-between text-[11px] font-black tracking-widest">
+                <span className="text-gray-300">{name.replace(/_/g, ' ')}</span>
+                <span className="text-blue-400 font-mono">
+                  {(value * 100).toFixed(1)}% Weight
+                </span>
+              </div>
+              <div className="h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+                <div
+                  className="h-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] transition-all duration-1000 rounded-full"
+                  style={{ width: `${value * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </AnalyticView>
-    )
-  }
+      </div>
 
-  if (activeTab === 'distribution') {
-    return (
-      <AnalyticView
+      <div className={activeTab === 'distribution' ? 'block' : 'hidden'}>
+        <AnalyticView
         title="Cohort Comparison"
         icon={Activity}
         explanation="Density plots show the frequency distribution of biomarkers in the study population. The pulsing marker indicates the current patient's position relative to the cohort."
         tableData={distributionTableData}
         columns={['Biomarker', 'Range Min', 'Range Max', 'Patient Value']}
       >
-        <div className="space-y-12">
-          {distributionData &&
-            !distributionData.error &&
-            Object.entries(distributionData)
-              .filter(([_, data]) => Array.isArray(data))
+        <div className="h-[450px] overflow-y-auto custom-scrollbar pr-4 space-y-12">
+          {distEntries
               .map(([key, data]) => (
                 <div key={key} className="h-[180px] relative">
                   <div className="absolute top-0 left-0 text-[8px] font-black text-blue-500 mb-2">
@@ -1236,24 +1200,24 @@ const VisualAnalytics = ({
                 </div>
               ))}
         </div>
+        
       </AnalyticView>
-    )
-  }
-
-  if (activeTab === 'calibration-risk') {
-    const calData = calibrationRiskData
-    const COLORS = {
-      'Logistic Regression': '#8b5cf6',
-      'Random Forest': '#10b981',
-      Svm: '#f59e0b',
-      Xgboost: '#ef4444',
-      Logistic_Regression: '#8b5cf6',
-      Random_Forest: '#10b981',
-      SVM: '#f59e0b',
-      XGBoost: '#ef4444'
-    }
-    const getColor = (name) => COLORS[name] || '#3b82f6'
-    const strat = calData?.stratification
+      </div>
+      <div className={activeTab === 'calibration-risk' ? 'block' : 'hidden'}>
+      {(() => {
+        const calData = calibrationRiskData
+        const COLORS = {
+          'Logistic Regression': '#8b5cf6',
+          'Random Forest': '#10b981',
+          Svm: '#f59e0b',
+          Xgboost: '#ef4444',
+          Logistic_Regression: '#8b5cf6',
+          Random_Forest: '#10b981',
+          SVM: '#f59e0b',
+          XGBoost: '#ef4444'
+        }
+        const getColor = (name) => COLORS[name] || '#3b82f6'
+        const strat = calData?.stratification
     const stratMax = strat ? Math.max(strat.safe, strat.moderate, strat.high, strat.critical) : 1
     const stratBars = strat
       ? [
@@ -1540,10 +1504,13 @@ const VisualAnalytics = ({
           </div>
         </div>
       </AnalyticView>
-    )
-  }
+        )
+      })()}
+      </div>
+    </>
+  )
 
-  return null
+
 }
 
 export default memo(VisualAnalytics)

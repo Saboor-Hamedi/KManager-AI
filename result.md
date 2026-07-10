@@ -1,192 +1,183 @@
- python analyse_data.py 
+npm run dev
 
-======================================================================
-PROSTATE CANCER RISK CLASSIFICATION PIPELINE
-======================================================================
+> biomarkers@1.0.0 dev
+> electron-vite dev
 
-This pipeline uses DPV voltammetry features (200-point
-current measurements) to predict prostate cancer risk
-based on PSA clinical cutoff (>4 ng/mL).
+vite v7.3.2 building ssr environment for development...
+✓ 2 modules transformed.
+out/main/index.js  3.72 kB
+✓ built in 1.08s
 
-======================================================================
-STEP 1: LOADING DATA
-======================================================================
-✓ Data loaded successfully
-  Shape: (1000, 4)
-  Columns: ['sample_id', 'PSA_pg_per_ml', 'AFP_pg_per_ml', 'CA125_U_per_ml']
+electron main process built successfully
 
-======================================================================
-STEP: LOADING DPV VOLTAMMETRY FEATURES
-======================================================================
-  Found 1000 sample sheets with DPV data
-  DPV feature matrix: (1000, 201) (200 current measurements per sample)
-  Merged dataset: (1000, 204)
+-----
 
-======================================================================
-STEP 2: TARGET VARIABLE CREATION
-======================================================================
-  Definition: PSA_pg_per_ml > 4000 pg/mL indicates high risk
-  Distribution:
-    Low Risk (0): 881 (88.1%)
-    High Risk (1): 119 (11.9%)
+vite v7.3.2 building ssr environment for development...
+✓ 1 modules transformed.
+out/preload/index.js  0.60 kB
+✓ built in 48ms
 
-======================================================================
-STEP 3: FEATURE PREPROCESSING
-======================================================================
-  Samples after removing missing values: 1000
+electron preload scripts built successfully
 
-  Skipping log transform — features contain negative values
+-----
 
-  Scaling: RobustScaler applied
-  Final feature matrix shape: (1000, 200)
+dev server running for the electron renderer process at:
 
-======================================================================
-STEP 4: DATA SPLITTING
-======================================================================
-  Training set: 700 samples (70.0%)
-  Validation set: 300 samples (30.0%)
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
 
-  Training distribution:
-    Low Risk: 617 (88.1%)
-    High Risk: 83 (11.9%)
-
-======================================================================
-STEP 5: MODEL INITIALIZATION
-======================================================================
-  ✓ Logistic Regression
-  ✓ Random Forest
-  ✓ SVM
-  ✓ XGBoost
-
-======================================================================
-STEP 6: MODEL TRAINING
-======================================================================
-
-  Training Logistic Regression...
-    ✓ Accuracy: 0.9367
-    ✓ F1-Score: 0.7654
-
-  Training Random Forest...
-    ✓ Accuracy: 0.9500
-    ✓ F1-Score: 0.7619
-
-  Training SVM...
-    ✓ Accuracy: 0.9533
-    ✓ F1-Score: 0.7879
-
-  Training XGBoost...
-    ✓ Accuracy: 0.9467
-    ✓ F1-Score: 0.7895
-
-======================================================================
-STEP 7b: GRAPH NEURAL NETWORK TRAINING
-======================================================================
-
-Initializing Graph Neural Network (GNN)...
-Building correlation graph from biomarkers...
-Creating GNN training data...
-
-Training Graph Neural Network...
-Epoch  10 | Train Loss: 0.0082 | Val Loss: 5.4534
-Epoch  20 | Train Loss: 0.0015 | Val Loss: 6.1792
-Epoch  30 | Train Loss: 0.0006 | Val Loss: 6.6227
-Epoch  40 | Train Loss: 0.0003 | Val Loss: 6.9491
-Epoch  50 | Train Loss: 0.0002 | Val Loss: 7.2119
-
-Evaluating GNN on validation set...
-
-✅ GNN Model trained successfully!
-  Validation Accuracy: 0.9367
-  Validation F1-Score: 0.7595
-  Validation ROC-AUC: 0.9663
-  ✓ Saved: gnn_model.pkl
-
-  ✓ Saved: scaler.pkl and feature_columns.pkl
-
-======================================================================
-STEP 8: GENERATING ADVANCED VISUALIZATIONS
-======================================================================
-
-  📊 Creating advanced confusion matrices...
-  ✓ Saved: advanced_cm_logistic_regression.png
-  ✓ Saved: advanced_cm_random_forest.png
-  ✓ Saved: advanced_cm_svm.png
-  ✓ Saved: advanced_cm_xgboost.png
-  ✓ Saved: advanced_cm_gnn.png
-
-  📈 Creating radar chart...
-  ✓ Saved: radar_chart_comparison.png
-
-  🔀 Creating parallel coordinates plot...
-  ✓ Saved: parallel_coordinates.png
-
-  ⛰️ Creating ridge plot...
-  ✓ Saved: ridge_plot_distributions.png
-
-  🎻 Creating violin plots...
-  ✓ Saved: violin_plots.png
-
-  🔥 Creating correlation heatmap...
-  ✓ Saved: correlation_heatmap.png
-
-  📊 Creating model performance summary chart...
-  ✓ Saved: model_performance_summary.png
-
-  🏅 Creating best model modal...
-  ✓ Saved: best_model_modal.png
-
-  📉 Creating enhanced ROC curves...
-  ✓ Saved: roc_curves_enhanced.png
-
-======================================================================
-PIPELINE COMPLETED SUCCESSFULLY
-======================================================================
-
-🏆 BEST MODEL: XGBoost
-   F1-Score: 0.7895
-   Accuracy: 0.9467
-   ROC-AUC: 0.9871
-
-======================================================================
-BEST MODEL SUMMARY
-======================================================================
-Best model: XGBoost
-  • Accuracy: 94.67%
-  • Precision: 75.00%
-  • Recall: 83.33%
-  • F1-Score: 78.95%
-  • ROC-AUC: 98.71%
-
-Model performance table (percentages):
-              Model  Accuracy (%)  Precision (%)  Recall (%)  F1-Score (%)  ROC-AUC (%)
-Logistic Regression         93.67          68.89       86.11         76.54        98.47
-      Random Forest         95.00          88.89       66.67         76.19        98.61
-                SVM         95.33          86.67       72.22         78.79        98.33
-            XGBoost         94.67          75.00       83.33         78.95        98.71
-                GNN         93.67          69.77       83.33         75.95        96.63
-  ✓ Saved: best_model_summary.csv
-
-📁 Output files saved to:
-   • ../models/ - Trained models
-   • ../figure/ - All visualizations
-
-======================================================================
-MODEL PERFORMANCE SUMMARY
-======================================================================
-                     Accuracy  Precision  Recall  F1-Score  ROC-AUC
-Logistic Regression    0.9367     0.6889  0.8611    0.7654   0.9847
-Random Forest          0.9500     0.8889  0.6667    0.7619   0.9861
-SVM                    0.9533     0.8667  0.7222    0.7879   0.9833
-XGBoost                0.9467     0.7500  0.8333    0.7895   0.9871
-GNN                    0.9367     0.6977  0.8333    0.7595   0.9663
-@Saboor ➜ src git(features) 
-----
+starting electron app...
 
 
-i get this value on app:
-Model	Brier Score	Status
-Logistic regression	0.042	Well Calibrated
-Random forest	0.042	Well Calibrated
-Svm	0.042	Well Calibrated
-Xgboost	0.042	Well Calibrated
-on model calibration, what is it why its different ?
+9:16:30 PM [vite] Internal server error: B:\biomarkers\src\renderer\src\components\VisualAnalytics.jsx: Unexpected token (706:4)
+
+  704 |
+  705 |   if (activeTab === 'cm') {
+> 706 |     const cm = metrics?.cm || [
+      |     ^
+  707 |       [0, 0],
+  708 |       [0, 0]
+  709 |     ]
+  Plugin: vite:react-babel
+  File: B:/biomarkers/src/renderer/src/components/VisualAnalytics.jsx:706:4
+  718 |          <div className="flex flex-col items-center gap-4 py-10">
+  719 |            <div className="flex gap-4 w-full max-w-[500px]">
+  720 |  ...ex flex-col items-center justify-center rounded-xl shadow-inner">
+      |                                                                 ^
+  721 |                <span className="text-5xl font-black text-white">{cm[0][0]}</span>
+  722 |                <span className="text-[10px] font-black text-blue-500 mt-2">
+      at constructor (B:\biomarkers\node_modules\@babel\parser\lib\index.js:365:19)
+      at JSXParserMixin.raise (B:\biomarkers\node_modules\@babel\parser\lib\index.js:6599:19)
+      at JSXParserMixin.unexpected (B:\biomarkers\node_modules\@babel\parser\lib\index.js:6619:16)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11442:22)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10831:21)
+      at JSXParserMixin.parseExpressionBase (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10784:23)
+      at B:\biomarkers\node_modules\@babel\parser\lib\index.js:10780:39
+      at JSXParserMixin.allowInAnd (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10780:17)
+      at JSXParserMixin.jsxParseExpressionContainer (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4711:36)
+      at JSXParserMixin.jsxParseElement (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10831:21)
+      at B:\biomarkers\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12493:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11675:28)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10831:21)
+      at JSXParserMixin.parseExpressionBase (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10784:23)
+      at B:\biomarkers\node_modules\@babel\parser\lib\index.js:10780:39
+      at JSXParserMixin.allowInAnd (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12421:16)
+      at JSXParserMixin.parseExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10780:17)
+      at JSXParserMixin.parseReturnStatement (B:\biomarkers\node_modules\@babel\parser\lib\index.js:13142:28)
+      at JSXParserMixin.parseStatementContent (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12798:21)
+      at JSXParserMixin.parseStatementLike (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12767:17)
+      at JSXParserMixin.parseStatementListItem (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12747:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (B:\biomarkers\node_modules\@babel\parser\lib\index.js:13316:61)
+9:16:30 PM [vite] (client) Pre-transform error: B:\biomarkers\src\renderer\src\components\VisualAnalytics.jsx: Unexpected token (706:4)
+9:16:36 PM [vite] Internal server error: B:\biomarkers\src\renderer\src\components\VisualAnalytics.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (1099:6)
+
+  1097 |         )}
+  1098 |       </AnalyticView>
+> 1099 |       </div>
+       |       ^
+  1100 |
+  1101 |       <div className={activeTab === 'importance' ? 'block' : 'hidden'}>
+  1102 |         <AnalyticView
+  Plugin: vite:react-babel
+  File: B:/biomarkers/src/renderer/src/components/VisualAnalytics.jsx:1099:6
+  1117 |                </div>
+  1118 |                <div className="h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+  1119 |                  <div
+       |              ^
+  1120 |                    className="h-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] transition-all duration-1000 r...
+  1121 |                    style={{ width: `${value * 100}%` }}
+      at constructor (B:\biomarkers\node_modules\@babel\parser\lib\index.js:365:19)
+      at JSXParserMixin.raise (B:\biomarkers\node_modules\@babel\parser\lib\index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10831:21)
+      at B:\biomarkers\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12493:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11675:28)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10831:21)
+      at JSXParserMixin.parseExpressionBase (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10784:23)
+      at B:\biomarkers\node_modules\@babel\parser\lib\index.js:10780:39
+      at JSXParserMixin.allowInAnd (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12421:16)
+      at JSXParserMixin.parseExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10780:17)
+      at JSXParserMixin.parseReturnStatement (B:\biomarkers\node_modules\@babel\parser\lib\index.js:13142:28)
+      at JSXParserMixin.parseStatementContent (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12798:21)
+      at JSXParserMixin.parseStatementLike (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12767:17)
+      at JSXParserMixin.parseStatementListItem (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12747:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (B:\biomarkers\node_modules\@babel\parser\lib\index.js:13316:61)
+      at JSXParserMixin.parseBlockBody (B:\biomarkers\node_modules\@babel\parser\lib\index.js:13309:10)
+      at JSXParserMixin.parseBlock (B:\biomarkers\node_modules\@babel\parser\lib\index.js:13297:10)
+      at JSXParserMixin.parseFunctionBody (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12100:24)
+      at JSXParserMixin.parseArrowExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:12075:10)
+      at JSXParserMixin.parseParenAndDistinguishExpression (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11687:12)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (B:\biomarkers\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (B:\biomarkers\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (B:\biomarkers\node_modules\@babel\parser\lib\index.js:10831:21)
+      at B:\biomarkers\node_modules\@babel\parser\lib\index.js:10800:39
+9:16:36 PM [vite] (client) Pre-transform error: B:\biomarkers\src\renderer\src\components\VisualAnalytics.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (1099:6)
+
+  1097 |         )}
+  1098 |       </AnalyticView>
+> 1099 |       </div>
+       |       ^
+  1100 |
+  1101 |       <div className={activeTab === 'importance' ? 'block' : 'hidden'}>
+  1102 |         <AnalyticView
+  Plugin: vite:react-babel
+  File: B:/biomarkers/src/renderer/src/components/VisualAnalytics.jsx:1099:6
+  1117 |                </div>
+  1118 |                <div className="h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+  1119 |                  <div
+       |              ^
+  1120 |                    className="h-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] transition-all duration-1000 r...
+  1121 |                    style={{ width: `${value * 100}%` }}

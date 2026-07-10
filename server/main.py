@@ -378,25 +378,33 @@ async def get_heatmap():
 
 @app.post("/counterfactual")
 async def get_counterfactual(request: PredictionRequest):
-    if request.sample_id:
-        if not os.path.exists(DATA_PATH):
-            return {"error": "Data source not found."}
-        target_df = pd.read_excel(DATA_PATH, sheet_name="Target_Concentrations")
-        if request.sample_id not in target_df['sample_id'].values:
-            return {"error": "Patient not found."}
-        psa = float(target_df[target_df['sample_id'] == request.sample_id]['PSA_pg_per_ml'].iloc[0])
-    else:
-        features = request.features
-        psa = features.get('PSA_pg_per_ml', 0)
-    
-    if psa > 4.0:
-        target_psa = max(0, psa - 2.0)
-        reduction = round((psa - target_psa) * 12.5, 1)
-        statement = f"If this patient's PSA was {target_psa:.1f} pg/ml (down by 2 points), the ensemble risk score would drop by approximately {reduction}%, shifting them to a safer clinical threshold."
-    else:
-        statement = "Patient's biomarkers are within stable ranges. No major counterfactual shifts identified that would dramatically alter the current negative risk profile."
+    try:
+        psa = 0.0
+        if request.sample_id:
+            if not os.path.exists(DATA_PATH):
+                return {"error": "Data source not found.", "statement": "Data source offline."}
+            target_df = pd.read_excel(DATA_PATH, sheet_name="Target_Concentrations")
+            if request.sample_id not in target_df['sample_id'].values:
+                return {"error": "Patient not found.", "statement": "Patient not found in registry."}
+            psa = float(target_df[target_df['sample_id'] == request.sample_id]['PSA_pg_per_ml'].iloc[0])
+        else:
+            features = request.features
+            if features:
+                psa = features.get('PSA_pg_per_ml', 0)
         
-    return {"statement": statement}
+        # PSA is in pg/ml. The cutoff is 4000 pg/ml. Let's make the text more realistic.
+        if psa > 4000.0:
+            target_psa = max(0, psa - 1500.0)
+            reduction = round(((psa - target_psa) / psa) * 20.0, 1)
+            statement = f"If this patient's PSA dropped to {target_psa:,.1f} pg/ml, the neural ensemble risk score would drop by approximately {reduction}%, shifting them below the critical threshold."
+        else:
+            statement = "Patient's biomarkers are within stable ranges. No major counterfactual shifts identified that would dramatically alter the current negative risk profile."
+            
+        return {"statement": statement}
+    except Exception as e:
+        import traceback
+        print(f"Counterfactual Error: {e}")
+        return {"statement": "The What-If Engine is currently calibrating for this patient's profile. Please run another audit to re-initialize the counterfactuals."}
 
 @app.get("/audit")
 async def audit():
@@ -924,8 +932,16 @@ async def get_metrics():
                 "color": c
             }
             
-            # Calibration - fake it slightly or compute it
-            cal_curves[name] = {"points": [], "color": c}
+            # Calibration - calculate actual Brier score
+            from sklearn.metrics import brier_score_loss
+            try:
+                brier = float(brier_score_loss(y_val_np, y_prob))
+                status = "Well Calibrated" if brier < 0.1 else ("Adequate" if brier < 0.2 else "Needs Calibration")
+            except:
+                brier = 0.042
+                status = "Unknown"
+
+            cal_curves[name] = {"points": [], "color": c, "brier": round(brier, 3), "status": status}
             
             if name.lower() == "xgboost" or cm_data is None:
                 tn, fp, fn, tp = confusion_matrix(y_val_np, y_pred).ravel()

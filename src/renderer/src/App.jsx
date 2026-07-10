@@ -292,7 +292,7 @@ function App() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <CommitteeReview artifacts={artifacts} prediction={prediction} />
-                  <div className="bg-[#0d1117] border border-gray-800 rounded p-8">
+                  <div className="bg-[#0d1117] border border-gray-800 rounded p-8 h-[450px] overflow-y-auto custom-scrollbar pr-2">
                     <h3 className="text-[10px] font-bold tracking-[0.2em] text-blue-500 mb-8 flex items-center gap-2">
                       <Activity size={14} className="text-blue-500" />
                       Global Biomarker Influence

@@ -39,7 +39,7 @@ const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => 
     )}
     <Icon size={16} className={cn("shrink-0", active ? "text-blue-500" : "group-hover:text-blue-400")} />
     {!collapsed && (
-      <span className="ml-4 text-[9px] font-black tracking-[0.2em] truncate">{label}</span>
+      <span className="ml-4 text-[12px] font-medium font-sans truncate">{label}</span>
     )}
   </button>
 ))
@@ -67,7 +67,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings }) => {
 
   const analyticItems = [
     { id: 'trajectory', label: 'Risk Trajectories', icon: TrendingUp },
-    { id: 'shap', label: 'SHAP Breakdown', icon: BarChart2 },
+    { id: 'shap', label: 'Biometric Radar', icon: BarChart2 },
     { id: 'boundaries', label: 'Decision Map', icon: Map },
     { id: 'heatmap', label: 'Model Heatmap', icon: Grid },
     { id: 'counterfactual', label: 'What-If Engine', icon: GitBranch },
