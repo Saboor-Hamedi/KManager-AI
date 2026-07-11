@@ -10,8 +10,10 @@ const SettingAIPanel = memo(() => {
 
   useEffect(() => {
     const loadSettings = async () => {
-      const key = await getSetting('DEEPSEEK_API_KEY', '')
-      const model = await getSetting('EMBEDDING_MODEL', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2')
+      const [key, model] = await Promise.all([
+        getSetting('DEEPSEEK_API_KEY', ''),
+        getSetting('EMBEDDING_MODEL', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2')
+      ])
       setApiKey(key)
       setEmbeddingModel(model)
     }

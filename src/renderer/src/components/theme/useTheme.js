@@ -7,6 +7,7 @@ export const applyThemeColors = (themeId) => {
   if (!theme) return;
   
   const root = document.documentElement;
+  root.setAttribute('data-theme', themeId);
   Object.entries(theme.colors).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });

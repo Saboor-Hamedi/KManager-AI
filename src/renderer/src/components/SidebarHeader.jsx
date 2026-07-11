@@ -1,21 +1,26 @@
 import React, { memo } from 'react'
-import { Activity, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '../lib/utils'
 
-const SidebarHeader = memo(({ collapsed, toggleCollapsed }) => (
-  <div className={cn("flex items-center border-b border-[var(--border-dim)] h-[50px] min-h-[50px] shrink-0 transition-colors duration-300", collapsed ? "justify-center p-0" : "justify-between px-4")}>
-    {!collapsed && (
-      <div className="flex items-center gap-2">
-        {/* <Activity className="text-[var(--text-accent)]" size={16} /> */}
-        <span className="font-black text-[var(--text-main)] tracking-[0.1em] text-xs">BIOMARKER</span>
+const SidebarHeader = memo(({ collapsed }) => (
+  <div className={cn(
+    'flex items-center border-b border-[var(--border-dim)] h-[50px] min-h-[50px] shrink-0',
+    collapsed ? 'justify-center px-0' : 'px-4'
+  )}>
+    {!collapsed ? (
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-5 h-5 rounded-md bg-[var(--text-accent)] flex items-center justify-center shrink-0">
+          <span className="text-[9px] font-black text-black leading-none select-none">K</span>
+        </div>
+        <div className="flex flex-col leading-none min-w-0">
+          <span className="text-[11px] font-bold text-[var(--text-main)] tracking-[0.12em] truncate">KMANAGER</span>
+          <span className="text-[8px] text-[var(--text-faint)] tracking-widest truncate">MANAGEMENT</span>
+        </div>
+      </div>
+    ) : (
+      <div className="w-5 h-5 rounded-md bg-[var(--text-accent)] flex items-center justify-center shrink-0">
+        <span className="text-[9px] font-black text-black leading-none select-none">K</span>
       </div>
     )}
-    <button 
-      onClick={toggleCollapsed}
-      className="p-1 hover:bg-[var(--bg-active)] rounded border border-[var(--border-dim)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none"
-    >
-      {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-    </button>
   </div>
 ))
 

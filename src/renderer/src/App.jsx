@@ -16,6 +16,18 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isThemeOpen, setIsThemeOpen] = useState(false)
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed')
+    return saved ? JSON.parse(saved) : false
+  })
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(next))
+      return next
+    })
+  }, [])
 
   // Initialize theme
   useTheme()
@@ -47,7 +59,10 @@ function App() {
     onTogglePalette: useCallback(() => {
       setActiveTab('search')
       setSearchFocusTrigger(prev => prev + 1)
-    }, [])
+    }, []),
+    onToggleSidebar: toggleSidebar,
+    onToggleTheme: useCallback(() => setIsThemeOpen(prev => !prev), []),
+    onToggleSettings: useCallback(() => setIsSettingsOpen(prev => !prev), []),
   })
 
   return (
@@ -57,13 +72,33 @@ function App() {
         setActiveTab={setActiveTab} 
         onOpenSettings={() => setIsSettingsOpen(true)} 
         onOpenTheme={() => setIsThemeOpen(true)}
+        collapsed={sidebarCollapsed}
+        toggleCollapsed={toggleSidebar}
       />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <div className="max-w-6xl mx-auto space-y-6 h-full flex flex-col">
-            {activeTab !== 'search' && (
-              <div className="animate-in fade-in duration-500 shrink-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Header toggleSidebar={toggleSidebar} />
+
+        {/* ── Search view — always mounted so state (history, query) survives tab switches ── */}
+        <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'search' ? 'flex' : 'hidden'}`}>
+          <DashboardSearch
+            focusTrigger={searchFocusTrigger}
+            onResultSelect={async (item) => {
+              if (item.id === 'nav-1') setActiveTab('analytics')
+              else if (item.id === 'nav-2') setActiveTab('users')
+              else if (item.id === 'nav-3') setIsSettingsOpen(true)
+              else if (item.id === 'action-2') setIsThemeOpen(true)
+              else if (item.vault_path) {
+                await window.api.system.openFile(item.vault_path)
+              }
+            }}
+          />
+        </div>
+
+        {/* ── Other views — lazy-conditional, padding/scroll handled here ── */}
+        {activeTab !== 'search' && (
+          <main className="flex-1 min-h-0 overflow-y-auto p-8 custom-scrollbar">
+            <div className="max-w-6xl mx-auto space-y-6 flex flex-col h-full">
+              <div className="animate-in fade-in duration-300 shrink-0">
                 <h1 className="text-lg font-black tracking-tight" style={{ color: 'var(--text-main)' }}>
                   {activeTab === 'analytics' ? 'Analytics' : 'Users Management'}
                 </h1>
@@ -71,32 +106,12 @@ function App() {
                   {activeTab === 'analytics' ? 'System Overview & Metrics' : 'Manage your users & permissions'}
                 </p>
               </div>
-            )}
-            
-            {activeTab === 'search' && (
-              <DashboardSearch 
-                focusTrigger={searchFocusTrigger} 
-                onResultSelect={async (item) => {
-                  if (item.id === 'nav-1') setActiveTab('analytics')
-                  else if (item.id === 'nav-2') setActiveTab('users')
-                  else if (item.id === 'nav-3') setIsSettingsOpen(true)
-                  else if (item.id === 'action-2') setIsThemeOpen(true)
-                  else if (item.vault_path) {
-                    await window.api.system.openFile(item.vault_path)
-                  }
-                }}
-              />
-            )}
 
-            {activeTab === 'analytics' && (
-              <AnalyticsView />
-            )}
-
-            {activeTab === 'users' && (
-              <UsersView />
-            )}
-          </div>
-        </main>
+              {activeTab === 'analytics' && <AnalyticsView />}
+              {activeTab === 'users' && <UsersView />}
+            </div>
+          </main>
+        )}
       </div>
       <ChatBot />
       <Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

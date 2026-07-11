@@ -30,7 +30,15 @@ const SettingDataPanel = () => {
 
   useEffect(() => {
     loadStats()
+
+    const handleSync = () => loadStats()
+    window.addEventListener('db-stats-updated', handleSync)
+
     const cleanup = window.api.db.onIngestProgress((update) => {
+      if (update.status === 'complete') {
+        loadStats()
+        window.dispatchEvent(new Event('db-stats-updated'))
+      }
       setIngestState(prev => ({
         ...prev,
         progress: update.progress,
@@ -38,7 +46,10 @@ const SettingDataPanel = () => {
         status: update.status === 'complete' ? 'success' : 'uploading'
       }))
     })
-    return cleanup
+    return () => {
+      window.removeEventListener('db-stats-updated', handleSync)
+      if (cleanup) cleanup()
+    }
   }, [])
 
   const handleDragOver = (e) => {

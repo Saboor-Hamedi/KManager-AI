@@ -70,9 +70,9 @@ const Setting = ({ isOpen, onClose }) => {
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg text-xs font-bold tracking-wide focus:outline-none transition-all duration-150",
+                  "flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg text-xs font-bold tracking-wide focus:outline-none outline-none border-0 transition-all duration-150",
                   activeTab === tab.id
-                    ? "bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)] shadow-sm"
+                    ? "bg-[var(--bg-active)] text-[var(--text-accent)] shadow-none"
                     : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]/60"
                 )}
               >

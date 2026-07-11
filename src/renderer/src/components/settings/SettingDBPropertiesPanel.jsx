@@ -27,12 +27,20 @@ const SettingDBPropertiesPanel = () => {
 
   useEffect(() => {
     loadStats()
+
+    const handleSync = () => loadStats()
+    window.addEventListener('db-stats-updated', handleSync)
+
     const unsubscribe = window.api.db.onIngestProgress((update) => {
+      if (update.status === 'complete') {
+        loadStats()
+        window.dispatchEvent(new Event('db-stats-updated'))
+      }
       setActionState(prev => {
         if (prev?.status === 'progress' || update.status === 'embedding') {
           return {
             type: 'reembed',
-            status: 'progress',
+            status: update.status === 'complete' ? 'success' : 'progress',
             progress: update.progress || 50,
             message: update.message || 'Processing vector chunks...'
           }
@@ -41,6 +49,7 @@ const SettingDBPropertiesPanel = () => {
       })
     })
     return () => {
+      window.removeEventListener('db-stats-updated', handleSync)
       if (unsubscribe) unsubscribe()
     }
   }, [])
@@ -57,6 +66,7 @@ const SettingDBPropertiesPanel = () => {
           message: `Successfully re-embedded ${res.documentsProcessed || 0} documents (${res.chunksProcessed || 0} vector chunks).`
         })
         loadStats()
+        window.dispatchEvent(new Event('db-stats-updated'))
       } else {
         setActionState({
           type: 'reembed',
@@ -88,6 +98,7 @@ const SettingDBPropertiesPanel = () => {
         })
         setConfirmTruncate(false)
         loadStats()
+        window.dispatchEvent(new Event('db-stats-updated'))
       } else {
         setActionState({
           type: 'truncate',

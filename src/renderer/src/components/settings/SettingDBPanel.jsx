@@ -17,13 +17,14 @@ const SettingDBPanel = memo(() => {
 
   useEffect(() => {
     const loadConfig = async () => {
-      setConfig({
-        host: await getSetting('DB_HOST', 'localhost'),
-        port: await getSetting('DB_PORT', '5432'),
-        database: await getSetting('DB_DATABASE', ''),
-        user: await getSetting('DB_USER', ''),
-        password: await getSetting('DB_PASSWORD', '')
-      })
+      const [host, port, database, user, password] = await Promise.all([
+        getSetting('DB_HOST', 'localhost'),
+        getSetting('DB_PORT', '5432'),
+        getSetting('DB_DATABASE', ''),
+        getSetting('DB_USER', ''),
+        getSetting('DB_PASSWORD', '')
+      ])
+      setConfig({ host, port, database, user, password })
       checkStatus()
     }
     loadConfig()

@@ -38,3 +38,66 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* ─── Global focus / outline reset ─────────────────────────────────────────
+   Chromium (Electron) renders a white ring on :focus-visible for every
+   interactive element. We suppress it universally and replace it with
+   nothing — our components provide their own hover/active feedback.
+   ─────────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+:focus,
+:focus-visible,
+:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+button,
+button:focus,
+button:focus-visible,
+button:active,
+input,
+input:focus,
+input:focus-visible,
+textarea,
+textarea:focus,
+textarea:focus-visible,
+select,
+select:focus,
+a,
+a:focus,
+a:focus-visible,
+[role="button"],
+[role="button"]:focus,
+[role="tab"],
+[role="tab"]:focus,
+[tabindex],
+[tabindex]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* ─── Mermaid SVG isolation ─────────────────────────────────────────────────
+   Mermaid injects inline <style> that can bleed borders into surrounding
+   elements. Scope those resets strictly inside our wrapper container.
+   ─────────────────────────────────────────────────────────────────────── */
+.mermaid-svg-container svg,
+.mermaid-svg-container svg * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ─── Scrollbar utility ─────────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 99px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }

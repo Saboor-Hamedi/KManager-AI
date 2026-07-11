@@ -6,7 +6,7 @@ const SidebarFooterItem = memo(({ icon: Icon, label, collapsed, onClick }) => (
   <button
     onClick={onClick}
     className={cn(
-      "flex items-center w-full py-2.5 transition-all duration-200 group relative focus:outline-none",
+      "flex items-center w-full py-2.5 transition-all duration-200 group relative focus:outline-none outline-none border-0",
       collapsed ? "justify-center px-0" : "px-3",
       "text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] rounded-md"
     )}

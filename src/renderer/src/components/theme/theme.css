@@ -1,3 +1,35 @@
+/* ── Synchronous dark-theme defaults ─────────────────────────────────────────
+   Applied before React mounts so there is no blink/flash of unstyled content.
+   useTheme.js will overwrite these async once the saved preference is loaded.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg-app:            #000000;
+  --bg-sidebar:        #0a0a0a;
+  --bg-activitybar:    #050505;
+  --bg-panel:          #111111;
+  --bg-editor:         #000000;
+  --bg-active:         rgba(64, 186, 250, 0.12);
+  --bg-card:           #161616;
+  --text-main:         #e0e0e0;
+  --text-muted:        #a0a0a0;
+  --text-faint:        #5a5a5a;
+  --text-accent:       #40bafa;
+  --text-accent-rgb:   64, 186, 250;
+  --border-dim:        #1a1a1a;
+  --border-subtle:     #222222;
+  --border-main:       #333333;
+  --border-card:       #202020;
+  --scroll-thumb:      #333333;
+  --scroll-track:      #0a0a0a;
+  --icon-primary:      #40bafa;
+  --icon-secondary:    #10b981;
+  --icon-tertiary:     #f59e0b;
+  --icon-danger:       #ef4444;
+  --icon-love:         #ec4899;
+  --caret-width:       2px;
+  --caret-color:       #40bafa;
+}
+
 .theme-modal-overlay {
   position: fixed;
   top: 0;
