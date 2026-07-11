@@ -1,6 +1,6 @@
-export const saveSetting = (key, value) => {
+export const saveSetting = async (key, value) => {
   try {
-    localStorage.setItem(key, value);
+    await window.api.config.set(key, value);
     return true;
   } catch (error) {
     console.error('Failed to save setting:', error);
@@ -8,9 +8,9 @@ export const saveSetting = (key, value) => {
   }
 };
 
-export const getSetting = (key, defaultValue = '') => {
+export const getSetting = async (key, defaultValue = '') => {
   try {
-    return localStorage.getItem(key) || defaultValue;
+    return await window.api.config.get(key, defaultValue);
   } catch (error) {
     console.error('Failed to read setting:', error);
     return defaultValue;

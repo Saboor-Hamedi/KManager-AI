@@ -1,9 +1,20 @@
-import { contextBridge, webUtils } from 'electron'
+import { contextBridge, webUtils, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  getPathForFile: (file) => webUtils.getPathForFile(file)
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  db: {
+    testConnection: (config) => ipcRenderer.invoke('db:test-connection', config),
+    connect: (config) => ipcRenderer.invoke('db:connect', config),
+    disconnect: () => ipcRenderer.invoke('db:disconnect'),
+    query: (text, params) => ipcRenderer.invoke('db:query', text, params),
+    status: () => ipcRenderer.invoke('db:status')
+  },
+  config: {
+    get: (key, defaultValue) => ipcRenderer.invoke('config:get', key, defaultValue),
+    set: (key, value) => ipcRenderer.invoke('config:set', key, value)
+  }
 }
 
 // Disable context menu globally
