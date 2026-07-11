@@ -5,7 +5,7 @@ import ArtifactPicker from './components/ArtifactPicker'
 import StatCard from './components/StatCard'
 import ForensicInput from './components/ForensicInput'
 import CommitteeReview from './components/CommitteeReview'
-import VisualAnalytics from './components/VisualAnalytics'
+import Visual from './components/Visual'
 import PatientDetailModal from './components/PatientDetailModal'
 import ChatBot from './components/ChatBot'
 import SettingsModal from './components/SettingsModal'
@@ -204,7 +204,7 @@ function App() {
         accent: 'border-gray-800'
       },
       {
-        label: 'Consensus',
+        label: 'Model Agreement',
         value: prediction ? prediction.consensus : '0.0%',
         icon: TrendingUp,
         color: 'text-blue-400',
@@ -232,7 +232,7 @@ function App() {
                 <header className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     
-                    <h1 className="text-lg font-black tracking-tight text-white">
+                    <h1 className="text-base font-bold tracking-tight text-white">
                       Forensic Overview
                     </h1>
                   </div>
@@ -291,7 +291,7 @@ function App() {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <CommitteeReview artifacts={artifacts} prediction={prediction} />
+                  <CommitteeReview artifacts={artifacts} prediction={prediction} metrics={metrics} />
                   <div className="bg-[#0d1117] border border-gray-800 rounded p-8 h-[450px] overflow-y-auto custom-scrollbar pr-2">
                     <h3 className="text-[10px] font-bold tracking-[0.2em] text-blue-500 mb-8 flex items-center gap-2">
                       <Activity size={14} className="text-blue-500" />
@@ -590,7 +590,7 @@ function App() {
             )}
 
             {isAnalyticTab && (
-              <VisualAnalytics
+              <Visual
                 activeTab={activeTab}
                 prediction={prediction}
                 tsneData={tsneData}

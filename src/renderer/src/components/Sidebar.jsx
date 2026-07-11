@@ -23,6 +23,9 @@ import {
   Users
 } from 'lucide-react'
 
+import SidebarHeader from './SidebarHeader'
+import SidebarFooter from './SidebarFooter'
+
 const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => (
   <button
     onClick={onClick}
@@ -39,7 +42,7 @@ const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => 
     )}
     <Icon size={16} className={cn("shrink-0", active ? "text-blue-500" : "group-hover:text-blue-400")} />
     {!collapsed && (
-      <span className="ml-4 text-[12px] font-medium font-sans truncate">{label}</span>
+      <span className="ml-4 text-[12px] font-['Inter',_sans-serif] font-medium tracking-wide truncate">{label}</span>
     )}
   </button>
 ))
@@ -85,27 +88,13 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings }) => {
     <div 
       className={cn(
         "h-screen bg-[#0d1117] border-r border-gray-800 flex flex-col transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-56"
       )}
     >
-      <div className={cn("flex items-center border-b border-gray-800 h-16 shrink-0", collapsed ? "justify-center p-0" : "justify-between p-6")}>
-        {!collapsed && (
-          <div className="flex items-center gap-3">
-            <Activity className="text-blue-600" size={20} />
-            <span className="font-black text-white tracking-[0.1em] text-sm">CANCER BIOMARKER</span>
-          </div>
-        )}
-        <button 
-          onClick={toggleCollapsed}
-          className="p-1.5 hover:bg-gray-800 rounded border border-gray-800 transition-colors text-gray-500"
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-      </div>
+      <SidebarHeader collapsed={collapsed} toggleCollapsed={toggleCollapsed} />
 
-      <div className="flex-1 pt-0 pb-4 overflow-y-auto overflow-x-hidden space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex-1 pt-0 pb-4 overflow-y-auto overflow-x-hidden space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div>
-
           {mainItems.map((item) => (
             <SidebarItem
               key={item.id}
@@ -118,7 +107,6 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings }) => {
         </div>
 
         <div>
-
           {analyticItems.map((item) => (
             <SidebarItem
               key={item.id}
@@ -131,15 +119,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings }) => {
         </div>
       </div>
 
-      <div className={cn("border-t border-gray-800 shrink-0", collapsed ? "p-2" : "p-4")}>
-        <SidebarItem
-          icon={Settings}
-          label="Settings"
-          collapsed={collapsed}
-          onClick={onOpenSettings}
-          active={false}
-        />
-      </div>
+      <SidebarFooter collapsed={collapsed} onOpenSettings={onOpenSettings} />
     </div>
   )
 })

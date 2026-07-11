@@ -148,14 +148,14 @@ const ArtifactPicker = ({ onSync, files = [], setFiles, syncing, setSyncing, onP
           onDragLeave={onDragLeave}
           onDrop={onDrop}
           className={cn(
-            'relative border border-dashed rounded p-10 min-h-[100px] transition-all duration-200 flex flex-col items-center justify-center gap-2 shrink-0',
+            'relative border border-dashed rounded p-4 min-h-[60px] transition-all duration-200 flex flex-col items-center justify-center gap-1 shrink-0',
             isDragging
               ? 'border-blue-500 bg-blue-500/5'
               : 'border-gray-800 bg-black/40 hover:border-gray-700'
           )}
         >
-          <Upload size={14} className="text-blue-500/50" />
-          <p className="text-[10px] font-bold text-gray-500 tracking-[0.2em] pointer-events-none">
+          <Upload size={12} className="text-blue-500/50" />
+          <p className="text-[9px] font-bold text-gray-500 tracking-[0.2em] pointer-events-none">
             Drop Models
           </p>
           <input
@@ -209,7 +209,7 @@ const ArtifactPicker = ({ onSync, files = [], setFiles, syncing, setSyncing, onP
               ))}
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center border border-gray-800/10 border-dashed rounded py-8">
+            <div className="h-full flex items-center justify-center border border-gray-800/10 border-dashed rounded py-4">
               <p className="text-[7px] text-gray-800 font-bold tracking-widest opacity-20">
                 No Models Calibrated
               </p>
