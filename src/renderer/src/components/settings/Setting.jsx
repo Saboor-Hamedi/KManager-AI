@@ -1,12 +1,16 @@
 import React, { useState } from 'react'
-import { Settings as SettingsIcon, X, Cpu, Database } from 'lucide-react'
+import { Settings as SettingsIcon, X, Cpu, Database, Server, BarChart3, UploadCloud } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import SettingAIPanel from './SettingAIPanel'
 import SettingDBPanel from './SettingDBPanel'
+import SettingDataPanel from './SettingDataPanel'
+import SettingDBPropertiesPanel from './SettingDBPropertiesPanel'
 import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
 
 const tabs = [
-  { id: 'database', label: 'Database', icon: Database },
+  { id: 'database', label: 'Connection', icon: Server },
+  { id: 'db_properties', label: 'DB Properties', icon: BarChart3 },
+  { id: 'data', label: 'Data Ingestion', icon: UploadCloud },
   { id: 'ai', label: 'AI', icon: Cpu },
 ]
 
@@ -25,42 +29,61 @@ const Setting = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'database':
+        return <SettingDBPanel />
+      case 'db_properties':
+        return <SettingDBPropertiesPanel />
+      case 'data':
+        return <SettingDataPanel />
+      case 'ai':
+        return <SettingAIPanel />
+      default:
+        return <SettingDBPanel />
+    }
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
-      <div className="bg-[var(--bg-app)] border border-[var(--border-dim)] rounded-lg shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 flex flex-col h-[600px] transition-colors duration-300">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border-dim)] shrink-0">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-[var(--bg-app)] border border-[var(--border-dim)] rounded-[5px] shadow-2xl w-full max-w-4xl h-[760px] max-h-[90vh] animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden transition-all duration-300">
+        {/* Native OS Window-Style Title Bar matching Reference Modal */}
+        <div className="h-9 border-b border-[#2a2a2a] bg-[#1e1e1e] flex items-center justify-between shrink-0 pl-3 pr-0 select-none">
           <div className="flex items-center gap-2">
-            <SettingsIcon size={18} className="text-[var(--text-muted)]" />
-            <h2 className="text-xs font-black tracking-widest text-[var(--text-main)]">Settings</h2>
+            <SettingsIcon size={14} className="text-[#a855f7]" />
+            <span className="text-xs font-normal text-gray-300 truncate block">Settings & Knowledge Hub</span>
           </div>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            className="h-full px-4 hover:bg-[#e81123] hover:text-white text-gray-400 transition-colors flex items-center justify-center text-sm shrink-0"
+            title="Close"
+          >
+            ✕
           </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-44 border-r border-[var(--border-dim)] p-3 space-y-1 shrink-0 overflow-y-auto">
+          <div className="w-48 border-r border-[var(--border-dim)] p-3 space-y-1.5 shrink-0 overflow-y-auto bg-[#131313]/50">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-3 w-full px-3 py-2.5 rounded text-xs font-bold tracking-wider focus:outline-none",
+                  "flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg text-xs font-bold tracking-wide focus:outline-none transition-all duration-150",
                   activeTab === tab.id
-                    ? "bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]"
+                    ? "bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)] shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]/60"
                 )}
               >
-                <tab.icon size={14} />
+                <tab.icon size={15} />
                 {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 p-6 overflow-y-auto">
-            {activeTab === 'database' && <SettingDBPanel />}
-            {activeTab === 'ai' && <SettingAIPanel />}
+          <div className="flex-1 p-7 overflow-y-auto custom-scrollbar bg-[var(--bg-app)]">
+            {renderContent()}
           </div>
         </div>
       </div>

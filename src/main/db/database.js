@@ -48,6 +48,28 @@ class Database {
     }
   }
 
+  /**
+   * Executes a callback within a managed database transaction using a single client.
+   * The callback receives a `client` object which it should use for queries.
+   */
+  async transaction(callback) {
+    if (!this.pool) {
+      throw new Error('Not connected to database');
+    }
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async testConnection(config) {
     const testPool = new Pool({
       host: config.host || 'localhost',

@@ -1,23 +1,54 @@
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import ChatBot from './components/ChatBot'
 import Setting from './components/settings/Setting'
 import ThemeModal from './components/theme/ThemeModal'
 import { useTheme } from './components/theme/useTheme'
+import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts'
 
-import DashboardMetrics from './components/dashboard/DashboardMetrics'
-import DashboardChart from './components/dashboard/DashboardChart'
-import DashboardActivityFeed from './components/dashboard/DashboardActivityFeed'
+import DashboardSearch from './components/search/DashboardSearch'
+import AnalyticsView from './components/analytics/AnalyticsView'
 import UsersView from './components/users/UsersView'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState('search')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isThemeOpen, setIsThemeOpen] = useState(false)
+  const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
 
   // Initialize theme
   useTheme()
+
+  // Auto-connect database
+  useEffect(() => {
+    const connectDB = async () => {
+      const host = await window.api.config.get('DB_HOST', 'localhost')
+      const port = await window.api.config.get('DB_PORT', '5432')
+      const database = await window.api.config.get('DB_DATABASE', '')
+      const user = await window.api.config.get('DB_USER', '')
+      const password = await window.api.config.get('DB_PASSWORD', '')
+
+      if (database && user) {
+        await window.api.db.connect({
+          host,
+          port: parseInt(port, 10) || 5432,
+          database,
+          user,
+          password
+        })
+      }
+    }
+    connectDB()
+  }, [])
+
+  // Global Keyboard Shortcuts
+  useKeyboardShortcuts({
+    onTogglePalette: useCallback(() => {
+      setActiveTab('search')
+      setSearchFocusTrigger(prev => prev + 1)
+    }, [])
+  })
 
   return (
     <div className="flex h-screen bg-[#06080a] text-white overflow-hidden font-sans transition-colors duration-300" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
@@ -30,24 +61,35 @@ function App() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
         <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <div className="max-w-6xl mx-auto space-y-6">
-            <div className="animate-in fade-in duration-500">
-              <h1 className="text-lg font-black tracking-tight" style={{ color: 'var(--text-main)' }}>
-                {activeTab === 'dashboard' ? 'Dashboard' : 'Users Management'}
-              </h1>
-              <p className="text-[10px] font-bold tracking-widest mt-2 uppercase" style={{ color: 'var(--text-muted)' }}>
-                {activeTab === 'dashboard' ? 'System Overview & Metrics' : 'Manage your users & permissions'}
-              </p>
-            </div>
-            
-            {activeTab === 'dashboard' && (
-              <div className="animate-in slide-in-from-bottom-4 duration-500 fade-in fill-mode-both" style={{ animationDelay: '100ms' }}>
-                <DashboardMetrics />
-                <div className="flex flex-col lg:flex-row gap-6">
-                  <DashboardChart />
-                  <DashboardActivityFeed />
-                </div>
+          <div className="max-w-6xl mx-auto space-y-6 h-full flex flex-col">
+            {activeTab !== 'search' && (
+              <div className="animate-in fade-in duration-500 shrink-0">
+                <h1 className="text-lg font-black tracking-tight" style={{ color: 'var(--text-main)' }}>
+                  {activeTab === 'analytics' ? 'Analytics' : 'Users Management'}
+                </h1>
+                <p className="text-[10px] font-bold tracking-widest mt-2 uppercase" style={{ color: 'var(--text-muted)' }}>
+                  {activeTab === 'analytics' ? 'System Overview & Metrics' : 'Manage your users & permissions'}
+                </p>
               </div>
+            )}
+            
+            {activeTab === 'search' && (
+              <DashboardSearch 
+                focusTrigger={searchFocusTrigger} 
+                onResultSelect={async (item) => {
+                  if (item.id === 'nav-1') setActiveTab('analytics')
+                  else if (item.id === 'nav-2') setActiveTab('users')
+                  else if (item.id === 'nav-3') setIsSettingsOpen(true)
+                  else if (item.id === 'action-2') setIsThemeOpen(true)
+                  else if (item.vault_path) {
+                    await window.api.system.openFile(item.vault_path)
+                  }
+                }}
+              />
+            )}
+
+            {activeTab === 'analytics' && (
+              <AnalyticsView />
             )}
 
             {activeTab === 'users' && (

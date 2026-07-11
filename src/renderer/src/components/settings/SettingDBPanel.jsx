@@ -27,6 +27,10 @@ const SettingDBPanel = memo(() => {
       checkStatus()
     }
     loadConfig()
+
+    // Poll status to catch background auto-connect
+    const intervalId = setInterval(checkStatus, 2000)
+    return () => clearInterval(intervalId)
   }, [])
 
   const checkStatus = async () => {
@@ -45,6 +49,11 @@ const SettingDBPanel = memo(() => {
   const handleTest = async () => {
     setTesting(true)
     setStatus(null)
+    await saveSetting('DB_HOST', config.host)
+    await saveSetting('DB_PORT', config.port)
+    await saveSetting('DB_DATABASE', config.database)
+    await saveSetting('DB_USER', config.user)
+    await saveSetting('DB_PASSWORD', config.password)
     try {
       const res = await window.electron.ipcRenderer.invoke('db:test-connection', {
         ...config,
@@ -81,6 +90,23 @@ const SettingDBPanel = memo(() => {
     await window.electron.ipcRenderer.invoke('db:disconnect')
     setConnected(false)
     setStatus(null)
+  }
+
+  const handleInitSchema = async () => {
+    setTesting(true)
+    setStatus(null)
+    
+    // Auto-connect to the newly typed database first so schema runs on the correct one
+    await handleConnect()
+
+    try {
+      const res = await window.electron.ipcRenderer.invoke('db:init-schema')
+      setStatus(res)
+    } catch (err) {
+      setStatus({ success: false, message: err.message })
+    } finally {
+      setTesting(false)
+    }
   }
 
   const fields = [
@@ -151,13 +177,23 @@ const SettingDBPanel = memo(() => {
         </button>
 
         {connected ? (
-          <button
-            onClick={handleDisconnect}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest border border-[var(--icon-danger)]/30 text-[var(--icon-danger)] hover:bg-[var(--icon-danger)]/10 transition-all"
-          >
-            <WifiOff size={12} />
-            Disconnect
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleInitSchema}
+              disabled={testing}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] hover:bg-[var(--icon-secondary)]/20 border border-[var(--icon-secondary)]/30 transition-all disabled:opacity-50"
+            >
+              {testing ? <Loader2 size={12} className="animate-spin" /> : <Database size={12} />}
+              Init Schema
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest border border-[var(--icon-danger)]/30 text-[var(--icon-danger)] hover:bg-[var(--icon-danger)]/10 transition-all"
+            >
+              <WifiOff size={12} />
+              Disconnect
+            </button>
+          </div>
         ) : (
           <button
             onClick={handleConnect}

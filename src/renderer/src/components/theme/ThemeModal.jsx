@@ -37,8 +37,8 @@ const ThemeModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="modal-overlay theme-modal-overlay" onClick={onClose}>
-      <div className="modal-container theme-modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-dim)] bg-[var(--bg-app)]">
+      <div className="modal-container theme-modal-container bg-[var(--bg-app)]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-dim)]">
           <div className="flex items-center gap-2 text-[var(--text-main)]">
             <Palette size={16} />
             <h2 className="text-xs font-bold tracking-wide">Appearance</h2>

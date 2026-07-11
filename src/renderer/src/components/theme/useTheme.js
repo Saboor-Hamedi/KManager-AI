@@ -21,6 +21,7 @@ export const useTheme = () => {
       const savedTheme = await getSetting('APP_THEME', 'dark');
       if (THEMES[savedTheme]) {
         setThemeState(savedTheme);
+        applyThemeColors(savedTheme);
       }
     };
     loadTheme();

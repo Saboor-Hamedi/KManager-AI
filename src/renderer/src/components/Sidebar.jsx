@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react'
 import { cn } from '../lib/utils'
-import { ChevronLeft, ChevronRight, LayoutDashboard, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutDashboard, Users, Search } from 'lucide-react'
 
 import SidebarHeader from './SidebarHeader'
 import SidebarFooter from './SidebarFooter'
@@ -41,7 +41,8 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme }) 
   }
 
   const items = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'search', label: 'Search', icon: Search },
+    { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
     { id: 'users', label: 'Users', icon: Users },
   ]
 

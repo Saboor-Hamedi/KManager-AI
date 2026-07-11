@@ -1,0 +1,7 @@
+Loading the image '<URL>' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
+(index):1 Loading the image 'https://i.pinimg.com/1200x/9e/12/21/9e1221bedd57eb788641add97b3ecfc9.jpg' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
+(index):1 Loading the image 'https://i.pinimg.com/1200x/9e/12/21/9e1221bedd57eb788641add97b3ecfc9.jpg' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
+(index):1 Loading the image 'https://i.pinimg.com/1200x/9e/12/21/9e1221bedd57eb788641add97b3ecfc9.jpg' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
+(index):1 Loading the image 'https://i.pinimg.com/1200x/9e/12/21/9e1221bedd57eb788641add97b3ecfc9.jpg' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
+(index):1 Loading the image 'https://i.pinimg.com/1200x/9e/12/21/9e1221bedd57eb788641add97b3ecfc9.jpg' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
+(index):1 Loading the image 'https://i.pinimg.com/1200x/9e/12/21/9e1221bedd57eb788641add97b3ecfc9.jpg' violates the following Content Security Policy directive: "img-src 'self' data:". The action has been blocked.
