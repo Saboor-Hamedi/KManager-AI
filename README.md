@@ -1,57 +1,115 @@
-# Biomarker Analysis Platform
+# KManager AI
 
-A desktop application for prostate cancer risk classification using differential pulse voltammetry data. The platform trains an ensemble of machine learning models on two hundred electrochemical current measurements per patient and provides interactive risk analysis through a modern desktop interface.
+[![Electron](https://img.shields.io/badge/Electron-191970?style=flat-square&logo=Electron&logoColor=white)](https://electronjs.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-## Overview
+**Knowledge Management Studio (KManager AI)** is a powerful, fully-offline desktop application designed for secure semantic and hybrid document search. Built with privacy as the absolute priority, KManager AI runs its entire vector embedding and search pipeline locally on your machine—no cloud APIs, no data telemetry, and no internet required.
 
-The platform processes DPV voltammetry data from Excel files, extracting two hundred current measurements per patient as features. It trains five machine learning models including Logistic Regression, Random Forest, Support Vector Machine, XGBoost, and a Graph Neural Network to predict prostate cancer risk based on a clinically established PSA threshold of four nanograms per milliliter. The trained models are served through a FastAPI backend and visualized in an Electron application built with React.
+> [!NOTE]
+> **Branch Notice**
+> The `master` branch of this repository contains the original **Biomarker Analysis Platform** (a prostate cancer machine learning pipeline). 
+> This specific branch (`hybrid-seach`) is a completely distinct, standalone project that evolved into a privacy-first AI Knowledge Management system.
 
-The training pipeline achieves strong results, with all models reaching ROC-AUC scores above ninety-six percent and validation accuracies above ninety-three percent on a dataset of one thousand patients.
+---
 
-## Project Structure
+## 📑 Table of Contents
 
-The project is organized into three main components:
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Building from Source](#-building-from-source)
+- [License](#-license)
 
-- server/ contains the Python backend, including the FastAPI server (main.py), the model training pipeline (analyse_data.py), the GNN model definition (gnn_model.py), and the trained model artifacts
-- src/main/ contains the Electron main process that spawns the Python server and handles inter-process communication
-- src/renderer/ contains the React frontend that displays prediction results, model metrics, and visual analytics
+---
 
-## Data
+## ⚡ Features
 
-The training data is stored in an Excel file with one thousand patient sheets, each containing two hundred DPV current measurements. A metadata sheet contains reference PSA, AFP, and CA125 concentrations used to define the risk target.
+- **Fully Offline AI Engine**: Uses `transformers.js` to run the `paraphrase-multilingual-MiniLM-L12-v2` neural network directly inside the Node.js runtime. 
+- **True Hybrid Search**: Combines PostgreSQL's exact-match Full-Text Search (FTS) with `pgvector`'s approximate nearest neighbor (IVFFlat) semantic search using a Reciprocal Rank Fusion (RRF) algorithm.
+- **Drag-and-Drop Ingestion**: Drop massive directories of PDF, Markdown, JSON, and text files. The app automatically extracts, chunks, and vectorizes them into the database.
+- **Native Document Viewing**: Read your source documents directly within the application's isolated embedded viewers.
+- **Air-Gapped Ready**: The 45MB quantized AI model is bundled directly into the installer.
+- **Seamless Auto-Updates**: Integrated GitHub Releases auto-updater downloads and applies patches silently in the background.
 
-## Setup
+---
 
-Install the Node.js dependencies with npm install. Install the Python dependencies separately in the server directory. The Python packages required include scikit-learn, xgboost, torch, torch-geometric, pandas, numpy, matplotlib, seaborn, fastapi, uvicorn, and openpyxl.
+## 🏗 Architecture
 
-## Training the Models
+KManager AI is built on a modern, high-performance technology stack:
 
-From the server/analysis/src directory, run:
+- **Frontend**: React 19, Tailwind CSS, Framer Motion, and Lucide Icons.
+- **Desktop Container**: Electron (v39), configured with strict context isolation and a custom IPC bridge.
+- **Backend Search**: PostgreSQL 14+ utilizing the `pgvector` extension for storing and querying 384-dimensional vector embeddings.
+- **Embedding Pipeline**: `@xenova/transformers` running entirely locally.
 
-python analyse_data.py
+---
 
-This loads the DPV data, trains all five models, saves them as pickle files, and generates diagnostic visualizations.
+## 📋 Prerequisites
 
-## Running the Application
+To run KManager AI from source, ensure you have the following installed on your system:
 
-Start the FastAPI server from the server directory:
+1. **Node.js** (v18 or higher)
+2. **PostgreSQL** (v14 or higher)
+3. **pgvector extension** installed on your PostgreSQL server:
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS vector;
+   ```
 
-python main.py
+---
 
-Or for development with hot reload:
+## 🚀 Installation
 
-uvicorn main:app --reload --port 8000
+1. **Clone the repository** (ensure you are on the `hybrid-seach` branch):
+   ```bash
+   git clone https://github.com/Saboor-Hamedi/biomarkers.git
+   cd biomarkers
+   git checkout hybrid-seach
+   ```
 
-Start the Electron application from the project root:
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-npm run dev
+3. **Database Setup**:
+   Launch the application. Navigate to the **Settings** panel to configure your database connection string and click **Initialize Database**. This will automatically execute the required SQL schemas.
 
-The Electron app spawns the Python server automatically on port 8001 and provides a graphical interface for making predictions, viewing model performance, and exploring patient data.
+4. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
 
-## API Endpoints
+---
 
-The FastAPI server exposes endpoints for single-patient prediction, batch analysis, population statistics, model metrics, SHAP feature importance, trajectory simulation, and counterfactual analysis. The full API reference is available in the brain/features/api_endpoints.md documentation.
+## 💻 Usage
 
-## Documentation
+1. **Ingest Documents**: Go to the Settings panel and drag your PDFs into the drop zone. The system will automatically chunk and vectorize the text.
+2. **Search**: Return to the Dashboard and type your query in natural language. The Hybrid Search engine will return the most relevant document chunks.
+3. **Read**: Click on any search result to open the original source document and read the context.
 
-Detailed documentation is available in the brain/ directory, covering the DPV data pipeline, model ensemble, GNN architecture, API endpoints, Electron app architecture, frontend components, and risk analytics.
+---
+
+## 📦 Building from Source
+
+To compile KManager AI into a standalone Windows installer (`.exe`):
+
+```bash
+npm run build:win
+```
+
+To build and automatically publish a new release to GitHub (requires a valid `GITHUB_TOKEN` environment variable):
+
+```bash
+npm run publish:win
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

@@ -37,6 +37,12 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+extraResources:
+  - from: assets
+    to: assets
+    filter:
+      - "**/*"
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: Saboor-Hamedi
+  repo: biomarkers

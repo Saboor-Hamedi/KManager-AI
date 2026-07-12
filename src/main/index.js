@@ -8,6 +8,7 @@ import ingestionService from './db/ingestion.js'
 import fs from 'fs'
 import path from 'path'
 import http from 'http'
+import { performHybridSearch } from './db/Hybrid.js'
 
 // PDF Server
 let pdfPort = 0
@@ -31,8 +32,10 @@ pdfServer.listen(0, '127.0.0.1', () => {
   pdfPort = pdfServer.address().port
 })
 
+let mainWindow = null
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 700,
     show: false,
@@ -201,24 +204,9 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('db:search', async (_event, queryText, limit = 10) => {
-    if (!db || !db.isConnected()) {
-      return { success: false, message: 'Database not connected' }
-    }
-    if (!queryText || queryText.trim() === '') {
-      return { success: true, rows: [] }
-    }
-
     try {
-      // 1. Generate embedding for the query
-      const vectorArray = await embeddingService.embedQuery(queryText)
-      
-      // 2. Format as Postgres vector string: '[0.1, 0.2, ...]'
-      const vectorString = '[' + vectorArray.join(',') + ']'
-      
-      // 3. Query the database using the search_chunks helper
-      const res = await db.query('SELECT * FROM search_chunks($1, $2::vector, $3)', [queryText, vectorString, limit])
-      
-      return { success: true, rows: res.rows }
+      const rows = await performHybridSearch(db, queryText, limit)
+      return { success: true, rows }
     } catch (err) {
       console.error('db:search error:', err)
       return { success: false, message: err.message }
@@ -375,6 +363,44 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+// --- Auto Updater ---
+import { autoUpdater } from 'electron-updater'
+import log from 'electron-log'
+
+log.transports.file.level = 'info'
+autoUpdater.logger = log
+autoUpdater.autoDownload = false // We want the user to click download manually in the UI
+
+app.on('ready', () => {
+  autoUpdater.checkForUpdatesAndNotify()
+})
+
+autoUpdater.on('update-available', (info) => {
+  log.info('Update available.')
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-available', info)
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  log.info('Update downloaded')
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-downloaded', info)
+})
+
+autoUpdater.on('download-progress', (progressObj) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-progress', progressObj)
+})
+
+ipcMain.handle('update:check', () => {
+  autoUpdater.checkForUpdates()
+})
+
+ipcMain.handle('update:download', () => {
+  autoUpdater.downloadUpdate()
+})
+
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall()
 })
 
 app.on('window-all-closed', () => {

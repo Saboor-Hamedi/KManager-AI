@@ -2,10 +2,16 @@ import { pipeline, env } from '@xenova/transformers'
 import path from 'path'
 import { app } from 'electron'
 
-// Configure transformers.js environment for Electron
-env.allowLocalModels = false; // We rely on remote download first time
-env.useBrowserCache = false; // Disable browser cache in Node.js environment
-env.cacheDir = path.join(app.getPath('userData'), 'models'); // Cache models in user data dir
+const isProd = app.isPackaged;
+const modelsDir = isProd
+  ? path.join(process.resourcesPath, 'assets/models')
+  : path.join(app.getAppPath(), 'assets/models');
+
+// Configure transformers.js environment for fully offline use
+env.allowRemoteModels = false; // Never hit the internet
+env.allowLocalModels = true;   // Read from local bundle
+env.useBrowserCache = false;   // Disable browser cache in Node.js environment
+env.localModelPath = modelsDir;
 
 class EmbeddingService {
   constructor() {

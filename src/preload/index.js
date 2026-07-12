@@ -38,6 +38,26 @@ const api = {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),
     close: () => ipcRenderer.send('window:close')
+  },
+  update: {
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    install: () => ipcRenderer.invoke('update:install'),
+    onUpdateAvailable: (callback) => {
+      const listener = (event, info) => callback(info)
+      ipcRenderer.on('update-available', listener)
+      return () => ipcRenderer.removeListener('update-available', listener)
+    },
+    onUpdateDownloaded: (callback) => {
+      const listener = (event, info) => callback(info)
+      ipcRenderer.on('update-downloaded', listener)
+      return () => ipcRenderer.removeListener('update-downloaded', listener)
+    },
+    onUpdateProgress: (callback) => {
+      const listener = (event, progress) => callback(progress)
+      ipcRenderer.on('update-progress', listener)
+      return () => ipcRenderer.removeListener('update-progress', listener)
+    }
   }
 }
 
