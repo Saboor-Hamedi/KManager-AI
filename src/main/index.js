@@ -33,10 +33,12 @@ pdfServer.listen(0, '127.0.0.1', () => {
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 800,
+    height: 700,
     show: false,
-    title: 'Dashboard',
+    frame: false,
+    titleBarStyle: 'hidden',
+    title: 'Knowledge Management Studio — KManager AI',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -48,6 +50,26 @@ function createWindow() {
     }
   })
 
+  // ── Global Escape Catcher ──
+  // Webviews (like the PDF viewer plugin) completely swallow keyboard events.
+  // We use globalShortcut registered temporarily by the renderer to catch ESC.
+  const { globalShortcut } = require('electron')
+  
+  ipcMain.handle('system:register-escape', () => {
+    globalShortcut.register('Escape', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('global-escape')
+      }
+    })
+  })
+
+  ipcMain.handle('system:unregister-escape', () => {
+    globalShortcut.unregister('Escape')
+  })
+
+  // Unregister when window loses focus so we don't break ESC in other apps
+  mainWindow.on('blur', () => globalShortcut.unregister('Escape'))
+  
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
@@ -67,6 +89,28 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle('get-pdf-port', () => {
     return pdfPort
+  })
+
+  ipcMain.on('window:minimize', () => {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+    if (win) win.minimize()
+  })
+
+  ipcMain.on('window:maximize', () => {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+    if (win) {
+      if (win.isMaximized()) {
+        win.unmaximize()
+        win.setSize(800, 700)
+      } else {
+        win.maximize()
+      }
+    }
+  })
+
+  ipcMain.on('window:close', () => {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+    if (win) win.close()
   })
 
   electronApp.setAppUserModelId('com.electron')

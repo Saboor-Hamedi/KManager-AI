@@ -13,7 +13,7 @@ const formatMarkdownText = (text) => {
   // Restore newlines between collapsed markdown table rows (| foo || bar | -> | foo |\n| bar |)
   let result = text
     .replace(/(\|\s*[-:]+[-| :]*\|)\s*\|/g, '$1\n|')
-    .replace(/\|\s*\|\s*(?=[A-Z0-9*_`\[])/g, '|\n|')
+    .replace(/\|\s*\|\s*(?=[A-Za-z0-9*_`\[|])/g, '|\n| ')
     .replace(/\|\s+\|/g, '|\n|')
 
   // Detect lines that are ONLY a pipe-separated list of [[wikilinks]] (common in Obsidian
@@ -29,7 +29,23 @@ const formatMarkdownText = (text) => {
   // Convert remaining standalone [[wikilinks]] to inline wikilink tokens
   result = result.replace(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (_, page) => `\`wikilink:${page.trim()}\``)
 
-  return result
+  // Ensure consecutive table rows starting with '|' have a markdown separator row (| --- |) after the first row
+  const lines = result.split('\n')
+  const formattedLines = []
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim()
+    formattedLines.push(lines[i])
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && i + 1 < lines.length) {
+      const nextTrimmed = lines[i + 1].trim()
+      if (nextTrimmed.startsWith('|') && !nextTrimmed.includes('---')) {
+        const colCount = (trimmed.match(/\|/g) || []).length - 1
+        if (colCount > 0) {
+          formattedLines.push('| ' + Array(colCount).fill('---').join(' | ') + ' |')
+        }
+      }
+    }
+  }
+  return formattedLines.join('\n')
 }
 
 const CodeCopyButton = ({ code }) => {
@@ -282,12 +298,28 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '' }) =>
 
   if (category === 'JSON' || ext === 'json') {
     const formattedJson = formatJsonContent(content)
+    if (content.length > 100000) {
+      return (
+        <div className="bg-[#1e1e1e] rounded-xl border border-[#2e2e2e] p-4 overflow-auto text-gray-300 text-[13px] font-mono leading-relaxed custom-scrollbar">
+          <div className="mb-2 text-[#858585] text-xs font-sans border-b border-[#2e2e2e] pb-2">File too large for syntax highlighting. Showing formatted raw text.</div>
+          <pre>{formattedJson}</pre>
+        </div>
+      )
+    }
     return (
       <AdaptiveCodeBlock code={formattedJson} language="json" title="JSON Data" showLineNumbers={true} />
     )
   }
 
   if (isCodeFile) {
+    if (content.length > 100000) {
+      return (
+        <div className="bg-[#1e1e1e] rounded-xl border border-[#2e2e2e] p-4 overflow-auto text-gray-300 text-[13px] font-mono leading-relaxed custom-scrollbar">
+          <div className="mb-2 text-[#858585] text-xs font-sans">File too large for syntax highlighting. Showing raw text.</div>
+          <pre>{content}</pre>
+        </div>
+      )
+    }
     return (
       <AdaptiveCodeBlock code={content.trim()} language={ext || 'text'} title={`${ext} Source File`} showLineNumbers={true} />
     )

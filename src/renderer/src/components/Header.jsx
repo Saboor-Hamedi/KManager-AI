@@ -12,10 +12,10 @@ const Header = ({ toggleSidebar }) => {
         >
           <PanelLeft size={16} />
         </button>
-        <div className="flex items-center gap-2 text-[11px] text-[var(--text-faint)] font-medium tracking-wide select-none">
-          <span className="text-[var(--text-accent)] font-bold tracking-widest text-[10px]">KM</span>
-          <span className="opacity-30">›</span>
-          <span>Knowledge Management</span>
+        <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] font-medium select-none">
+          <span>Knowledge Base</span>
+          <span className="opacity-40">/</span>
+          <span className="text-[var(--text-main)]">Search & Explore</span>
         </div>
       </div>
 

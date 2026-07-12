@@ -6,16 +6,19 @@ import { cn } from '../../lib/utils'
 const SettingAIPanel = memo(() => {
   const [apiKey, setApiKey] = useState('')
   const [embeddingModel, setEmbeddingModel] = useState('Xenova/paraphrase-multilingual-MiniLM-L12-v2')
+  const [enableRag, setEnableRag] = useState(true)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     const loadSettings = async () => {
-      const [key, model] = await Promise.all([
+      const [key, model, rag] = await Promise.all([
         getSetting('DEEPSEEK_API_KEY', ''),
-        getSetting('EMBEDDING_MODEL', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2')
+        getSetting('EMBEDDING_MODEL', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2'),
+        getSetting('ENABLE_RAG', true)
       ])
       setApiKey(key)
       setEmbeddingModel(model)
+      setEnableRag(rag !== false && rag !== 'false')
     }
     loadSettings()
     setSaved(false)
@@ -25,6 +28,7 @@ const SettingAIPanel = memo(() => {
     e.preventDefault()
     await saveSetting('DEEPSEEK_API_KEY', apiKey)
     await saveSetting('EMBEDDING_MODEL', embeddingModel)
+    await saveSetting('ENABLE_RAG', enableRag)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -67,6 +71,24 @@ const SettingAIPanel = memo(() => {
             className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)] font-mono"
           />
         </div>
+      </div>
+
+      <div className="flex items-center justify-between p-3.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-panel)]/50">
+        <div>
+          <h4 className="text-xs font-bold text-[var(--text-main)]">Enable RAG Answer Synthesis</h4>
+          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+            When enabled, KManager AI synthesizes a direct answer below retrieved search sources using DeepSeek.
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enableRag}
+            onChange={(e) => setEnableRag(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-9 h-5 bg-[var(--border-dim)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--text-accent)]" />
+        </label>
       </div>
 
       <div className="pt-2">

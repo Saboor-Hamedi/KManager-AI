@@ -17,6 +17,16 @@ const tabs = [
 const Setting = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('database')
 
+  React.useEffect(() => {
+    const handleOpenSettings = (e) => {
+      if (e.detail?.tab) {
+        setActiveTab(e.detail.tab)
+      }
+    }
+    window.addEventListener('open-settings', handleOpenSettings)
+    return () => window.removeEventListener('open-settings', handleOpenSettings)
+  }, [])
+
   useKeyboardShortcuts({
     onEscape: () => {
       if (isOpen) {

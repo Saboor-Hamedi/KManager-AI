@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
+import GlobalTitleBar from './components/GlobalTitleBar'
 import ChatBot from './components/ChatBot'
 import Setting from './components/settings/Setting'
 import ThemeModal from './components/theme/ThemeModal'
@@ -31,6 +32,16 @@ function App() {
 
   // Initialize theme
   useTheme()
+
+  useEffect(() => {
+    const handleOpenSettings = (e) => {
+      setIsSettingsOpen(true)
+      // Custom tab handling could go here if needed
+      // e.g. e.detail.tab === 'database' -> pass to Setting.jsx
+    }
+    window.addEventListener('open-settings', handleOpenSettings)
+    return () => window.removeEventListener('open-settings', handleOpenSettings)
+  }, [])
 
   // Auto-connect database
   useEffect(() => {
@@ -66,17 +77,20 @@ function App() {
   })
 
   return (
-    <div className="flex h-screen bg-[#06080a] text-white overflow-hidden font-sans transition-colors duration-300" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        onOpenSettings={() => setIsSettingsOpen(true)} 
-        onOpenTheme={() => setIsThemeOpen(true)}
-        collapsed={sidebarCollapsed}
-        toggleCollapsed={toggleSidebar}
-      />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header toggleSidebar={toggleSidebar} />
+    <div className="flex flex-col h-screen bg-[#06080a] text-white overflow-hidden font-sans transition-colors duration-300" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
+      <GlobalTitleBar />
+
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          onOpenSettings={() => setIsSettingsOpen(true)} 
+          onOpenTheme={() => setIsThemeOpen(true)}
+          collapsed={sidebarCollapsed}
+          toggleCollapsed={toggleSidebar}
+        />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <Header toggleSidebar={toggleSidebar} />
 
         {/* ── Search view — always mounted so state (history, query) survives tab switches ── */}
         <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'search' ? 'flex' : 'hidden'}`}>
@@ -112,6 +126,7 @@ function App() {
             </div>
           </main>
         )}
+        </div>
       </div>
       <ChatBot />
       <Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

@@ -30,13 +30,25 @@ const api = {
     openFile: (filePath) => ipcRenderer.invoke('system:open-file', filePath),
     fileExists: (filePath) => ipcRenderer.invoke('system:file-exists', filePath),
     resolvePaths: (paths) => ipcRenderer.invoke('system:resolve-paths', paths),
-    selectFolder: () => ipcRenderer.invoke('system:select-folder')
+    selectFolder: () => ipcRenderer.invoke('system:select-folder'),
+    registerEscape: () => ipcRenderer.invoke('system:register-escape'),
+    unregisterEscape: () => ipcRenderer.invoke('system:unregister-escape')
+  },
+  windowControls: {
+    minimize: () => ipcRenderer.send('window:minimize'),
+    maximize: () => ipcRenderer.send('window:maximize'),
+    close: () => ipcRenderer.send('window:close')
   }
 }
 
 // Disable context menu globally
 if (typeof window !== 'undefined') {
   window.addEventListener('contextmenu', (e) => e.preventDefault())
+
+  // Catch ESC events from the main process (e.g. from PDF webviews)
+  ipcRenderer.on('global-escape', () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }))
+  })
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

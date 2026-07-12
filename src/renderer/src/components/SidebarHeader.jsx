@@ -11,9 +11,8 @@ const SidebarHeader = memo(({ collapsed }) => (
         <div className="w-5 h-5 rounded-md bg-[var(--text-accent)] flex items-center justify-center shrink-0">
           <span className="text-[9px] font-black text-black leading-none select-none">K</span>
         </div>
-        <div className="flex flex-col leading-none min-w-0">
-          <span className="text-[11px] font-bold text-[var(--text-main)] tracking-[0.12em] truncate">KMANAGER</span>
-          <span className="text-[8px] text-[var(--text-faint)] tracking-widest truncate">MANAGEMENT</span>
+        <div className="flex items-center min-w-0">
+          <span className="text-[11.5px] font-bold text-[var(--text-main)] tracking-[0.14em] truncate">KMANAGER</span>
         </div>
       </div>
     ) : (

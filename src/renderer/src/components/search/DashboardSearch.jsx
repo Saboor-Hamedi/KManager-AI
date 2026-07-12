@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Search, Send, Plus, ChevronDown, Mic, ArrowUp, RotateCcw } from 'lucide-react'
+import { Search, Send, Plus, ChevronDown, Mic, ArrowUp, RotateCcw, Sparkles } from 'lucide-react'
 import SearchResultCard from './SearchResultCard'
 import ReferenceDocumentModal from './ReferenceDocumentModal'
+import DocumentRenderer from './DocumentRenderer'
+import { getSetting, saveSetting } from '../../lib/settings'
+import { streamRagAnswer, checkIsConversational } from '../../lib/deepseek'
 
 const SearchLoadingSkeleton = () => (
   <div className="flex flex-col gap-6 py-3 animate-in fade-in duration-200">
@@ -45,12 +48,7 @@ const EmptySearchState = ({ query }) => (
   </div>
 )
 
-const PLACEHOLDERS = [
-  'Ask anything across your knowledge base...',
-  'Search documents or @mention a specific note...',
-  'Summarize recent insights or compare concepts...',
-  'Type / for quick actions and workflow tools...'
-]
+
 
 const DashboardSearch = () => {
   const [query, setQuery] = useState('')
@@ -61,6 +59,19 @@ const DashboardSearch = () => {
   const [viewMode, setViewMode] = useState('text')
   const [fullText, setFullText] = useState('')
   const [loadingText, setLoadingText] = useState(false)
+  const [enableRag, setEnableRag] = useState(true)
+
+  useEffect(() => {
+    getSetting('ENABLE_RAG', true).then(val => {
+      setEnableRag(val !== false && val !== 'false')
+    })
+  }, [])
+
+  const toggleRag = async () => {
+    const nextVal = !enableRag
+    setEnableRag(nextVal)
+    await saveSetting('ENABLE_RAG', nextVal)
+  }
   
   const scrollRef = useRef(null)
   const savedScrollTopRef = useRef(0)
@@ -68,46 +79,36 @@ const DashboardSearch = () => {
   const isSearchingRef = useRef(false)
   const textareaRef = useRef(null)
 
-  const [placeholderIdx, setPlaceholderIdx] = useState(0)
-  const [typedPlaceholder, setTypedPlaceholder] = useState('')
 
-  useEffect(() => {
-    let currentText = PLACEHOLDERS[placeholderIdx]
-    let charIdx = 0
-    let isDeleting = false
-    let timeoutId
-
-    const typeStep = () => {
-      if (!isDeleting) {
-        charIdx++
-        setTypedPlaceholder(currentText.slice(0, charIdx))
-        if (charIdx === currentText.length) {
-          isDeleting = true
-          timeoutId = setTimeout(typeStep, 2800)
-        } else {
-          timeoutId = setTimeout(typeStep, 38)
-        }
-      } else {
-        charIdx--
-        setTypedPlaceholder(currentText.slice(0, charIdx))
-        if (charIdx === 0) {
-          isDeleting = false
-          setPlaceholderIdx((prev) => (prev + 1) % PLACEHOLDERS.length)
-        } else {
-          timeoutId = setTimeout(typeStep, 18)
-        }
-      }
-    }
-
-    timeoutId = setTimeout(typeStep, 800)
-    return () => clearTimeout(timeoutId)
-  }, [placeholderIdx])
 
   // Get HTTP PDF viewer port
   useEffect(() => {
     if (window.api && window.api.server && window.api.server.getPort) {
       window.api.server.getPort().then(port => setPdfPort(port))
     }
+  }, [])
+
+  // Global Ctrl+P to focus textarea
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        e.stopPropagation()
+        setSelectedPdf(null) // Ensure modal is closed
+        if (textareaRef.current) {
+          setTimeout(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus()
+              const length = textareaRef.current.value.length
+              textareaRef.current.setSelectionRange(length, length)
+            }
+          }, 50)
+        }
+      }
+    }
+    // Use capture phase to ensure this runs before other listeners
+    window.addEventListener('keydown', handleGlobalKeyDown, true)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown, true)
   }, [])
 
   const handleSelect = useCallback((item) => {
@@ -122,10 +123,13 @@ const DashboardSearch = () => {
     setSelectedPdf(null)
   }, [])
 
-  // Auto-scroll chat to bottom only when history updates
+  // Smooth auto-scroll chat to bottom only when history updates
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
     }
   }, [history])
 
@@ -206,7 +210,25 @@ const DashboardSearch = () => {
     })
 
     try {
-      const res = await window.api.db.search(searchQuery, 15)
+      const apiKey = await getSetting('DEEPSEEK_API_KEY', '')
+      const isConv = await checkIsConversational(searchQuery, apiKey)
+      
+      if (isConv) {
+        setHistory(prev => prev.map(msg => 
+          msg.id === messageId ? { 
+            ...msg, 
+            results: [], 
+            isLoading: false, 
+            error: null,
+            ragStatus: 'done',
+            ragAnswer: 'Hello! I am your KManager AI assistant. What would you like to search for in your knowledge base today?'
+          } : msg
+        ))
+        return
+      }
+
+      // We now limit to 3 results to provide hyper-focused context to the AI, reducing noise
+      const res = await window.api.db.search(searchQuery, 3)
       
       if (res && res.success) {
         const mapped = res.rows.map(row => ({
@@ -219,8 +241,33 @@ const DashboardSearch = () => {
           vault_path: row.vault_path
         }))
         setHistory(prev => prev.map(msg => 
-          msg.id === messageId ? { ...msg, results: mapped, isLoading: false, error: null } : msg
+          msg.id === messageId ? { 
+            ...msg, 
+            results: mapped, 
+            isLoading: false, 
+            error: null,
+            ragStatus: enableRag && mapped.length > 0 ? 'generating' : 'disabled',
+            ragAnswer: ''
+          } : msg
         ))
+
+        if (enableRag && mapped.length > 0) {
+          getSetting('DEEPSEEK_API_KEY', '').then(apiKey => {
+            streamRagAnswer(searchQuery, mapped.slice(0, 5), apiKey, (accumulated) => {
+              setHistory(prev => prev.map(msg => 
+                msg.id === messageId ? { ...msg, ragAnswer: accumulated } : msg
+              ))
+            }).then(() => {
+              setHistory(prev => prev.map(msg => 
+                msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
+              ))
+            }).catch(ragErr => {
+              setHistory(prev => prev.map(msg => 
+                msg.id === messageId ? { ...msg, ragStatus: 'error', ragError: ragErr.message } : msg
+              ))
+            })
+          })
+        }
       } else {
         setHistory(prev => prev.map(msg => 
           msg.id === messageId ? { ...msg, results: [], isLoading: false, error: res.message || 'Unknown search error' } : msg
@@ -286,11 +333,6 @@ const DashboardSearch = () => {
         selectedPdf={selectedPdf}
         onClose={handleCloseModal}
         fileExists={fileExists}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        loadingText={loadingText}
-        fullText={fullText}
-        pdfPort={pdfPort}
       />
 
       {/* Chat History Feed */}
@@ -299,17 +341,22 @@ const DashboardSearch = () => {
         className="flex-1 overflow-y-auto px-6 pt-8 pb-48 custom-scrollbar space-y-10 scroll-smooth"
       >
         {history.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center gap-4 select-none px-6">
-            <div className="text-center">
-              <h2 className="text-[15px] font-semibold text-[var(--text-main)] tracking-tight">
-                Knowledge Management
-              </h2>
-              <p className="text-[12px] text-[var(--text-muted)] mt-1 font-normal">
-                Ask anything across your entire knowledge base
-              </p>
+          <div className="h-full flex flex-col items-center justify-center gap-5 select-none px-6">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-accent)] shadow-sm">
+                <span className="text-sm font-black tracking-tighter">KM</span>
+              </div>
+              <div>
+                <h2 className="text-[15px] font-bold text-[var(--text-main)] tracking-tight">
+                  Knowledge Management
+                </h2>
+                <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-normal">
+                  Ask anything across your entire knowledge base
+                </p>
+              </div>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-1.5 max-w-md pt-1">
+            <div className="flex flex-wrap justify-center gap-1.5 max-w-md">
               {[
                 'Summarize recent notes',
                 'Find concepts in my vault',
@@ -357,6 +404,39 @@ const DashboardSearch = () => {
                         handleSelect={handleSelect}
                       />
                     ))}
+
+                    {/* RAG Synthesized Answer Card BELOW retrieved sources */}
+                    {msg.ragStatus && msg.ragStatus !== 'disabled' && (
+                      <div className="w-full mt-8 mb-8 pt-6 border-t border-[var(--border-subtle)] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-accent)]">
+                            DeepSeek Synthesis
+                          </span>
+                        </div>
+
+                        {msg.ragStatus === 'generating' && !msg.ragAnswer && (
+                          <div className="flex items-center gap-2 py-2 text-xs text-[var(--text-muted)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)] animate-pulse" />
+                            Synthesizing answer from {msg.results?.length || 0} sources...
+                          </div>
+                        )}
+
+                        {msg.ragAnswer && (
+                          <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none">
+                            <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" />
+                            {msg.ragStatus === 'generating' && (
+                              <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
+                            )}
+                          </div>
+                        )}
+
+                        {msg.ragStatus === 'error' && (
+                          <div className="py-2 text-xs text-red-400">
+                            RAG Synthesis failed: {msg.ragError} (Check API key in AI Settings)
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -367,10 +447,10 @@ const DashboardSearch = () => {
       </div>
 
       {/* Antigravity-Style AI Composer Card */}
-      <div className="px-6 pb-2 pt-1 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)] to-transparent shrink-0">
+      <div className="pl-6 pr-14 sm:px-6 pb-2 pt-1 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)] to-transparent shrink-0">
         <div className="max-w-2xl mx-auto">
-          <div className="flex flex-col bg-[var(--bg-card)] border border-[var(--border-main)] focus-within:border-[var(--text-accent)] rounded-2xl transition-all duration-200 overflow-hidden">
-            {/* Top Row: Auto-growing Textarea with Animated Typewriter Placeholder */}
+          <div className="flex flex-col bg-[var(--bg-card)] rounded-xl transition-all duration-200 overflow-hidden shadow-sm">
+            {/* Top Row: Auto-growing Textarea */}
             <textarea 
               ref={textareaRef}
               rows={1}
@@ -378,37 +458,47 @@ const DashboardSearch = () => {
               onChange={handleInput}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
-              placeholder={typedPlaceholder || PLACEHOLDERS[0]}
-              className="w-full bg-transparent border-none outline-none text-[14px] font-normal text-[var(--text-main)] pt-3.5 pb-2.5 px-4 placeholder-[var(--text-muted)]/70 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
+              placeholder="Ask anything across your knowledge base..."
+              className="w-full bg-transparent border-none outline-none text-[13.5px] font-normal text-[var(--text-main)] py-3 px-4 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
               autoComplete="off"
               spellCheck="false"
             />
 
             {/* Bottom Row: Actions & Model Pill */}
-            <div className="flex items-center justify-between px-2.5 pb-2.5 pt-1 border-t border-[var(--border-dim)] select-none">
+            <div className="flex items-center justify-between px-2 pb-2 pt-0 select-none">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'data' } }))}
                   className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
-                  title="Add Attachment"
+                  title="Upload Data (Settings)"
                 >
                   <Plus size={16} />
                 </button>
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs font-medium text-[var(--text-main)]">
-                  <span>KManager AI</span>
-                  <ChevronDown size={13} className="text-[var(--text-muted)]" />
-                </div>
                 {history.length > 0 && (
                   <button
                     type="button"
                     onClick={handleNewSession}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-panel)]/80 hover:bg-[var(--bg-active)] text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors animate-in fade-in duration-200"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-[var(--bg-active)] text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors animate-in fade-in duration-200"
                     title="Clear chat history and start a new session"
                   >
                     <RotateCcw size={13} />
                     <span>New session</span>
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={toggleRag}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    enableRag
+                      ? 'bg-[var(--text-accent)]/10 text-[var(--text-accent)] hover:bg-[var(--text-accent)]/20'
+                      : 'hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                  title={enableRag ? 'RAG Synthesis Enabled (Click to toggle)' : 'RAG Synthesis Disabled (Click to toggle)'}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${enableRag ? 'bg-[var(--text-accent)] shadow-[0_0_5px_var(--text-accent)]' : 'bg-[var(--text-muted)] opacity-50'}`} />
+                  <span>RAG: {enableRag ? 'ON' : 'OFF'}</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-2">

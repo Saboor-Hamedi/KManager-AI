@@ -3,195 +3,304 @@ import path from 'path'
 import embeddingService from './embeddings.js'
 import crypto from 'crypto'
 
+// ---------------------------------------------------------------------------
+// Simple in-process cache: avoids re-parsing the same PDF bytes twice
+// Key: SHA-256 of the raw file buffer. Value: extracted text string.
+// ---------------------------------------------------------------------------
+const _extractionCache = new Map()
+
+// ---------------------------------------------------------------------------
+// Timing helpers
+// ---------------------------------------------------------------------------
+function startTimer() {
+  return Date.now()
+}
+
+function elapsed(start) {
+  const ms = Date.now() - start
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(2)}s`
+}
+
 class IngestionService {
   /**
    * Split text into overlapping chunks of roughly `chunkSize` words.
    */
+  /**
+   * Sanitize text for PostgreSQL UTF-8 — removes null bytes and other
+   * control characters that cause "invalid byte sequence" errors.
+   */
+  sanitizeText(text) {
+    if (!text) return ''
+    return text
+      // Remove null bytes (0x00) — the main culprit from PDF extraction
+      .replace(/\x00/g, '')
+      // Remove other C0/C1 control characters except common whitespace
+      .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+      // Collapse runs of whitespace introduced by replacements
+      .replace(/  +/g, ' ')
+      .trim()
+  }
+
   chunkText(text, chunkSize = 400, overlap = 50) {
-    // Match each word along with its trailing whitespace.
-    // This perfectly preserves line breaks, tabs, and spacing when reconstructed!
-    const tokens = text.match(/\S+\s*/g) || [];
-    const chunks = [];
-    
-    for (let i = 0; i < tokens.length; i += (chunkSize - overlap)) {
-      const chunk = tokens.slice(i, i + chunkSize).join('');
-      if (chunk.trim().length > 0) {
-        chunks.push(chunk.trim());
-      }
+    const tokens = text.match(/\S+\s*/g) || []
+    const chunks = []
+    for (let i = 0; i < tokens.length; i += chunkSize - overlap) {
+      const chunk = tokens.slice(i, i + chunkSize).join('')
+      if (chunk.trim().length > 0) chunks.push(chunk.trim())
     }
-    
-    return chunks;
+    return chunks
   }
 
   /**
-   * Extract text from a file based on its extension
+   * Extract text from a file. Results are cached by file-content hash
+   * so re-ingesting the same PDF skips the expensive parse step.
    */
   async extractText(filePath) {
-    const ext = path.extname(filePath).toLowerCase();
-    
+    const ext = path.extname(filePath).toLowerCase()
+
     if (ext === '.pdf') {
-      const dataBuffer = fs.readFileSync(filePath);
-      const mod = require('pdf-parse');
-      const PDFParse = mod.PDFParse;
-      
-      if (!PDFParse) {
-        throw new Error('Could not find PDFParse class in pdf-parse module');
+      const dataBuffer = await fs.promises.readFile(filePath)
+
+      // Cache by content hash so identical PDFs are only parsed once
+      const bufHash = crypto.createHash('sha256').update(dataBuffer).digest('hex')
+      if (_extractionCache.has(bufHash)) {
+        return _extractionCache.get(bufHash)
       }
-      
-      const parser = new PDFParse({ data: dataBuffer });
-      const result = await parser.getText();
-      await parser.destroy();
-      
-      return result.text;
+
+      // pdf-parse v2 ships as an ES module with `export default`.
+      // When Electron's CJS `require()` loads it the function lives on .default.
+      let pdfParse
+      try {
+        const pdfMod = require('pdf-parse')
+        pdfParse = typeof pdfMod === 'function'
+          ? pdfMod
+          : (typeof pdfMod?.default === 'function' ? pdfMod.default : null)
+      } catch (loadErr) {
+        throw new Error(`Failed to load pdf-parse module: ${loadErr.message}`)
+      }
+
+      if (typeof pdfParse !== 'function') {
+        // Last-resort: try dynamic import (works if pdf-parse ships pure ESM)
+        try {
+          const esmMod = await import('pdf-parse')
+          pdfParse = esmMod?.default ?? esmMod
+        } catch (_) { /* ignore */ }
+      }
+
+      if (typeof pdfParse !== 'function') {
+        throw new Error(
+          'pdf-parse could not be loaded as a callable function. ' +
+          'Run: npm install pdf-parse@1 to pin to the stable v1 API.'
+        )
+      }
+
+      const result = await pdfParse(dataBuffer)
+      const text = result.text
+
+      // Store in cache (limit cache to 200 entries to avoid memory leaks)
+      if (_extractionCache.size >= 200) {
+        const firstKey = _extractionCache.keys().next().value
+        _extractionCache.delete(firstKey)
+      }
+      _extractionCache.set(bufHash, text)
+
+      return text
+
     } else if (ext === '.txt' || ext === '.md' || ext === '.json' || ext === '.csv') {
-      return fs.readFileSync(filePath, 'utf8');
+      return await fs.promises.readFile(filePath, 'utf8')
     } else {
-      throw new Error(`Unsupported file type: ${ext}`);
+      throw new Error(`Unsupported file type: ${ext}. Supported: .pdf .txt .md .json .csv`)
     }
   }
 
   /**
-   * Main ingestion workflow
-   * @param {string} filePath - Absolute path to the file
-   * @param {Database} db - The connected database instance
-   * @param {Function} progressCallback - Callback to report progress to the UI
+   * Main ingestion workflow with detailed timing output.
    */
   async ingestFile(filePath, db, progressCallback = () => {}) {
     if (!db || !db.isConnected()) {
-      throw new Error('Database not connected');
+      throw new Error('Database not connected')
     }
 
-    progressCallback({ status: 'extracting', progress: 10, message: 'Extracting text from file...' });
-    
-    // 1. Extract Text
-    const fileName = path.basename(filePath);
-    const fileType = path.extname(filePath).replace('.', '').toLowerCase() || 'txt';
-    const fileSize = fs.statSync(filePath).size;
-    const rawText = await this.extractText(filePath);
-    
+    const totalStart = startTimer()
+
+    // ── Step 1: Extract ──────────────────────────────────────────────────
+    const t1 = startTimer()
+    progressCallback({ status: 'extracting', progress: 5, message: '📄 Extracting text from file...' })
+
+    const fileName   = path.basename(filePath)
+    const fileType   = path.extname(filePath).replace('.', '').toLowerCase() || 'txt'
+    const fileStat   = await fs.promises.stat(filePath)
+    const fileSize   = fileStat.size
+    const rawText    = await this.extractText(filePath)
+
     if (!rawText || rawText.trim() === '') {
-      throw new Error('No text could be extracted from this file.');
+      throw new Error('No text could be extracted from this file.')
     }
 
-    // Generate a hash to prevent duplicates
-    const contentHash = crypto.createHash('sha256').update(rawText).digest('hex');
+    // Sanitize BEFORE hashing or inserting — strips null bytes, bad control chars
+    const sanitizedText = this.sanitizeText(rawText)
+    if (!sanitizedText) {
+      throw new Error('File contained no usable text after sanitization.')
+    }
+    const extractTime = elapsed(t1)
 
-    progressCallback({ status: 'chunking', progress: 30, message: 'Splitting text into semantic chunks...' });
+    // ── Step 2: Hash + Chunk ─────────────────────────────────────────────
+    const t2 = startTimer()
+    progressCallback({ status: 'chunking', progress: 25, message: `✂️  Chunking text (extracted in ${extractTime})...` })
 
-    // 2. Chunk Text
-    const chunks = this.chunkText(rawText);
-    const totalChunks = chunks.length;
+    const contentHash = crypto.createHash('sha256').update(sanitizedText).digest('hex')
+    const chunks      = this.chunkText(sanitizedText)
+    const totalChunks = chunks.length
+    const chunkTime   = elapsed(t2)
 
-    progressCallback({ status: 'embedding', progress: 40, message: `Generating embeddings for ${totalChunks} chunks...` });
+    // ── Step 3: Embed + Insert ───────────────────────────────────────────
+    progressCallback({
+      status: 'embedding',
+      progress: 35,
+      message: `🧠 Embedding ${totalChunks} chunks (chunked in ${chunkTime})...`
+    })
 
-    // Execute everything inside a robust PostgreSQL transaction
     return await db.transaction(async (client) => {
-      // 3. Insert Document record
+      const t3 = startTimer()
+
       const docInsertRes = await client.query(
         `INSERT INTO documents (vault_path, file_name, file_type, file_size, content, content_hash)
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()
          RETURNING id`,
-        [filePath, fileName, fileType, fileSize, rawText, contentHash]
-      );
-      
-      const documentId = docInsertRes.rows[0].id;
-      const totalChunks = await this.chunkAndEmbedDocument(client, documentId, rawText, progressCallback);
-      
-      progressCallback({ status: 'complete', progress: 100, message: 'Ingestion complete!' });
-      return { success: true, documentId, chunksProcessed: totalChunks };
-    });
+        [filePath, fileName, fileType, fileSize, sanitizedText, contentHash]
+      )
+
+      const documentId    = docInsertRes.rows[0].id
+      const chunksStored  = await this.chunkAndEmbedDocument(client, documentId, sanitizedText, progressCallback)
+      const embedTime     = elapsed(t3)
+      const totalTime     = elapsed(totalStart)
+
+      progressCallback({
+        status: 'complete',
+        progress: 100,
+        message: `✅ Done! ${chunksStored} chunks embedded in ${embedTime} (total: ${totalTime})`
+      })
+
+      return {
+        success: true,
+        documentId,
+        chunksProcessed: chunksStored,
+        timing: { extract: extractTime, chunk: chunkTime, embed: embedTime, total: totalTime }
+      }
+    })
   }
 
   /**
-   * DRY helper method: Deletes existing embeddings for a document, chunks text, generates embeddings, and inserts chunks
+   * Deletes existing embeddings for a document, re-chunks, generates embeddings, and bulk-inserts.
    */
   async chunkAndEmbedDocument(client, documentId, rawText, progressCallback = () => {}) {
-    await client.query('DELETE FROM embedding_documents WHERE document_id = $1', [documentId]);
-    const chunks = this.chunkText(rawText);
-    const totalChunks = chunks.length;
-    const BATCH_SIZE = 8; // Small micro-batch so ONNX C++ never holds the thread for more than ~30ms
+    await client.query('DELETE FROM embedding_documents WHERE document_id = $1', [documentId])
+
+    const chunks     = this.chunkText(rawText)
+    const totalChunks = chunks.length
+    const BATCH_SIZE  = 4 // balanced: low freeze risk, faster than 2
 
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-      // Pause 20ms before each batch so Electron event loop can handle scroll & click events
-      await new Promise(resolve => setTimeout(resolve, 20));
+      // Yield to Electron event loop so UI stays responsive
+      await new Promise(resolve => setTimeout(resolve, 15))
 
-      const batchChunks = chunks.slice(i, i + BATCH_SIZE);
-      progressCallback({ 
-        status: 'embedding', 
-        progress: 40 + Math.floor((i / chunks.length) * 50), 
-        message: `Embedding chunks ${i + 1} to ${Math.min(i + BATCH_SIZE, chunks.length)} of ${totalChunks}...` 
-      });
-      
-      const batchVectors = await embeddingService.embedQuery(batchChunks);
+      const batchChunks = chunks.slice(i, i + BATCH_SIZE)
+      progressCallback({
+        status: 'embedding',
+        progress: 40 + Math.floor((i / chunks.length) * 55),
+        message: `🔢 Embedding chunk ${i + 1}–${Math.min(i + BATCH_SIZE, totalChunks)} of ${totalChunks}...`
+      })
 
-      // Pause 10ms after inference so Electron renders UI animations smoothly
-      await new Promise(resolve => setTimeout(resolve, 10));
+      const batchVectors = await embeddingService.embedQuery(batchChunks)
 
-      const values = [];
-      const flatParams = [];
-      let paramIndex = 1;
-      
+      // Brief pause after heavy ONNX inference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      const values     = []
+      const flatParams = []
+      let   paramIndex = 1
+
       for (let j = 0; j < batchChunks.length; j++) {
-        const chunkIndex = i + j;
-        const content = batchChunks[j];
-        const vectorStr = '[' + batchVectors[j].join(',') + ']';
-        const tokenCount = content.split(/\s+/).length;
-        
-        values.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}::vector, $${paramIndex++})`);
-        flatParams.push(documentId, chunkIndex, content, vectorStr, tokenCount);
+        const content    = batchChunks[j]
+        const vectorStr  = '[' + batchVectors[j].join(',') + ']'
+        const tokenCount = content.split(/\s+/).length
+
+        values.push(
+          `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}::vector, $${paramIndex++})`
+        )
+        flatParams.push(documentId, i + j, content, vectorStr, tokenCount)
       }
 
-      const bulkInsertQuery = `
-        INSERT INTO embedding_documents (document_id, chunk_index, content, embedding, token_count)
-        VALUES ${values.join(', ')}
-      `;
-      await client.query(bulkInsertQuery, flatParams);
+      await client.query(
+        `INSERT INTO embedding_documents (document_id, chunk_index, content, embedding, token_count)
+         VALUES ${values.join(', ')}`,
+        flatParams
+      )
     }
-    return totalChunks;
+
+    return totalChunks
   }
 
   /**
-   * Re-chunks and re-embeds all documents currently archived in PostgreSQL
+   * Re-chunks and re-embeds all documents in PostgreSQL, with per-document timing.
    */
   async reembedAll(db, progressCallback = () => {}) {
-    if (!db || !db.isConnected()) {
-      throw new Error('Database not connected');
-    }
-    const docsRes = await db.query('SELECT id, file_name, content FROM documents');
-    const docs = docsRes.rows;
-    let totalChunksProcessed = 0;
+    if (!db || !db.isConnected()) throw new Error('Database not connected')
+
+    const docsRes = await db.query('SELECT id, file_name, content FROM documents')
+    const docs    = docsRes.rows
+    let totalChunksProcessed = 0
+    const globalStart = startTimer()
 
     for (let idx = 0; idx < docs.length; idx++) {
-      // Yield to event loop between documents so Electron UI stays completely responsive and smooth
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 10))
 
-      const doc = docs[idx];
+      const doc    = docs[idx]
+      const docStart = startTimer()
+
       progressCallback({
         status: 'embedding',
         progress: Math.floor((idx / docs.length) * 100),
-        message: `Re-embedding document (${idx + 1}/${docs.length}): ${doc.file_name}`
-      });
+        message: `🔄 Re-embedding (${idx + 1}/${docs.length}): ${doc.file_name}...`
+      })
+
       await db.transaction(async (client) => {
-        const processed = await this.chunkAndEmbedDocument(client, doc.id, doc.content, progressCallback);
-        totalChunksProcessed += processed;
-      });
+        const processed = await this.chunkAndEmbedDocument(client, doc.id, doc.content, progressCallback)
+        totalChunksProcessed += processed
+      })
+
+      const docTime = elapsed(docStart)
+      progressCallback({
+        status: 'embedding',
+        progress: Math.floor(((idx + 1) / docs.length) * 100),
+        message: `✅ ${doc.file_name} done in ${docTime} (${idx + 1}/${docs.length})`
+      })
     }
 
-    progressCallback({ status: 'complete', progress: 100, message: `Successfully re-embedded ${docs.length} documents (${totalChunksProcessed} chunks).` });
-    return { success: true, documentsProcessed: docs.length, chunksProcessed: totalChunksProcessed };
+    const totalTime = elapsed(globalStart)
+    progressCallback({
+      status: 'complete',
+      progress: 100,
+      message: `🎉 Re-embedded ${docs.length} documents / ${totalChunksProcessed} chunks in ${totalTime}`
+    })
+
+    return { success: true, documentsProcessed: docs.length, chunksProcessed: totalChunksProcessed, totalTime }
   }
 
   /**
-   * Lightweight fast truncation of all data
+   * Truncates all data tables with timing.
    */
   async truncateAll(db) {
-    if (!db || !db.isConnected()) {
-      throw new Error('Database not connected');
-    }
-    await db.query('TRUNCATE TABLE search_feedback, embedding_documents, documents RESTART IDENTITY CASCADE');
-    return { success: true };
+    if (!db || !db.isConnected()) throw new Error('Database not connected')
+    const t = startTimer()
+    await db.query('TRUNCATE TABLE search_feedback, embedding_documents, documents RESTART IDENTITY CASCADE')
+    _extractionCache.clear()
+    const time = elapsed(t)
+    console.log(`[IngestionService] truncateAll completed in ${time}`)
+    return { success: true, time }
   }
 }
 
-export default new IngestionService();
+export default new IngestionService()

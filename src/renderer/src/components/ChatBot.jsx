@@ -59,7 +59,7 @@ const ChatBot = ({ appState = {} }) => {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 p-3 rounded-full bg-[var(--text-accent)] hover:opacity-90 text-[var(--bg-app)] shadow-[0_0_15px_var(--bg-active)] transition-all duration-300 z-50",
+          "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 p-3 rounded-full bg-[var(--text-accent)] hover:opacity-90 text-[var(--bg-app)] shadow-[0_0_15px_var(--bg-active)] transition-all duration-300 z-50",
           isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 hover:scale-110"
         )}
       >
