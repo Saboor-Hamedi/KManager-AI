@@ -16,6 +16,17 @@ const formatMarkdownText = (text) => {
     .replace(/\|\s*\|\s*(?=[A-Za-z0-9*_`\[|])/g, '|\n| ')
     .replace(/\|\s+\|/g, '|\n|')
 
+  // Decode literal hex escape sequences (e.g. \xf4, $'\xf4') into actual characters
+  result = result.replace(/(?:\$')?\\x([0-9a-fA-F]{2})'?/g, (match, hex) => {
+    try {
+      // First try URI decode (handles some utf-8 bytes)
+      return decodeURIComponent('%' + hex)
+    } catch {
+      // Fallback to basic char code
+      return String.fromCharCode(parseInt(hex, 16))
+    }
+  })
+
   // Detect lines that are ONLY a pipe-separated list of [[wikilinks]] (common in Obsidian
   // note metadata like "wikilinks" fields). Render them as a tag cloud paragraph instead.
   result = result.replace(
