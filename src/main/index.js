@@ -325,10 +325,66 @@ app.whenReady().then(() => {
     db = new Database(config)
     const result = await db.connect()
     if (result.success) {
-      // Silently try to install pg_trgm and patch the search function for fuzzy/typo support
-      db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm').then(() =>
-        db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
-      ).catch(() => {}) // Non-fatal: older postgres or missing privileges
+      // Silently patch the DB for fuzzy/typo-tolerant search on every connect
+      ;(async () => {
+        try {
+          await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
+          await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
+          await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
+          // Replace search_chunks with the full 3-leg hybrid: semantic + FTS + trigram fuzzy
+          await db.query(`
+            CREATE OR REPLACE FUNCTION search_chunks(
+              query_text TEXT,
+              query_embedding VECTOR(384),
+              result_limit INT DEFAULT 10
+            )
+            RETURNS TABLE (
+              id UUID, document_id UUID, chunk_index INT, content TEXT,
+              vault_path TEXT, file_name TEXT, file_type TEXT, similarity FLOAT
+            )
+            LANGUAGE plpgsql AS $func$
+            BEGIN
+              RETURN QUERY
+              WITH semantic_search AS (
+                SELECT dc.id,
+                  RANK() OVER (ORDER BY dc.embedding <=> query_embedding) AS semantic_rank
+                FROM embedding_documents dc
+                WHERE dc.embedding IS NOT NULL
+                ORDER BY dc.embedding <=> query_embedding LIMIT 100
+              ),
+              keyword_search AS (
+                SELECT dc.id,
+                  RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC) AS keyword_rank
+                FROM embedding_documents dc
+                WHERE dc.fts_vector @@ plainto_tsquery('simple', query_text)
+                ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC LIMIT 100
+              ),
+              fuzzy_search AS (
+                SELECT dc.id,
+                  RANK() OVER (ORDER BY word_similarity(query_text, dc.content) DESC) AS fuzzy_rank
+                FROM embedding_documents dc
+                WHERE word_similarity(query_text, dc.content) > 0.12
+                ORDER BY word_similarity(query_text, dc.content) DESC LIMIT 100
+              )
+              SELECT dc.id, dc.document_id, dc.chunk_index, dc.content,
+                d.vault_path, d.file_name, d.file_type,
+                (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
+                 COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
+                 COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity
+              FROM embedding_documents dc
+              JOIN documents d ON d.id = dc.document_id
+              LEFT JOIN semantic_search ss ON ss.id = dc.id
+              LEFT JOIN keyword_search ks ON ks.id = dc.id
+              LEFT JOIN fuzzy_search fs ON fs.id = dc.id
+              WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL OR fs.id IS NOT NULL
+              ORDER BY similarity DESC LIMIT result_limit;
+            END;
+            $func$;
+          `)
+        } catch (_err) {
+          // Non-fatal — works on standard postgres without superuser if extensions already installed
+        }
+      })()
     }
     return result
   })
