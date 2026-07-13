@@ -153,6 +153,7 @@ RETURNS TABLE (
   vault_path    TEXT,
   file_name     TEXT,
   file_type     TEXT,
+  created_at    TIMESTAMPTZ,
   similarity    FLOAT
 )
 LANGUAGE plpgsql
@@ -196,6 +197,7 @@ BEGIN
     d.vault_path,
     d.file_name,
     d.file_type,
+    d.created_at,
     -- RRF: semantic (1x) + exact keyword (2x) + fuzzy (1.5x)
     (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
      COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +

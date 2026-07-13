@@ -340,7 +340,7 @@ app.whenReady().then(() => {
             )
             RETURNS TABLE (
               id UUID, document_id UUID, chunk_index INT, content TEXT,
-              vault_path TEXT, file_name TEXT, file_type TEXT, similarity FLOAT
+              vault_path TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMPTZ, similarity FLOAT
             )
             LANGUAGE plpgsql AS $func$
             BEGIN
@@ -367,7 +367,7 @@ app.whenReady().then(() => {
                 ORDER BY word_similarity(query_text, dc.content) DESC LIMIT 100
               )
               SELECT dc.id, dc.document_id, dc.chunk_index, dc.content,
-                d.vault_path, d.file_name, d.file_type,
+                d.vault_path, d.file_name, d.file_type, d.created_at,
                 (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
                  COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
                  COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity

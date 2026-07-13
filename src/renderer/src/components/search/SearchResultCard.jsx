@@ -64,14 +64,6 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
 
   return (
     <div className="flex items-center bg-[var(--bg-panel)]/60 border border-[var(--border-subtle)] rounded-md overflow-hidden h-6 shrink-0 select-none">
-      {/* Open Source Button */}
-      <button
-        onClick={() => handleSelect(item)}
-        className="h-full px-2.5 text-[10.5px] font-medium text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors flex items-center border-r border-[var(--border-subtle)]"
-      >
-        Open Source
-      </button>
-
       {/* Copy Button */}
       <button 
         onClick={handleCopy}
@@ -85,7 +77,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
       <button 
         onClick={() => handleFeedback('helpful')}
         className={`h-full px-2 transition-colors flex items-center justify-center border-r border-[var(--border-subtle)] ${
-          feedback === 'helpful' ? 'bg-purple-500/20 text-[#a855f7]' : 'hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
         }`}
         title="Helpful result"
       >
@@ -96,7 +88,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
       <button 
         onClick={() => handleFeedback('unhelpful')}
         className={`h-full px-2 transition-colors flex items-center justify-center ${
-          feedback === 'unhelpful' ? 'bg-red-500/20 text-red-500' : 'hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
         }`}
         title="Not helpful"
       >
@@ -115,10 +107,25 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
     handleSelect(item)
   }
 
+  // Format created_at as a human-readable relative or short date
+  const formatDate = (ts) => {
+    if (!ts) return null
+    const d = new Date(ts)
+    const now = new Date()
+    const diff = now - d
+    if (diff < 60000) return 'just now'
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined })
+  }
+
+  const createdLabel = formatDate(item.created_at)
+
   return (
     <div className="group relative transition-all duration-200 overflow-hidden mb-2">
-      {/* Sleek Compact Header without Icon or Boxy Background */}
-      <div className="flex items-center justify-between gap-4 mb-2.5">
+      {/* Header: title + match badge + action bar */}
+      <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
           onClick={() => onSelect(item)}
           className="flex items-center gap-2 cursor-pointer min-w-0 flex-1 hover:opacity-80 transition-opacity"
@@ -131,9 +138,16 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
           </span>
         </div>
 
-        {/* Unified Action Bar (Same Height & Harmonious Styling) */}
+        {/* Action Bar */}
         <UnifiedActionBar item={item} query={query} handleSelect={onSelect} />
       </div>
+
+      {/* Created At timestamp */}
+      {createdLabel && (
+        <div className="mb-2 text-[10px] text-[var(--text-faint)] tracking-wide">
+          {createdLabel}
+        </div>
+      )}
 
       {/* Content Chunk Body */}
       <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden">

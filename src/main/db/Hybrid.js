@@ -59,7 +59,7 @@ export async function performHybridSearch(db, queryText, limit = 10) {
   const fallback = await db.query(
     `SELECT
        dc.id, dc.document_id, dc.chunk_index, dc.content,
-       d.vault_path, d.file_name, d.file_type,
+       d.vault_path, d.file_name, d.file_type, d.created_at,
        (1 - (dc.embedding <=> $1::vector))::FLOAT AS similarity
      FROM embedding_documents dc
      JOIN documents d ON d.id = dc.document_id
