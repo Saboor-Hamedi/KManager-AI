@@ -187,10 +187,11 @@ app.whenReady().then(() => {
   ipcMain.handle('db:init-schema', async () => {
     if (!db) return { success: false, message: 'Not connected' }
     try {
-      let finalPath = path.join(__dirname, '../../schema.sql')
-      if (!fs.existsSync(finalPath)) {
-        finalPath = path.join(app.getAppPath(), 'schema.sql')
-      }
+      const isProd = app.isPackaged
+      let finalPath = isProd 
+        ? path.join(process.resourcesPath, 'schema.sql')
+        : path.join(app.getAppPath(), 'schema.sql')
+        
       if (!fs.existsSync(finalPath)) {
         return { success: false, message: 'schema.sql not found at ' + finalPath }
       }

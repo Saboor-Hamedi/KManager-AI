@@ -42,6 +42,8 @@ extraResources:
     to: assets
     filter:
       - "**/*"
+  - from: schema.sql
+    to: schema.sql
 publish:
   provider: github
   owner: Saboor-Hamedi
