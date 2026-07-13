@@ -16,7 +16,6 @@ const SettingDataPanel = () => {
   const [queue, setQueue] = useState([])
   const [statsVisible, setStatsVisible] = useState(true)
   const [showCancelModal, setShowCancelModal] = useState(false)
-  const [showCancelModal, setShowCancelModal] = useState(false)
   const fileInputRef = useRef(null)
   const queueParentRef = useRef(null)
 
