@@ -13,6 +13,7 @@ class Database {
       connectionTimeoutMillis: 5000
     }
     this.pool = null
+    this.isEnding = false
   }
 
   async connect() {
@@ -24,22 +25,39 @@ class Database {
       return { success: true, message: 'Connected successfully' }
     } catch (err) {
       this.pool = null
+      this.isEnding = false
       return { success: false, message: err.message }
     }
   }
 
   async disconnect() {
-    if (this.pool) {
-      await this.pool.end()
+    if (this.pool && !this.isEnding) {
+      this.isEnding = true
+      try {
+        await this.pool.end()
+      } catch (e) {
+        // Ignore errors during tear down
+      }
       this.pool = null
+      this.isEnding = false
     }
   }
 
   async query(text, params = []) {
-    if (!this.pool) {
+    if (!this.pool || this.isEnding) {
       throw new Error('Not connected to database')
     }
-    const client = await this.pool.connect()
+    
+    let client;
+    try {
+      client = await this.pool.connect()
+    } catch (err) {
+      if (err.message.includes('calling end on the pool')) {
+        throw new Error('Not connected to database')
+      }
+      throw err
+    }
+
     try {
       const res = await client.query(text, params)
       return res
@@ -53,10 +71,20 @@ class Database {
    * The callback receives a `client` object which it should use for queries.
    */
   async transaction(callback) {
-    if (!this.pool) {
+    if (!this.pool || this.isEnding) {
       throw new Error('Not connected to database');
     }
-    const client = await this.pool.connect();
+    
+    let client;
+    try {
+      client = await this.pool.connect();
+    } catch (err) {
+      if (err.message.includes('calling end on the pool')) {
+        throw new Error('Not connected to database')
+      }
+      throw err
+    }
+
     try {
       await client.query('BEGIN');
       const result = await callback(client);
