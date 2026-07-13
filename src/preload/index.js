@@ -12,6 +12,7 @@ const api = {
     status: () => ipcRenderer.invoke('db:status'),
     stats: () => ipcRenderer.invoke('db:stats'),
     search: (queryText, limit) => ipcRenderer.invoke('db:search', queryText, limit),
+    getAnalytics: () => ipcRenderer.invoke('db:get-analytics'),
     ingestFile: (filePath) => ipcRenderer.invoke('db:ingest-file', filePath),
     queueFiles: (filePaths) => ipcRenderer.invoke('db:queue-files', filePaths),
     getQueue: () => ipcRenderer.invoke('db:get-queue'),
