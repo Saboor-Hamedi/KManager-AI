@@ -14,6 +14,7 @@
 -- EXTENSION
 -- ============================================================================
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- ============================================================================
 -- TABLE: documents
@@ -126,7 +127,8 @@ $$;
 
 -- ============================================================================
 -- HELPER: search_chunks(query_text TEXT, query_embedding VECTOR(384), limit INT)
--- Performs Hybrid Search combining pgvector cosine similarity and Full-Text Search.
+-- Performs Hybrid Search combining pgvector cosine similarity, Full-Text Search,
+-- and trigram fuzzy search (pg_trgm) for typo tolerance.
 -- ============================================================================
 DROP FUNCTION IF EXISTS search_chunks(text, vector, integer);
 
@@ -166,6 +168,16 @@ BEGIN
     WHERE dc.fts_vector @@ plainto_tsquery('simple', query_text)
     ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC
     LIMIT 100
+  ),
+  -- Trigram fuzzy search: catches typos & partial word matches
+  fuzzy_search AS (
+    SELECT 
+      dc.id,
+      RANK() OVER (ORDER BY similarity(dc.content, query_text) DESC) AS fuzzy_rank
+    FROM embedding_documents dc
+    WHERE similarity(dc.content, query_text) > 0.08
+    ORDER BY similarity(dc.content, query_text) DESC
+    LIMIT 100
   )
   SELECT
     dc.id,
@@ -175,14 +187,16 @@ BEGIN
     d.vault_path,
     d.file_name,
     d.file_type,
-    -- Reciprocal Rank Fusion (k=60 is standard, keyword weighted 2x for product exact matches)
+    -- Reciprocal Rank Fusion: semantic + exact keyword (2x weight) + fuzzy (1.5x weight)
     (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) + 
-     COALESCE(2.0 / (60 + ks.keyword_rank), 0.0))::FLOAT AS similarity
+     COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
+     COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity
   FROM embedding_documents dc
   JOIN documents d ON d.id = dc.document_id
   LEFT JOIN semantic_search ss ON ss.id = dc.id
   LEFT JOIN keyword_search ks ON ks.id = dc.id
-  WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL
+  LEFT JOIN fuzzy_search fs ON fs.id = dc.id
+  WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL OR fs.id IS NOT NULL
   ORDER BY similarity DESC
   LIMIT result_limit;
 END;

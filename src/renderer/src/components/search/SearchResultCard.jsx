@@ -5,6 +5,39 @@ import remarkGfm from 'remark-gfm'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
+/**
+ * Highlight query keywords inside a plain text string.
+ * Returns an array of React elements with matching words wrapped in <mark>.
+ */
+const HighlightedText = memo(({ text, query }) => {
+  if (!query || !text) return <>{text}</>
+
+  const words = query
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+
+  if (words.length === 0) return <>{text}</>
+
+  const pattern = new RegExp(`(${words.join('|')})`, 'gi')
+  const parts = text.split(pattern)
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        pattern.test(part) ? (
+          <mark key={i} className="bg-[var(--text-accent)]/20 text-[var(--text-accent)] rounded px-0.5 font-medium not-italic">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  )
+})
+
 const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState(null)
@@ -112,8 +145,27 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
               )
             }
 
+            // Build highlight-aware markdown component overrides
+            const highlightComponents = {
+              ...cleanMarkdownComponents,
+              p: ({ node, children, ...props }) => (
+                <p className="mb-1.5 last:mb-0" {...props}>
+                  {typeof children === 'string'
+                    ? <HighlightedText text={children} query={query} />
+                    : children}
+                </p>
+              ),
+              li: ({ node, children, ...props }) => (
+                <li {...props}>
+                  {typeof children === 'string'
+                    ? <HighlightedText text={children} query={query} />
+                    : children}
+                </li>
+              ),
+            }
+
             return (
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={cleanMarkdownComponents}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={highlightComponents}>
                 {formatMarkdownText(item.content)}
               </ReactMarkdown>
             )
