@@ -7,10 +7,11 @@ const ReactMarkdown = lazy(() => import('react-markdown'))
 
 /**
  * Highlight query keywords inside a plain text string.
- * Returns an array of React elements with matching words wrapped in <mark>.
+ * Returns an array of React elements with matching words in the accent color.
+ * When disabled (e.g. result has been clicked/opened), renders plain text.
  */
-const HighlightedText = memo(({ text, query }) => {
-  if (!query || !text) return <>{text}</>
+const HighlightedText = memo(({ text, query, disabled }) => {
+  if (disabled || !query || !text) return <>{text}</>
 
   const words = query
     .trim()
@@ -27,9 +28,9 @@ const HighlightedText = memo(({ text, query }) => {
     <>
       {parts.map((part, i) =>
         pattern.test(part) ? (
-          <mark key={i} className="bg-[var(--text-accent)]/20 text-[var(--text-accent)] rounded px-0.5 font-medium not-italic">
+          <span key={i} className="text-[var(--text-accent)] font-semibold">
             {part}
-          </mark>
+          </span>
         ) : (
           <span key={i}>{part}</span>
         )
@@ -107,13 +108,19 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
 
 const SearchResultCard = memo(({ item, query, handleSelect }) => {
   const simPercent = Math.round((item.similarity || 0.75) * 100)
+  const [selected, setSelected] = useState(false)
+
+  const onSelect = (item) => {
+    setSelected(true)
+    handleSelect(item)
+  }
 
   return (
     <div className="group relative transition-all duration-200 overflow-hidden mb-2">
       {/* Sleek Compact Header without Icon or Boxy Background */}
       <div className="flex items-center justify-between gap-4 mb-2.5">
         <div 
-          onClick={() => handleSelect(item)}
+          onClick={() => onSelect(item)}
           className="flex items-center gap-2 cursor-pointer min-w-0 flex-1 hover:opacity-80 transition-opacity"
         >
           <h4 className="text-[13px] font-semibold text-[var(--text-main)] truncate hover:text-[var(--text-accent)] transition-colors">
@@ -125,7 +132,7 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
         </div>
 
         {/* Unified Action Bar (Same Height & Harmonious Styling) */}
-        <UnifiedActionBar item={item} query={query} handleSelect={handleSelect} />
+        <UnifiedActionBar item={item} query={query} handleSelect={onSelect} />
       </div>
 
       {/* Content Chunk Body */}
@@ -151,14 +158,14 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
               p: ({ node, children, ...props }) => (
                 <p className="mb-1.5 last:mb-0" {...props}>
                   {typeof children === 'string'
-                    ? <HighlightedText text={children} query={query} />
+                    ? <HighlightedText text={children} query={query} disabled={selected} />
                     : children}
                 </p>
               ),
               li: ({ node, children, ...props }) => (
                 <li {...props}>
                   {typeof children === 'string'
-                    ? <HighlightedText text={children} query={query} />
+                    ? <HighlightedText text={children} query={query} disabled={selected} />
                     : children}
                 </li>
               ),
