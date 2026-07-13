@@ -334,10 +334,19 @@ app.whenReady().then(() => {
               query_text TEXT NOT NULL,
               latency_ms INT NOT NULL,
               result_count INT NOT NULL,
+              top_similarity FLOAT DEFAULT 0,
               is_fallback BOOLEAN DEFAULT FALSE,
               created_at TIMESTAMPTZ DEFAULT NOW()
             )
           `)
+          
+          // Ensure new columns exist for existing installations
+          try {
+            await db.query('ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS top_similarity FLOAT DEFAULT 0')
+          } catch (e) {
+            // ignore if column exists
+          }
+
           await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
           await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
           await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
@@ -443,11 +452,12 @@ app.whenReady().then(() => {
       const start = Date.now()
       const { rows, isFallback } = await performHybridSearch(db, queryText, limit)
       const latency = Date.now() - start
+      const topSim = rows.length > 0 ? rows[0].similarity || 0 : 0
       
       // Log the search asynchronously
       db.query(
-        'INSERT INTO search_logs (query_text, latency_ms, result_count, is_fallback) VALUES ($1, $2, $3, $4)',
-        [queryText, latency, rows.length, isFallback]
+        'INSERT INTO search_logs (query_text, latency_ms, result_count, top_similarity, is_fallback) VALUES ($1, $2, $3, $4, $5)',
+        [queryText, latency, rows.length, topSim, isFallback]
       ).catch(e => console.error('Failed to log search:', e))
 
       return { success: true, rows, isFallback }
@@ -461,7 +471,7 @@ app.whenReady().then(() => {
     if (!db || !db.isConnected()) return { success: false }
     try {
       // Get real database metrics
-      const latencyRes = await db.query('SELECT AVG(latency_ms) as avg, COUNT(*) as total FROM search_logs')
+      const latencyRes = await db.query('SELECT AVG(latency_ms) as avg_lat, AVG(top_similarity) as avg_sim, COUNT(*) as total FROM search_logs')
       const feedbackRes = await db.query(`
         SELECT 
           COUNT(*) as total,
@@ -475,7 +485,8 @@ app.whenReady().then(() => {
       return {
         success: true,
         metrics: {
-          avgLatency: latencyRes.rows[0]?.avg ? Math.round(Number(latencyRes.rows[0].avg)) : 0,
+          avgLatency: latencyRes.rows[0]?.avg_lat ? Math.round(Number(latencyRes.rows[0].avg_lat)) : 0,
+          avgCosine: latencyRes.rows[0]?.avg_sim ? Number(latencyRes.rows[0].avg_sim) : 0,
           totalSearches: latencyRes.rows[0]?.total ? Number(latencyRes.rows[0].total) : 0,
           totalFeedback: feedbackRes.rows[0]?.total ? Number(feedbackRes.rows[0].total) : 0,
           positiveFeedback: feedbackRes.rows[0]?.positive ? Number(feedbackRes.rows[0].positive) : 0,

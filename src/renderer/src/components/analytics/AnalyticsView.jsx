@@ -95,7 +95,7 @@ const AnalyticsView = () => {
             hallucinationDrop: '23.4'
           },
           retrieval: {
-            avgCosine: '0.87',
+            avgCosine: m.avgCosine ? m.avgCosine.toFixed(2) : '0.00',
             contextDensity: '70.0',
             mrrAt3: '0.92',
             avgSearchSpeed: m.avgLatency.toString()
