@@ -15,11 +15,20 @@ const ConfirmModal = React.memo(({
 
   // Handle subtle mount animation
   useEffect(() => {
-    if (isOpen) setRender(true)
+    if (isOpen) {
+      setRender(true)
+    } else {
+      // Fallback unmount in case onAnimationEnd is dropped due to heavy thread usage
+      const timer = setTimeout(() => setRender(false), 350)
+      return () => clearTimeout(timer)
+    }
   }, [isOpen])
 
-  const handleAnimationEnd = () => {
-    if (!isOpen) setRender(false)
+  const handleAnimationEnd = (e) => {
+    // Ensure we only unmount when the modal background transition ends, not its children
+    if (!isOpen && e.target === e.currentTarget) {
+      setRender(false)
+    }
   }
 
   if (!render) return null
@@ -27,7 +36,7 @@ const ConfirmModal = React.memo(({
   return (
     <div 
       className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isOpen ? 'bg-black/40 backdrop-blur-[8px] opacity-100' : 'bg-transparent backdrop-blur-none opacity-0'
+        isOpen ? 'bg-black/40 backdrop-blur-[8px] opacity-100' : 'bg-transparent backdrop-blur-none opacity-0 pointer-events-none'
       }`}
       onAnimationEnd={handleAnimationEnd}
     >
