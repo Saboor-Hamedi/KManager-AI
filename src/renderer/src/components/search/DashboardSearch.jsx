@@ -458,7 +458,7 @@ const DashboardSearch = () => {
                             </div>
                             
                             {/* Save to DB Button */}
-                            {msg.ragStatus === 'complete' && (
+                            {msg.ragStatus === 'done' && (
                               <div className="flex justify-start mt-2">
                                 <button
                                   onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
