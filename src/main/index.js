@@ -175,8 +175,14 @@ app.whenReady().then(() => {
       
       try {
         const fileStart = Date.now()
+        let lastProgressTime = 0
         const result = await ingestionService.ingestFile(item.path, db, (progressUpdate) => {
-          mainWindow?.webContents.send('db:ingest-progress', { ...progressUpdate, fileName: item.name })
+          const now = Date.now()
+          // Only send update if complete/error, or if 150ms has passed since last update
+          if (progressUpdate.status === 'complete' || progressUpdate.status === 'error' || now - lastProgressTime > 150) {
+            lastProgressTime = now
+            mainWindow?.webContents.send('db:ingest-progress', { ...progressUpdate, fileName: item.name })
+          }
         })
         
         const ms = Date.now() - fileStart
