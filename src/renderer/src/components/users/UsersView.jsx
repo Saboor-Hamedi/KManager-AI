@@ -56,7 +56,7 @@ const UsersView = () => {
               placeholder="Search users..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-md text-xs text-[var(--text-main)] pl-9 pr-4 py-2 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)]"
+              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-md text-xs text-[var(--text-main)] pl-9 pr-4 py-2 focus:outline-none transition-colors placeholder:text-[var(--text-faint)]"
             />
           </div>
           <button className="p-2 border border-[var(--border-dim)] rounded-md bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors">

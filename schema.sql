@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS documents (
   updated_at    TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(vault_path)
 );
-SELECT * FROM documents;
+
 -- ============================================================================
 -- TABLE: embedding_documents
 -- Stores overlapping ~500-token chunks of each document with pgvector

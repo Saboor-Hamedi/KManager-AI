@@ -149,7 +149,7 @@ const SettingDBPanel = memo(() => {
                 value={config[key]}
                 onChange={(e) => update(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] pl-8 pr-3 py-2 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)] font-mono"
+                className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] pl-8 pr-3 py-2 focus:outline-none transition-colors placeholder:text-[var(--text-faint)] font-mono"
               />
             </div>
           </div>
@@ -171,25 +171,25 @@ const SettingDBPanel = memo(() => {
         <button
           onClick={handleTest}
           disabled={testing}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest border border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
         >
           {testing ? <Loader2 size={12} className="animate-spin" /> : <FileKey size={12} />}
           Test
         </button>
 
         {connected ? (
-          <div className="flex gap-3">
+          <div className="flex-1 flex gap-2">
             <button
               onClick={handleInitSchema}
               disabled={testing}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] hover:bg-[var(--icon-secondary)]/20 border border-[var(--icon-secondary)]/30 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] hover:bg-[var(--icon-secondary)]/20 transition-all disabled:opacity-50"
             >
               {testing ? <Loader2 size={12} className="animate-spin" /> : <Database size={12} />}
               Init Schema
             </button>
             <button
               onClick={handleDisconnect}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest border border-[var(--icon-danger)]/30 text-[var(--icon-danger)] hover:bg-[var(--icon-danger)]/10 transition-all"
+              className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
             >
               <WifiOff size={12} />
               Disconnect
@@ -198,7 +198,7 @@ const SettingDBPanel = memo(() => {
         ) : (
           <button
             onClick={handleConnect}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded text-[10px] font-black tracking-widest bg-[var(--text-accent)] hover:opacity-90 text-[var(--bg-app)] shadow-[0_0_15px_var(--bg-active)] transition-all"
+            className="flex-[2] flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all"
           >
             <Wifi size={12} />
             Connect

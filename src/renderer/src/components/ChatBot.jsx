@@ -143,7 +143,7 @@ const ChatBot = ({ appState = {} }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 pr-10 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)]"
+              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 pr-10 focus:outline-none transition-colors placeholder:text-[var(--text-faint)]"
             />
             <button 
               type="submit"

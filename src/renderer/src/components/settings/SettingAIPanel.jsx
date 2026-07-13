@@ -49,7 +49,7 @@ const SettingAIPanel = memo(() => {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="sk-..."
-            className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)] font-mono"
+            className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none transition-colors placeholder:text-[var(--text-faint)] font-mono"
           />
         </div>
       </div>
@@ -68,7 +68,7 @@ const SettingAIPanel = memo(() => {
             value={embeddingModel}
             onChange={(e) => setEmbeddingModel(e.target.value)}
             placeholder="Xenova/paraphrase-multilingual-MiniLM-L12-v2"
-            className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)] font-mono"
+            className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none transition-colors placeholder:text-[var(--text-faint)] font-mono"
           />
         </div>
       </div>
