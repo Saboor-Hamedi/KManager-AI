@@ -122,7 +122,7 @@ const SettingDBPropertiesPanel = () => {
   const avgChunks = totalDocs > 0 ? (totalChunks / totalDocs).toFixed(1) : '0'
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-black tracking-tight text-[var(--text-main)] mb-1">DB Properties & Storage</h3>
@@ -181,35 +181,35 @@ const SettingDBPropertiesPanel = () => {
       )}
 
       {/* Top Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Documents</span>
-            <FileText size={16} className="text-[#a855f7]" />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Documents</span>
+            <FileText size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-3xl font-black text-gray-100 tracking-tight">
+          <div className="text-2xl font-black text-gray-100 tracking-tight">
             {totalDocs.toLocaleString()}
           </div>
           <div className="text-[11px] font-medium text-gray-400 mt-1">Archived in PostgreSQL</div>
         </div>
 
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Vector Chunks</span>
-            <Layers size={16} className="text-[#a855f7]" />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vector Chunks</span>
+            <Layers size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-3xl font-black text-[#a855f7] tracking-tight">
+          <div className="text-2xl font-black text-[#a855f7] tracking-tight">
             {totalChunks.toLocaleString()}
           </div>
           <div className="text-[11px] font-medium text-gray-400 mt-1">Indexed via pgvector</div>
         </div>
 
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Chunks / Doc</span>
-            <HardDrive size={16} className="text-[#a855f7]" />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Chunks / Doc</span>
+            <HardDrive size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-3xl font-black text-gray-100 tracking-tight">
+          <div className="text-2xl font-black text-gray-100 tracking-tight">
             {avgChunks}
           </div>
           <div className="text-[11px] font-medium text-gray-400 mt-1">Semantic density ratio</div>
@@ -217,7 +217,7 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Format Distribution Table / Cards */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-5 shadow-sm">
+      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Database size={16} className="text-[#a855f7]" />
@@ -269,7 +269,7 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Database Maintenance & Operations */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-5 shadow-sm space-y-4">
+      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm space-y-3">
         <div className="flex items-center gap-2 border-b border-[#2a2a2a] pb-3">
           <Cpu size={16} className="text-[#a855f7]" />
           <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200">Database Maintenance & Operations</h4>
@@ -277,7 +277,7 @@ const SettingDBPropertiesPanel = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Re-embed Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-xl p-4 flex flex-col justify-between">
+          <div className="bg-[#131313] border border-[#252525] rounded-xl p-3 flex flex-col justify-between">
             <div className="space-y-1.5 mb-4">
               <span className="text-xs font-bold text-gray-200 flex items-center gap-2">
                 <Cpu size={14} className="text-purple-400" />
@@ -297,7 +297,7 @@ const SettingDBPropertiesPanel = () => {
           </div>
 
           {/* Truncate All Data Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-xl p-4 flex flex-col justify-between">
+          <div className="bg-[#131313] border border-[#252525] rounded-xl p-3 flex flex-col justify-between">
             <div className="space-y-1.5 mb-4">
               <span className="text-xs font-bold text-red-400 flex items-center gap-2">
                 <Trash2 size={14} />
@@ -343,7 +343,7 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Storage Architecture Overview */}
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-4">
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-3">
         <div className="flex items-center gap-2 text-xs font-bold text-gray-300 mb-2">
           <CheckCircle2 size={15} className="text-emerald-400" />
           <span>Permanent Archive Protection Enabled</span>

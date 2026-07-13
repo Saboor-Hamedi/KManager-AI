@@ -246,11 +246,11 @@ class IngestionService {
 
     const chunks     = this.chunkText(rawText)
     const totalChunks = chunks.length
-    const BATCH_SIZE  = 4 // balanced: low freeze risk, faster than 2
+    const BATCH_SIZE  = 2 // very low batch size to maximize UI responsiveness during heavy ONNX inference
 
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       // Yield to Electron event loop so UI stays responsive
-      await new Promise(resolve => setTimeout(resolve, 15))
+      await new Promise(resolve => setTimeout(resolve, 30))
 
       const batchChunks = chunks.slice(i, i + BATCH_SIZE)
       progressCallback({
@@ -261,8 +261,8 @@ class IngestionService {
 
       const batchVectors = await embeddingService.embedQuery(batchChunks)
 
-      // Brief pause after heavy ONNX inference
-      await new Promise(resolve => setTimeout(resolve, 10))
+      // Brief pause after heavy ONNX inference to allow UI interactions (clicks/hovers) to process
+      await new Promise(resolve => setTimeout(resolve, 30))
 
       const values     = []
       const flatParams = []
