@@ -122,7 +122,7 @@ const SettingDBPropertiesPanel = () => {
   const avgChunks = totalDocs > 0 ? (totalChunks / totalDocs).toFixed(1) : '0'
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-2.5 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[13px] font-black tracking-tight text-[var(--text-main)] mb-0.5">DB Properties & Storage</h3>
@@ -139,7 +139,7 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {error && (
-        <div className="p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-red-300 text-[11px] font-semibold">
+        <div className="p-2 rounded-md bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-red-300 text-[11px] font-semibold">
           <AlertCircle size={14} />
           <span>{error}</span>
         </div>
@@ -147,7 +147,7 @@ const SettingDBPropertiesPanel = () => {
 
       {/* Action Progress / Notification Banner */}
       {actionState && (
-        <div className={`p-3 rounded-md border flex flex-col gap-2 ${
+        <div className={`p-2 rounded-md border flex flex-col gap-1.5 ${
           actionState.status === 'error'
             ? 'bg-red-500/10 border-red-500/30 text-red-300'
             : actionState.status === 'success'
@@ -182,42 +182,42 @@ const SettingDBPropertiesPanel = () => {
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Documents</span>
             <FileText size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-gray-100 tracking-tight">
+          <div className="text-xl font-black text-gray-100 tracking-tight">
             {totalDocs.toLocaleString()}
           </div>
-          <div className="text-[10px] font-medium text-gray-400 mt-1">Archived in PostgreSQL</div>
+          <div className="text-[10px] font-medium text-gray-400">Archived in PostgreSQL</div>
         </div>
 
         <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vector Chunks</span>
             <Layers size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-[#a855f7] tracking-tight">
+          <div className="text-xl font-black text-[#a855f7] tracking-tight">
             {totalChunks.toLocaleString()}
           </div>
-          <div className="text-[10px] font-medium text-gray-400 mt-1">Indexed via pgvector</div>
+          <div className="text-[10px] font-medium text-gray-400">Indexed via pgvector</div>
         </div>
 
         <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Chunks / Doc</span>
             <HardDrive size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-gray-100 tracking-tight">
+          <div className="text-xl font-black text-gray-100 tracking-tight">
             {avgChunks}
           </div>
-          <div className="text-[10px] font-medium text-gray-400 mt-1">Semantic density ratio</div>
+          <div className="text-[10px] font-medium text-gray-400">Semantic density ratio</div>
         </div>
       </div>
 
       {/* Format Distribution Table / Cards */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Database size={13} className="text-[#a855f7]" />
             <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-200">Ingested File Formats</h4>
@@ -228,7 +228,7 @@ const SettingDBPropertiesPanel = () => {
         </div>
 
         {dbStats && dbStats.by_type && Object.keys(dbStats.by_type).length > 0 ? (
-          <div className="max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+          <div className="max-h-[140px] overflow-y-auto custom-scrollbar pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(dbStats.by_type)
                 .sort(([, a], [, b]) => Number(b) - Number(a))
@@ -268,8 +268,8 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Database Maintenance & Operations */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 border-b border-[#2a2a2a] pb-3">
+      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm space-y-2">
+        <div className="flex items-center gap-2 border-b border-[#2a2a2a] pb-2">
           <Cpu size={13} className="text-[#a855f7]" />
           <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-200">Database Maintenance & Operations</h4>
         </div>
@@ -277,14 +277,11 @@ const SettingDBPropertiesPanel = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Re-embed Operation */}
           <div className="bg-[#131313] border border-[#252525] rounded-md p-3 flex flex-col justify-between">
-            <div className="space-y-1 mb-4">
+            <div className="mb-2">
               <span className="text-[11px] font-bold text-gray-200 flex items-center gap-2">
                 <Cpu size={13} className="text-purple-400" />
                 Re-embed Knowledge Base
               </span>
-              <p className="text-[10px] text-gray-400 leading-relaxed">
-                Re-chunks all archived document content and regenerates semantic embeddings without needing to re-upload files from disk.
-              </p>
             </div>
             <button
               onClick={handleReembedAll}
@@ -297,14 +294,11 @@ const SettingDBPropertiesPanel = () => {
 
           {/* Truncate All Data Operation */}
           <div className="bg-[#131313] border border-[#252525] rounded-md p-3 flex flex-col justify-between">
-            <div className="space-y-1 mb-4">
+            <div className="mb-2">
               <span className="text-[11px] font-bold text-red-400 flex items-center gap-2">
                 <Trash2 size={13} />
                 Truncate Knowledge Base
               </span>
-              <p className="text-[10px] text-gray-400 leading-relaxed">
-                Lightweight instant truncation (<code className="text-red-300">TRUNCATE TABLE</code>) clears all documents, chunks, and feedback in O(1) time.
-              </p>
             </div>
 
             {!confirmTruncate ? (
@@ -342,14 +336,11 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Storage Architecture Overview */}
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-md p-3">
-        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-300 mb-1.5">
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-md p-2.5">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-300">
           <CheckCircle2 size={13} className="text-emerald-400" />
           <span>Permanent Archive Protection Enabled</span>
         </div>
-        <p className="text-[10px] text-gray-400 leading-relaxed">
-          Every ingested file is fully archived in the <code className="text-[#a855f7]">documents.content</code> table. Even if local files are deleted or moved on your disk, your search queries and document previews operate directly from PostgreSQL.
-        </p>
       </div>
     </div>
   )
