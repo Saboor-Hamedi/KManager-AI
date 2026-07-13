@@ -34,6 +34,14 @@ const SettingDBPanel = memo(() => {
     return () => clearInterval(intervalId)
   }, [])
 
+  // Auto-clear success status after 3 seconds
+  useEffect(() => {
+    if (status && status.success) {
+      const timer = setTimeout(() => setStatus(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [status])
+
   const checkStatus = async () => {
     try {
       const res = await window.electron.ipcRenderer.invoke('db:status')
