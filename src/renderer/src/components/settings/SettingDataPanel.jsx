@@ -110,8 +110,11 @@ const SettingDataPanel = () => {
   }
 
   const handleCancelQueue = () => {
-    window.api.db.cancelQueue()
     setShowCancelModal(false)
+    // Defer the heavy IPC call so React has time to unmount the modal and play the animation
+    setTimeout(() => {
+      window.api.db.cancelQueue()
+    }, 50)
   }
 
   const handleClearQueue = () => {
