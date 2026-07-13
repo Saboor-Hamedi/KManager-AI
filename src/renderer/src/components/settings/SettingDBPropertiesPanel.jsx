@@ -294,7 +294,7 @@ const SettingDBPropertiesPanel = () => {
               </span>
               <button
                 onClick={() => setConfirmReembed(true)}
-                disabled={actionState?.status === 'progress' || totalDocs === 0}
+                disabled={actionState?.status === 'progress'}
                 className="px-2 py-1 rounded bg-[#a855f7]/20 hover:bg-[#a855f7]/40 text-[#d8b4fe] disabled:opacity-40 text-[10px] font-bold transition-colors border border-[#a855f7]/30"
               >
                 Re-embed
@@ -314,7 +314,7 @@ const SettingDBPropertiesPanel = () => {
               </span>
               <button
                 onClick={() => setConfirmTruncate(true)}
-                disabled={actionState?.status === 'progress' || totalDocs === 0}
+                disabled={actionState?.status === 'progress'}
                 className="px-2 py-1 rounded bg-red-500/15 hover:bg-red-500/30 text-red-300 disabled:opacity-40 text-[10px] font-bold transition-colors border border-red-500/30"
               >
                 Truncate

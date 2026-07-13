@@ -11,43 +11,14 @@ const ConfirmModal = React.memo(({
   cancelText = 'Cancel', 
   isDestructive = true 
 }) => {
-  const [render, setRender] = useState(false)
-
-  // Handle subtle mount animation
-  useEffect(() => {
-    if (isOpen) {
-      setRender(true)
-    } else {
-      // Fallback unmount in case onAnimationEnd is dropped due to heavy thread usage
-      const timer = setTimeout(() => setRender(false), 350)
-      return () => clearTimeout(timer)
-    }
-  }, [isOpen])
-
-  const handleAnimationEnd = (e) => {
-    // Ensure we only unmount when the modal background transition ends, not its children
-    if (!isOpen && e.target === e.currentTarget) {
-      setRender(false)
-    }
-  }
-
-  if (!render) return null
+  if (!isOpen) return null
 
   return (
-    <div 
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isOpen ? 'bg-black/40 backdrop-blur-[8px] opacity-100' : 'bg-transparent backdrop-blur-none opacity-0 pointer-events-none'
-      }`}
-      onAnimationEnd={handleAnimationEnd}
-    >
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[8px]">
       {/* Background click to close */}
       <div className="absolute inset-0" onClick={onCancel} />
 
-      <div 
-        className={`relative w-full max-w-[300px] bg-[#1a1a1a]/80 backdrop-blur-2xl border border-white/5 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
-        }`}
-      >
+      <div className="relative w-full max-w-[300px] bg-[#1a1a1a]/80 backdrop-blur-2xl border border-white/5 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Subtle top highlight */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -82,11 +53,7 @@ const ConfirmModal = React.memo(({
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 py-2.5 rounded-lg text-xs font-bold tracking-wide transition-all duration-300 shadow-lg ${
-              isDestructive
-                ? 'bg-red-500/90 text-white hover:bg-red-500 hover:shadow-red-500/25 hover:-translate-y-[1px]'
-                : 'bg-white text-black hover:bg-gray-100 hover:shadow-white/20 hover:-translate-y-[1px]'
-            }`}
+            className="flex-1 py-2.5 rounded-lg text-xs font-bold tracking-wide text-white bg-white/10 hover:bg-white/20 transition-all duration-200 shadow-lg"
           >
             {confirmText}
           </button>
