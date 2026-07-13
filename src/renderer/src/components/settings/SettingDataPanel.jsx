@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { UploadCloud, File, CheckCircle2, AlertCircle, Loader2, X, Clock } from 'lucide-react'
+import { UploadCloud, File, CheckCircle2, AlertCircle, Loader2, X, Clock, StopCircle } from 'lucide-react'
+import ConfirmModal from '../layout/ConfirmModal'
 
 const SettingDataPanel = () => {
   const [isDragging, setIsDragging] = useState(false)
@@ -11,12 +12,10 @@ const SettingDataPanel = () => {
     message: '',
     fileName: ''
   })
-  // Only pending/processing files shown — done ones get removed automatically
   const [queue, setQueue] = useState([])
-  const [totalTime, setTotalTime] = useState(null)
   const [statsVisible, setStatsVisible] = useState(true)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const fileInputRef = useRef(null)
-  const isProcessingRef = useRef(false)
 
   const loadStats = async () => {
     setLoadingStats(true)
@@ -32,22 +31,37 @@ const SettingDataPanel = () => {
     const handleSync = () => loadStats()
     window.addEventListener('db-stats-updated', handleSync)
 
-    const cleanup = window.api.db.onIngestProgress((update) => {
-      if (update.status === 'complete') {
+    // Initial fetch of the active queue from the main process
+    window.api.db.getQueue().then(q => {
+      if (q && q.length > 0) {
+        setQueue(q)
+        setStatsVisible(true)
+      }
+    })
+
+    const cleanupQueue = window.api.db.onQueueUpdated((updatedQueue) => {
+      setQueue(updatedQueue)
+      if (updatedQueue.length > 0) setStatsVisible(true)
+    })
+
+    const cleanupProgress = window.api.db.onIngestProgress((update) => {
+      if (update.status === 'complete' || update.status === 'idle') {
         loadStats()
         window.dispatchEvent(new Event('db-stats-updated'))
       }
       setIngestState(prev => ({
         ...prev,
-        progress: update.progress,
-        message: update.message,
-        status: update.status === 'complete' ? 'success' : 'uploading'
+        progress: update.progress || 0,
+        message: update.message || '',
+        fileName: update.fileName || prev.fileName,
+        status: update.status === 'complete' ? 'success' : update.status === 'error' ? 'error' : update.status === 'idle' ? 'success' : 'uploading'
       }))
     })
 
     return () => {
       window.removeEventListener('db-stats-updated', handleSync)
-      if (cleanup) cleanup()
+      if (cleanupProgress) cleanupProgress()
+      if (cleanupQueue) cleanupQueue()
     }
   }, [])
 
@@ -64,83 +78,6 @@ const SettingDataPanel = () => {
     catch (_) { return paths }
   }
 
-  const processFiles = async (filePaths) => {
-    if (isProcessingRef.current) return
-    isProcessingRef.current = true
-
-    setTotalTime(null)
-    setStatsVisible(true)
-
-    // Populate queue with pending items
-    const queueItems = filePaths.map(p => ({
-      id: `${p}-${Date.now()}-${Math.random()}`,
-      path: p,
-      name: p.split(/[\\/]/).pop(),
-      status: 'pending',
-      timing: null
-    }))
-    setQueue(queueItems)
-
-    const globalStart = Date.now()
-    let successCount = 0
-    let lastError = null
-
-    for (let i = 0; i < filePaths.length; i++) {
-      const filePath = filePaths[i]
-      const fileName = filePath.split(/[\\/]/).pop()
-      const queueId  = queueItems[i].id
-
-      // Mark as processing
-      setQueue(prev => prev.map(q => q.id === queueId ? { ...q, status: 'processing' } : q))
-
-      setIngestState({
-        status: 'uploading',
-        progress: 0,
-        message: `Processing file ${i + 1} of ${filePaths.length}…`,
-        fileName
-      })
-
-      await new Promise(r => setTimeout(r, 50))
-
-      const fileStart = Date.now()
-      try {
-        const result = await window.api.db.ingestFile(filePath)
-        const ms = Date.now() - fileStart
-        const timing = result?.timing?.total || (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`)
-
-        if (result?.success) {
-          successCount++
-          // Remove from queue immediately once done
-          setQueue(prev => prev.filter(q => q.id !== queueId))
-        } else {
-          lastError = result?.message || 'Failed'
-          // Keep failed files in queue so user can see them, but mark error
-          setQueue(prev => prev.map(q => q.id === queueId ? { ...q, status: 'error', timing } : q))
-        }
-      } catch (err) {
-        lastError = err.message
-        const ms = Date.now() - fileStart
-        const timing = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
-        setQueue(prev => prev.map(q => q.id === queueId ? { ...q, status: 'error', timing } : q))
-      }
-    }
-
-    const totalMs = Date.now() - globalStart
-    const totalTimeFmt = totalMs < 1000 ? `${totalMs}ms` : `${(totalMs / 1000).toFixed(1)}s`
-    setTotalTime(totalTimeFmt)
-
-    if (successCount === filePaths.length) {
-      setIngestState({ status: 'success', progress: 100, message: `Successfully ingested ${successCount} file${successCount !== 1 ? 's' : ''} in ${totalTimeFmt}.`, fileName: 'Ingestion Complete' })
-    } else if (successCount > 0) {
-      setIngestState({ status: 'success', progress: 100, message: `${successCount} ingested, ${filePaths.length - successCount} failed. Total: ${totalTimeFmt}. Last error: ${lastError}`, fileName: 'Partial Success' })
-    } else {
-      setIngestState({ status: 'error', progress: 0, message: lastError || 'Failed to ingest any files.', fileName: 'Ingestion Failed' })
-    }
-
-    loadStats()
-    isProcessingRef.current = false
-  }
-
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true) }
   const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false) }
 
@@ -148,21 +85,35 @@ const SettingDataPanel = () => {
     e.preventDefault()
     setIsDragging(false)
     const resolved = await getFilePaths(Array.from(e.dataTransfer.files))
-    if (resolved.length > 0) processFiles(resolved)
+    if (resolved.length > 0) {
+      setStatsVisible(true)
+      window.api.db.queueFiles(resolved)
+    }
   }
 
   const handleFileSelect = async (e) => {
     const resolved = await getFilePaths(Array.from(e.target.files))
-    if (resolved.length > 0) processFiles(resolved)
+    if (resolved.length > 0) {
+      setStatsVisible(true)
+      window.api.db.queueFiles(resolved)
+    }
     e.target.value = null
   }
 
-  const removeFromQueue = (id) => setQueue(prev => prev.filter(q => q.id !== id))
+  const handleCancelQueue = () => {
+    window.api.db.cancelQueue()
+    setShowCancelModal(false)
+  }
 
-  const pendingOrErrorQueue = queue // only pending/processing/error remain
+  const handleClearQueue = () => {
+    window.api.db.clearQueue()
+    setStatsVisible(false)
+  }
+
+  const pendingOrErrorQueue = queue
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       <div>
         <h3 className="text-base font-black tracking-tight text-[var(--text-main)] mb-0.5">Data Ingestion</h3>
         <p className="text-xs text-[var(--text-muted)]">Upload PDFs, documents, or raw text to your Knowledge Hub. Files are automatically chunked and embedded via local AI.</p>
@@ -201,7 +152,7 @@ const SettingDataPanel = () => {
               {ingestState.status === 'error'     && <AlertCircle className="text-red-500" size={20} />}
             </div>
             <div className="flex-1 min-w-0">
-              <h5 className="text-sm font-bold text-[var(--text-main)] truncate">{ingestState.fileName}</h5>
+              <h5 className="text-sm font-bold text-[var(--text-main)] truncate">{ingestState.fileName || (ingestState.status === 'success' ? 'Processing Complete' : 'Processing...')}</h5>
               <p className={`text-xs mt-1 ${ingestState.status === 'error' ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
                 {ingestState.message}
               </p>
@@ -210,19 +161,12 @@ const SettingDataPanel = () => {
                   <div className="h-full bg-[var(--text-accent)] transition-all duration-300 ease-out" style={{ width: `${ingestState.progress}%` }} />
                 </div>
               )}
-              {/* Total time badge */}
-              {totalTime && ingestState.status === 'success' && (
-                <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[var(--text-faint)] font-mono">
-                  <Clock size={10} />
-                  Total time: <span className="font-bold text-emerald-400">{totalTime}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Queue — only pending/processing/error files, done ones are auto-removed */}
+      {/* Queue */}
       {statsVisible && pendingOrErrorQueue.length > 0 && (
         <div className="border border-[var(--border-dim)] rounded-xl bg-[var(--bg-app)] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-dim)] bg-[var(--bg-panel)]">
@@ -230,9 +174,16 @@ const SettingDataPanel = () => {
               {pendingOrErrorQueue.filter(q => q.status === 'pending' || q.status === 'processing').length} remaining
               {pendingOrErrorQueue.some(q => q.status === 'error') && ` · ${pendingOrErrorQueue.filter(q => q.status === 'error').length} failed`}
             </span>
-            <button onClick={() => setStatsVisible(false)} className="p-1 rounded hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
-              <X size={13} />
-            </button>
+            <div className="flex items-center gap-2">
+              {pendingOrErrorQueue.some(q => q.status === 'processing' || q.status === 'pending') && (
+                <button onClick={() => setShowCancelModal(true)} className="flex items-center gap-1.5 px-2 py-1 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[10px] font-bold tracking-widest uppercase transition-colors">
+                  <StopCircle size={11} /> Cancel
+                </button>
+              )}
+              <button onClick={handleClearQueue} className="p-1 rounded hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors" title="Clear/Hide Queue">
+                <X size={13} />
+              </button>
+            </div>
           </div>
 
           <div className="overflow-y-auto custom-scrollbar" style={{ minHeight: '120px', maxHeight: '240px' }}>
@@ -249,18 +200,13 @@ const SettingDataPanel = () => {
                     <Clock size={9} />{item.timing}
                   </span>
                 )}
-                {item.status !== 'processing' && (
-                  <button onClick={() => removeFromQueue(item.id)} className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-red-400 transition-all">
-                    <X size={11} />
-                  </button>
-                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* DB Stats — plain inline text */}
+      {/* DB Stats */}
       <div className="flex items-center gap-2 px-1 text-xs text-[var(--text-muted)]">
         {loadingStats ? (
           <span className="flex items-center gap-1.5"><Loader2 size={11} className="animate-spin" /> Loading stats…</span>
@@ -280,6 +226,16 @@ const SettingDataPanel = () => {
           <span className="text-[var(--text-faint)]">Connect to a database to see stats</span>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showCancelModal}
+        title="Cancel Processing?"
+        message="Are you sure you want to cancel the current queue? Any files already embedded will remain in the database."
+        confirmText="Yes, Cancel"
+        isDestructive={true}
+        onConfirm={handleCancelQueue}
+        onCancel={() => setShowCancelModal(false)}
+      />
     </div>
   )
 }

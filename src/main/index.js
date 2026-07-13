@@ -155,6 +155,89 @@ app.whenReady().then(() => {
   })
 
   let db = null
+  let ingestionQueue = []
+  let isIngesting = false
+  let cancelIngestionFlag = false
+
+  async function processQueue() {
+    isIngesting = true
+    cancelIngestionFlag = false
+    
+    while (ingestionQueue.length > 0) {
+      if (cancelIngestionFlag) break
+      
+      const index = ingestionQueue.findIndex(q => q.status === 'pending')
+      if (index === -1) break // Nothing left
+      
+      const item = ingestionQueue[index]
+      item.status = 'processing'
+      mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+      
+      try {
+        const fileStart = Date.now()
+        const result = await ingestionService.ingestFile(item.path, db, (progressUpdate) => {
+          mainWindow?.webContents.send('db:ingest-progress', { ...progressUpdate, fileName: item.name })
+        })
+        
+        const ms = Date.now() - fileStart
+        item.timing = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
+        
+        if (result?.success) {
+          ingestionQueue.splice(index, 1) // Remove on success
+        } else {
+          item.status = 'error'
+          item.timing = result?.message || 'Failed'
+        }
+      } catch (err) {
+        item.status = 'error'
+        item.timing = 'Failed'
+      }
+      
+      mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+      await new Promise(r => setTimeout(r, 50)) // Prevent blocking
+    }
+    
+    isIngesting = false
+    mainWindow?.webContents.send('db:ingest-progress', { status: 'idle' })
+    if (cancelIngestionFlag) {
+      mainWindow?.webContents.send('db:ingest-progress', { status: 'error', message: 'Ingestion cancelled.', fileName: 'Cancelled' })
+    }
+  }
+
+  ipcMain.handle('db:queue-files', async (event, filePaths) => {
+    const newItems = filePaths.map(p => ({
+      id: `${p}-${Date.now()}-${Math.random()}`,
+      path: p,
+      name: p.split(/[\\/]/).pop(),
+      status: 'pending',
+      timing: null
+    }))
+    ingestionQueue.push(...newItems)
+    mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+    
+    if (!isIngesting) {
+      processQueue()
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('db:get-queue', () => {
+    return ingestionQueue
+  })
+
+  ipcMain.handle('db:cancel-queue', () => {
+    cancelIngestionFlag = true
+    ingestionQueue = ingestionQueue.filter(q => q.status !== 'pending')
+    mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+    return { success: true }
+  })
+
+  ipcMain.handle('db:clear-queue', () => {
+    // Keep pending/processing, drop errors
+    ingestionQueue = ingestionQueue.filter(q => q.status === 'processing' || q.status === 'pending')
+    mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+    return { success: true }
+  })
 
   ipcMain.handle('db:test-connection', async (_event, config) => {
     const testDb = new Database(config)

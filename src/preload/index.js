@@ -13,12 +13,21 @@ const api = {
     stats: () => ipcRenderer.invoke('db:stats'),
     search: (queryText, limit) => ipcRenderer.invoke('db:search', queryText, limit),
     ingestFile: (filePath) => ipcRenderer.invoke('db:ingest-file', filePath),
+    queueFiles: (filePaths) => ipcRenderer.invoke('db:queue-files', filePaths),
+    getQueue: () => ipcRenderer.invoke('db:get-queue'),
+    cancelQueue: () => ipcRenderer.invoke('db:cancel-queue'),
+    clearQueue: () => ipcRenderer.invoke('db:clear-queue'),
     reembedAll: () => ipcRenderer.invoke('db:reembed-all'),
     truncateAll: () => ipcRenderer.invoke('db:truncate-all'),
     onIngestProgress: (callback) => {
       const listener = (event, progress) => callback(progress)
       ipcRenderer.on('db:ingest-progress', listener)
       return () => ipcRenderer.removeListener('db:ingest-progress', listener)
+    },
+    onQueueUpdated: (callback) => {
+      const listener = (event, queue) => callback(queue)
+      ipcRenderer.on('db:queue-updated', listener)
+      return () => ipcRenderer.removeListener('db:queue-updated', listener)
     },
     submitFeedback: (queryText, score, chunkId, documentId) => ipcRenderer.invoke('db:submit-feedback', queryText, score, chunkId, documentId)
   },

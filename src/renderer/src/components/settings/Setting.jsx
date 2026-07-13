@@ -39,20 +39,11 @@ const Setting = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'database':
-        return <SettingDBPanel />
-      case 'db_properties':
-        return <SettingDBPropertiesPanel />
-      case 'data':
-        return <SettingDataPanel />
-      case 'ai':
-        return <SettingAIPanel />
-      default:
-        return <SettingDBPanel />
-    }
-  }
+  const renderTab = (id, Component) => (
+    <div key={id} className="h-full w-full" style={{ display: activeTab === id ? 'block' : 'none' }}>
+      <Component />
+    </div>
+  )
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -93,7 +84,10 @@ const Setting = ({ isOpen, onClose }) => {
           </div>
 
           <div className="flex-1 p-7 overflow-y-auto custom-scrollbar bg-[var(--bg-app)]">
-            {renderContent()}
+            {renderTab('database', SettingDBPanel)}
+            {renderTab('db_properties', SettingDBPropertiesPanel)}
+            {renderTab('data', SettingDataPanel)}
+            {renderTab('ai', SettingAIPanel)}
           </div>
         </div>
       </div>
