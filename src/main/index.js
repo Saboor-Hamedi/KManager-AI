@@ -328,6 +328,16 @@ app.whenReady().then(() => {
       // Silently patch the DB for fuzzy/typo-tolerant search on every connect
       ;(async () => {
         try {
+          await db.query(`
+            CREATE TABLE IF NOT EXISTS search_logs (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              query_text TEXT NOT NULL,
+              latency_ms INT NOT NULL,
+              result_count INT NOT NULL,
+              is_fallback BOOLEAN DEFAULT FALSE,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+          `)
           await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
           await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
           await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
@@ -430,10 +440,52 @@ app.whenReady().then(() => {
 
   ipcMain.handle('db:search', async (_event, queryText, limit = 10) => {
     try {
+      const start = Date.now()
       const { rows, isFallback } = await performHybridSearch(db, queryText, limit)
+      const latency = Date.now() - start
+      
+      // Log the search asynchronously
+      db.query(
+        'INSERT INTO search_logs (query_text, latency_ms, result_count, is_fallback) VALUES ($1, $2, $3, $4)',
+        [queryText, latency, rows.length, isFallback]
+      ).catch(e => console.error('Failed to log search:', e))
+
       return { success: true, rows, isFallback }
     } catch (err) {
       console.error('db:search error:', err)
+      return { success: false, message: err.message }
+    }
+  })
+
+  ipcMain.handle('db:get-analytics', async () => {
+    if (!db || !db.isConnected()) return { success: false }
+    try {
+      // Get real database metrics
+      const latencyRes = await db.query('SELECT AVG(latency_ms) as avg, COUNT(*) as total FROM search_logs')
+      const feedbackRes = await db.query(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN score = 1 THEN 1 ELSE 0 END) as positive
+        FROM search_feedback
+      `)
+      const statsRes = await db.query('SELECT * FROM get_document_stats()')
+      
+      const searchLogs = await db.query('SELECT latency_ms as standard FROM search_logs ORDER BY created_at DESC LIMIT 50')
+
+      return {
+        success: true,
+        metrics: {
+          avgLatency: latencyRes.rows[0]?.avg ? Math.round(Number(latencyRes.rows[0].avg)) : 0,
+          totalSearches: latencyRes.rows[0]?.total ? Number(latencyRes.rows[0].total) : 0,
+          totalFeedback: feedbackRes.rows[0]?.total ? Number(feedbackRes.rows[0].total) : 0,
+          positiveFeedback: feedbackRes.rows[0]?.positive ? Number(feedbackRes.rows[0].positive) : 0,
+          totalDocs: statsRes.rows[0]?.total_docs || 0,
+          totalChunks: statsRes.rows[0]?.total_chunks || 0,
+          recentLatencies: searchLogs.rows.reverse()
+        }
+      }
+    } catch (err) {
+      console.error('db:get-analytics error:', err)
       return { success: false, message: err.message }
     }
   })

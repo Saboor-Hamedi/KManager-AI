@@ -66,6 +66,19 @@ CREATE TABLE IF NOT EXISTS search_feedback (
 );
 
 -- ============================================================================
+-- TABLE: search_logs
+-- Tracks real search performance, latency, and BM25 scores for the dashboard.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS search_logs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  query_text    TEXT NOT NULL,
+  latency_ms    INT NOT NULL,
+  result_count  INT NOT NULL,
+  is_fallback   BOOLEAN DEFAULT FALSE,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
 -- INDEXES
 -- ============================================================================
 

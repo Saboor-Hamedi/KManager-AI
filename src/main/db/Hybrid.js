@@ -20,6 +20,78 @@ function expandQuery(queryText) {
 }
 
 /**
+ * Lightweight, in-memory BM25 scorer.
+ * Re-ranks the subset of documents returned by PostgreSQL.
+ */
+function applyBM25ReRanking(queryText, rows) {
+  if (!rows || rows.length === 0) return rows;
+  
+  // 1. Tokenize query (lowercase, split by non-word chars, remove empty/short)
+  const qTokens = queryText.toLowerCase().split(/\W+/).filter(t => t.length > 1);
+  if (qTokens.length === 0) return rows;
+
+  // 2. Tokenize documents and build stats
+  const k1 = 1.2;
+  const b = 0.75;
+  const N = rows.length;
+  let totalLength = 0;
+  
+  const docTokensList = rows.map(r => {
+    const tokens = (r.content || '').toLowerCase().split(/\W+/).filter(t => t.length > 1);
+    totalLength += tokens.length;
+    
+    // Map of token -> count in this doc
+    const tf = {};
+    for (const t of tokens) {
+      tf[t] = (tf[t] || 0) + 1;
+    }
+    return { tokens, tf, length: tokens.length };
+  });
+  
+  const avgdl = totalLength / N || 1;
+
+  // 3. Document Frequencies for query tokens
+  const df = {};
+  for (const qt of qTokens) {
+    df[qt] = 0;
+    for (const doc of docTokensList) {
+      if (doc.tf[qt]) df[qt]++;
+    }
+  }
+
+  // 4. Calculate BM25 for each document
+  for (let i = 0; i < N; i++) {
+    const doc = docTokensList[i];
+    let score = 0;
+    for (const qt of qTokens) {
+      if (!doc.tf[qt]) continue;
+      
+      const termFreq = doc.tf[qt];
+      const docDf = df[qt];
+      
+      // Inverse Document Frequency (IDF)
+      const idf = Math.log(1 + (N - docDf + 0.5) / (docDf + 0.5));
+      
+      // Term Frequency component
+      const tfComponent = (termFreq * (k1 + 1)) / (termFreq + k1 * (1 - b + b * (doc.length / avgdl)));
+      
+      score += idf * tfComponent;
+    }
+    
+    // Normalize BM25 score loosely (assume max realistic score for a few terms is ~10-15)
+    // We cap at 1.0 just for UI simplicity, but keep original for ranking
+    rows[i].bm25Score = score;
+    rows[i].bm25Normalized = Math.min(score / 10, 1.0);
+    
+    // Combine SQL similarity (which includes semantic/fuzzy) with pure BM25
+    rows[i].combinedScore = rows[i].similarity + (rows[i].bm25Normalized * 0.5);
+  }
+
+  // 5. Sort by combined score descending
+  return rows.sort((a, b) => b.combinedScore - a.combinedScore);
+}
+
+/**
  * Performs a smart hybrid search:
  *   1. Semantic (pgvector) — meaning-based, uses expanded query for better embedding
  *   2. FTS keyword — exact token matching (uses original query)
@@ -50,7 +122,8 @@ export async function performHybridSearch(db, queryText, limit = 10) {
   )
 
   if (res.rows.length > 0) {
-    return { rows: res.rows, isFallback: false }
+    const reranked = applyBM25ReRanking(originalQuery, res.rows)
+    return { rows: reranked, isFallback: false }
   }
 
   // 2. FALLBACK: If all 3 legs returned nothing (edge case: very short / unknown query),
@@ -69,5 +142,5 @@ export async function performHybridSearch(db, queryText, limit = 10) {
     [vectorString, limit]
   )
 
-  return { rows: fallback.rows, isFallback: true }
+  return { rows: applyBM25ReRanking(originalQuery, fallback.rows), isFallback: true }
 }

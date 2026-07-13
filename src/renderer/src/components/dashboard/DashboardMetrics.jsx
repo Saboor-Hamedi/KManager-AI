@@ -66,13 +66,13 @@ const DashboardMetrics = ({ results }) => {
           trendUp={true} 
         />
         <MetricCard 
-          title="DB Searches Skipped" 
+          title="User Feedback Given" 
           value={results.dbSearchesAvoided} 
           icon={Database} 
           colorClass="text-[var(--text-accent)]" 
           bgClass="bg-[var(--text-accent)]/10" 
-          trend="Zero Latency" 
-          trendLabel="bypassed vector search" 
+          trend="Total Ratings" 
+          trendLabel="likes and dislikes" 
           trendUp={true} 
         />
         <MetricCard 
