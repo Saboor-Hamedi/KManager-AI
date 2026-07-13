@@ -56,68 +56,72 @@ const SettingDBPropertiesPanel = () => {
     }
   }, [])
 
-  const handleReembedAll = async () => {
+  const handleReembedAll = () => {
     setConfirmReembed(false)
-    setActionState({ type: 'reembed', status: 'progress', progress: 5, message: 'Starting knowledge base re-embedding...' })
-    try {
-      const res = await window.api.db.reembedAll()
-      if (res && res.success) {
-        setActionState({
-          type: 'reembed',
-          status: 'success',
-          progress: 100,
-          message: `Successfully re-embedded ${res.documentsProcessed || 0} documents (${res.chunksProcessed || 0} vector chunks).`
-        })
-        loadStats()
-        window.dispatchEvent(new Event('db-stats-updated'))
-      } else {
+    setTimeout(async () => {
+      setActionState({ type: 'reembed', status: 'progress', progress: 5, message: 'Starting knowledge base re-embedding...' })
+      try {
+        const res = await window.api.db.reembedAll()
+        if (res && res.success) {
+          setActionState({
+            type: 'reembed',
+            status: 'success',
+            progress: 100,
+            message: `Successfully re-embedded ${res.documentsProcessed || 0} documents (${res.chunksProcessed || 0} vector chunks).`
+          })
+          loadStats()
+          window.dispatchEvent(new Event('db-stats-updated'))
+        } else {
+          setActionState({
+            type: 'reembed',
+            status: 'error',
+            progress: 0,
+            message: res?.message || 'Re-embedding failed.'
+          })
+        }
+      } catch (err) {
         setActionState({
           type: 'reembed',
           status: 'error',
           progress: 0,
-          message: res?.message || 'Re-embedding failed.'
+          message: err.message
         })
       }
-    } catch (err) {
-      setActionState({
-        type: 'reembed',
-        status: 'error',
-        progress: 0,
-        message: err.message
-      })
-    }
+    }, 50)
   }
 
-  const handleTruncateAll = async () => {
-    setActionState({ type: 'truncate', status: 'progress', progress: 50, message: 'Truncating database tables...' })
-    try {
-      const res = await window.api.db.truncateAll()
-      if (res && res.success) {
-        setActionState({
-          type: 'truncate',
-          status: 'success',
-          progress: 100,
-          message: 'All tables truncated and vector indexes cleared instantly.'
-        })
-        setConfirmTruncate(false)
-        loadStats()
-        window.dispatchEvent(new Event('db-stats-updated'))
-      } else {
+  const handleTruncateAll = () => {
+    setConfirmTruncate(false)
+    setTimeout(async () => {
+      setActionState({ type: 'truncate', status: 'progress', progress: 50, message: 'Truncating database tables...' })
+      try {
+        const res = await window.api.db.truncateAll()
+        if (res && res.success) {
+          setActionState({
+            type: 'truncate',
+            status: 'success',
+            progress: 100,
+            message: 'All tables truncated and vector indexes cleared instantly.'
+          })
+          loadStats()
+          window.dispatchEvent(new Event('db-stats-updated'))
+        } else {
+          setActionState({
+            type: 'truncate',
+            status: 'error',
+            progress: 0,
+            message: res?.message || 'Failed to truncate database.'
+          })
+        }
+      } catch (err) {
         setActionState({
           type: 'truncate',
           status: 'error',
           progress: 0,
-          message: res?.message || 'Failed to truncate database.'
+          message: err.message
         })
       }
-    } catch (err) {
-      setActionState({
-        type: 'truncate',
-        status: 'error',
-        progress: 0,
-        message: err.message
-      })
-    }
+    }, 50)
   }
 
   const totalDocs = dbStats?.total_docs || 0
