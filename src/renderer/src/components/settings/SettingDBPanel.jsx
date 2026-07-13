@@ -183,9 +183,9 @@ const SettingDBPanel = memo(() => {
         <button
           onClick={handleTest}
           disabled={loadingAction !== null}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-gradient-to-b from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 shadow-sm text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-xs font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all disabled:opacity-50"
         >
-          {loadingAction === 'test' ? <Loader2 size={11} className="animate-spin" /> : <FileKey size={11} />}
+          {loadingAction === 'test' ? <Loader2 size={14} className="animate-spin" /> : <FileKey size={14} />}
           {loadingAction === 'test' ? 'Testing...' : 'Test'}
         </button>
 
@@ -194,17 +194,17 @@ const SettingDBPanel = memo(() => {
             <button
               onClick={handleInitSchema}
               disabled={loadingAction !== null}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-gradient-to-b from-[var(--icon-secondary)]/20 to-[var(--icon-secondary)]/10 hover:from-[var(--icon-secondary)]/30 hover:to-[var(--icon-secondary)]/20 shadow-sm text-emerald-400 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-xs font-medium bg-[#307049] hover:bg-[#3d8c5b] border border-[#448c5f] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all disabled:opacity-50"
             >
-              {loadingAction === 'init' ? <Loader2 size={11} className="animate-spin" /> : <Database size={11} />}
+              {loadingAction === 'init' ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
               {loadingAction === 'init' ? 'Initializing...' : 'Init Schema'}
             </button>
             <button
               onClick={handleDisconnect}
               disabled={loadingAction !== null}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-gradient-to-b from-red-500/20 to-red-500/10 hover:from-red-500/30 hover:to-red-500/20 shadow-sm text-red-400 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-xs font-medium bg-[#873636] hover:bg-[#a34242] border border-[#9c4545] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all disabled:opacity-50"
             >
-              <WifiOff size={11} />
+              <WifiOff size={14} />
               Disconnect
             </button>
           </>
@@ -212,9 +212,9 @@ const SettingDBPanel = memo(() => {
           <button
             onClick={handleConnect}
             disabled={loadingAction !== null}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-gradient-to-b from-[var(--text-accent)] to-[#8338ec] hover:opacity-90 shadow-sm text-white transition-all disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-xs font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all disabled:opacity-50"
           >
-            {loadingAction === 'connect' ? <Loader2 size={11} className="animate-spin" /> : <Wifi size={11} />}
+            {loadingAction === 'connect' ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
             {loadingAction === 'connect' ? 'Connecting...' : 'Connect'}
           </button>
         )}
