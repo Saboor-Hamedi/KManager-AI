@@ -125,46 +125,45 @@ const SettingDBPropertiesPanel = () => {
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-black tracking-tight text-[var(--text-main)] mb-1">DB Properties & Storage</h3>
-          <p className="text-sm font-bold text-[var(--text-muted)]">Live statistics, format distributions, and maintenance tools for your Knowledge Hub.</p>
+          <h3 className="text-[13px] font-black tracking-tight text-[var(--text-main)] mb-0.5">DB Properties & Storage</h3>
+          <p className="text-[11px] font-bold text-[var(--text-muted)]">Live statistics, format distributions, and maintenance tools for your Knowledge Hub.</p>
         </div>
         <button
           onClick={loadStats}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-active)] hover:bg-[#2c2c2c] text-xs font-bold text-[var(--text-main)] border border-[var(--border-subtle)] transition-colors shadow-sm"
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--bg-active)] hover:bg-[#2c2c2c] text-[var(--text-main)] border border-[var(--border-subtle)] transition-colors shadow-sm"
           title="Refresh statistics"
         >
-          <RefreshCw size={13} className={loading ? 'animate-spin text-[#a855f7]' : 'text-[#a855f7]'} />
-          <span>Refresh</span>
+          <RefreshCw size={12} className={loading ? 'animate-spin text-[#a855f7]' : 'text-[#a855f7]'} />
         </button>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-300 text-xs font-semibold">
-          <AlertCircle size={16} />
+        <div className="p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-red-300 text-[11px] font-semibold">
+          <AlertCircle size={14} />
           <span>{error}</span>
         </div>
       )}
 
       {/* Action Progress / Notification Banner */}
       {actionState && (
-        <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+        <div className={`p-3 rounded-md border flex flex-col gap-2 ${
           actionState.status === 'error'
             ? 'bg-red-500/10 border-red-500/30 text-red-300'
             : actionState.status === 'success'
             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
             : 'bg-[#a855f7]/10 border-[#a855f7]/30 text-gray-200'
         }`}>
-          <div className="flex items-center justify-between text-xs font-bold">
+          <div className="flex items-center justify-between text-[11px] font-bold">
             <span className="flex items-center gap-2">
-              {actionState.status === 'progress' && <RefreshCw size={14} className="animate-spin text-[#a855f7]" />}
-              {actionState.status === 'success' && <CheckCircle2 size={14} className="text-emerald-400" />}
-              {actionState.status === 'error' && <AlertCircle size={14} className="text-red-400" />}
+              {actionState.status === 'progress' && <RefreshCw size={12} className="animate-spin text-[#a855f7]" />}
+              {actionState.status === 'success' && <CheckCircle2 size={12} className="text-emerald-400" />}
+              {actionState.status === 'error' && <AlertCircle size={12} className="text-red-400" />}
               <span>{actionState.message}</span>
             </span>
             <button
               onClick={() => setActionState(null)}
-              className="text-gray-400 hover:text-gray-200 text-xs font-normal"
+              className="text-gray-400 hover:text-gray-200 text-[10px] font-normal"
             >
               Dismiss
             </button>
@@ -182,7 +181,7 @@ const SettingDBPropertiesPanel = () => {
 
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Documents</span>
             <FileText size={14} className="text-[#a855f7]" />
@@ -190,10 +189,10 @@ const SettingDBPropertiesPanel = () => {
           <div className="text-2xl font-black text-gray-100 tracking-tight">
             {totalDocs.toLocaleString()}
           </div>
-          <div className="text-[11px] font-medium text-gray-400 mt-1">Archived in PostgreSQL</div>
+          <div className="text-[10px] font-medium text-gray-400 mt-1">Archived in PostgreSQL</div>
         </div>
 
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vector Chunks</span>
             <Layers size={14} className="text-[#a855f7]" />
@@ -201,10 +200,10 @@ const SettingDBPropertiesPanel = () => {
           <div className="text-2xl font-black text-[#a855f7] tracking-tight">
             {totalChunks.toLocaleString()}
           </div>
-          <div className="text-[11px] font-medium text-gray-400 mt-1">Indexed via pgvector</div>
+          <div className="text-[10px] font-medium text-gray-400 mt-1">Indexed via pgvector</div>
         </div>
 
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Chunks / Doc</span>
             <HardDrive size={14} className="text-[#a855f7]" />
@@ -212,16 +211,16 @@ const SettingDBPropertiesPanel = () => {
           <div className="text-2xl font-black text-gray-100 tracking-tight">
             {avgChunks}
           </div>
-          <div className="text-[11px] font-medium text-gray-400 mt-1">Semantic density ratio</div>
+          <div className="text-[10px] font-medium text-gray-400 mt-1">Semantic density ratio</div>
         </div>
       </div>
 
       {/* Format Distribution Table / Cards */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm">
+      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Database size={16} className="text-[#a855f7]" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200">Ingested File Formats</h4>
+            <Database size={13} className="text-[#a855f7]" />
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-200">Ingested File Formats</h4>
           </div>
           <span className="text-[11px] font-semibold text-gray-400">
             {dbStats?.by_type ? Object.keys(dbStats.by_type).length : 0} format(s)
@@ -239,7 +238,7 @@ const SettingDBPropertiesPanel = () => {
                   return (
                     <div
                       key={format}
-                      className="bg-[#131313] border border-[#242424] hover:border-[#333] rounded-lg p-3 space-y-2 transition-colors"
+                      className="bg-[#131313] border border-[#242424] hover:border-[#333] rounded-md p-2.5 space-y-2 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#202020] text-[#a855f7] border border-[#2d2d2d]">
@@ -269,41 +268,41 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Database Maintenance & Operations */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 shadow-sm space-y-3">
+      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-4 shadow-sm space-y-3">
         <div className="flex items-center gap-2 border-b border-[#2a2a2a] pb-3">
-          <Cpu size={16} className="text-[#a855f7]" />
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200">Database Maintenance & Operations</h4>
+          <Cpu size={13} className="text-[#a855f7]" />
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-200">Database Maintenance & Operations</h4>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Re-embed Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-xl p-3 flex flex-col justify-between">
-            <div className="space-y-1.5 mb-4">
-              <span className="text-xs font-bold text-gray-200 flex items-center gap-2">
-                <Cpu size={14} className="text-purple-400" />
+          <div className="bg-[#131313] border border-[#252525] rounded-md p-3 flex flex-col justify-between">
+            <div className="space-y-1 mb-4">
+              <span className="text-[11px] font-bold text-gray-200 flex items-center gap-2">
+                <Cpu size={13} className="text-purple-400" />
                 Re-embed Knowledge Base
               </span>
-              <p className="text-[11px] text-gray-400 leading-relaxed">
+              <p className="text-[10px] text-gray-400 leading-relaxed">
                 Re-chunks all archived document content and regenerates semantic embeddings without needing to re-upload files from disk.
               </p>
             </div>
             <button
               onClick={handleReembedAll}
               disabled={actionState?.status === 'progress' || totalDocs === 0}
-              className="w-full px-3 py-2 rounded-lg bg-[#a855f7] hover:bg-[#9333ea] disabled:opacity-40 disabled:hover:bg-[#a855f7] text-white text-xs font-bold transition-colors shadow-md"
+              className="w-full px-2 py-1.5 rounded bg-[#a855f7] hover:bg-[#9333ea] disabled:opacity-40 disabled:hover:bg-[#a855f7] text-white text-[11px] font-bold transition-colors shadow-sm"
             >
               {actionState?.type === 'reembed' && actionState?.status === 'progress' ? 'Re-embedding...' : 'Re-embed All Documents'}
             </button>
           </div>
 
           {/* Truncate All Data Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-xl p-3 flex flex-col justify-between">
-            <div className="space-y-1.5 mb-4">
-              <span className="text-xs font-bold text-red-400 flex items-center gap-2">
-                <Trash2 size={14} />
+          <div className="bg-[#131313] border border-[#252525] rounded-md p-3 flex flex-col justify-between">
+            <div className="space-y-1 mb-4">
+              <span className="text-[11px] font-bold text-red-400 flex items-center gap-2">
+                <Trash2 size={13} />
                 Truncate Knowledge Base
               </span>
-              <p className="text-[11px] text-gray-400 leading-relaxed">
+              <p className="text-[10px] text-gray-400 leading-relaxed">
                 Lightweight instant truncation (<code className="text-red-300">TRUNCATE TABLE</code>) clears all documents, chunks, and feedback in O(1) time.
               </p>
             </div>
@@ -312,26 +311,26 @@ const SettingDBPropertiesPanel = () => {
               <button
                 onClick={() => setConfirmTruncate(true)}
                 disabled={actionState?.status === 'progress' || totalDocs === 0}
-                className="w-full px-3 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-300 disabled:opacity-40 text-xs font-bold transition-colors"
+                className="w-full px-2 py-1.5 rounded bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-300 disabled:opacity-40 text-[11px] font-bold transition-colors"
               >
                 Truncate All Tables
               </button>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-red-300">
-                  <AlertTriangle size={13} />
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-red-300">
+                  <AlertTriangle size={12} />
                   <span>Are you sure? This cannot be undone.</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleTruncateAll}
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors"
+                    className="flex-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold transition-colors"
                   >
                     Confirm Truncate
                   </button>
                   <button
                     onClick={() => setConfirmTruncate(false)}
-                    className="px-3 py-1.5 rounded-lg bg-[#252525] hover:bg-[#2f2f2f] text-gray-300 text-xs font-semibold transition-colors"
+                    className="px-2 py-1 rounded bg-[#252525] hover:bg-[#2f2f2f] text-gray-300 text-[11px] font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -343,12 +342,12 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Storage Architecture Overview */}
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-gray-300 mb-2">
-          <CheckCircle2 size={15} className="text-emerald-400" />
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-md p-3">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-300 mb-1.5">
+          <CheckCircle2 size={13} className="text-emerald-400" />
           <span>Permanent Archive Protection Enabled</span>
         </div>
-        <p className="text-xs text-gray-400 leading-relaxed">
+        <p className="text-[10px] text-gray-400 leading-relaxed">
           Every ingested file is fully archived in the <code className="text-[#a855f7]">documents.content</code> table. Even if local files are deleted or moved on your disk, your search queries and document previews operate directly from PostgreSQL.
         </p>
       </div>
