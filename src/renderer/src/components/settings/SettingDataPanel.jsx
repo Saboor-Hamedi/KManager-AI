@@ -231,7 +231,6 @@ const SettingDataPanel = () => {
         isOpen={showCancelModal}
         title="Cancel Processing?"
         message="Are you sure you want to cancel the current queue? Any files already embedded will remain in the database."
-        confirmText="Yes, Cancel"
         isDestructive={true}
         onConfirm={handleCancelQueue}
         onCancel={() => setShowCancelModal(false)}
