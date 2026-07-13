@@ -104,7 +104,15 @@ const AnalyticsView = () => {
             label: `S${i+1}`,
             standard: lat.standard,
             hybrid: Math.max(2, Math.round(lat.standard * (0.3 + Math.random() * 0.4))),
-            isConv: false
+            isConv: false,
+            metrics: {
+              baseFaithfulness: 45 + Math.floor(Math.random() * 20),
+              hybridFaithfulness: 90 + Math.floor(Math.random() * 10),
+              baseRelevance: 50 + Math.floor(Math.random() * 25),
+              hybridRelevance: 92 + Math.floor(Math.random() * 8),
+              baseCoherence: 80 + Math.floor(Math.random() * 15),
+              hybridCoherence: 95 + Math.floor(Math.random() * 5)
+            }
           }))
         })
       }
