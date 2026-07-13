@@ -206,7 +206,7 @@ app.whenReady().then(() => {
     isIngesting = false
     mainWindow?.webContents.send('db:ingest-progress', { status: 'idle' })
     if (cancelIngestionFlag) {
-      mainWindow?.webContents.send('db:ingest-progress', { status: 'error', message: 'Ingestion cancelled.', fileName: 'Cancelled' })
+      mainWindow?.webContents.send('db:ingest-progress', { status: 'idle' })
     }
   }
 

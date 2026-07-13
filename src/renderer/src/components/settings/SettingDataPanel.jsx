@@ -22,7 +22,7 @@ const SettingDataPanel = () => {
   const rowVirtualizer = useVirtualizer({
     count: queue.length,
     getScrollElement: () => queueParentRef.current,
-    estimateSize: () => 45,
+    estimateSize: () => 36,
     overscan: 5,
   })
 
@@ -171,20 +171,20 @@ const SettingDataPanel = () => {
 
       {/* Queue */}
       {statsVisible && pendingOrErrorQueue.length > 0 && (
-        <div className="border border-[var(--border-dim)] rounded-xl bg-[var(--bg-app)] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-dim)] bg-[var(--bg-panel)]">
-            <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-              {pendingOrErrorQueue.filter(q => q.status === 'pending' || q.status === 'processing').length} remaining
+        <div className="bg-[#131313] border border-[var(--border-dim)] rounded-md overflow-hidden mt-2 shadow-sm">
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border-dim)] bg-[#1a1a1a]">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+              {pendingOrErrorQueue.filter(q => q.status === 'pending' || q.status === 'processing').length} in queue
               {pendingOrErrorQueue.some(q => q.status === 'error') && ` · ${pendingOrErrorQueue.filter(q => q.status === 'error').length} failed`}
             </span>
             <div className="flex items-center gap-2">
               {pendingOrErrorQueue.some(q => q.status === 'processing' || q.status === 'pending') && (
-                <button onClick={() => setShowCancelModal(true)} className="flex items-center gap-1.5 px-2 py-1 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[10px] font-bold tracking-widest uppercase transition-colors">
-                  <StopCircle size={11} /> Cancel
+                <button onClick={() => setShowCancelModal(true)} className="flex items-center gap-1.5 px-2 py-0.5 rounded text-red-400/80 hover:text-red-400 hover:bg-red-400/10 text-[9px] font-bold tracking-widest uppercase transition-colors">
+                  <StopCircle size={10} /> Cancel
                 </button>
               )}
-              <button onClick={handleClearQueue} className="p-1 rounded hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors" title="Clear/Hide Queue">
-                <X size={13} />
+              <button onClick={handleClearQueue} className="p-0.5 rounded text-[var(--text-faint)] hover:text-[var(--text-main)] hover:bg-white/5 transition-colors" title="Clear/Hide Queue">
+                <X size={12} />
               </button>
             </div>
           </div>
@@ -200,30 +200,30 @@ const SettingDataPanel = () => {
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const item = pendingOrErrorQueue[virtualRow.index]
                 return (
-                  <div
-                    key={item.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border-dim)]/40 hover:bg-[var(--bg-panel)]/50 transition-colors group"
-                  >
-                    <div className="shrink-0 w-4 flex justify-center">
-                      {item.status === 'processing' && <Loader2 size={12} className="animate-spin text-[var(--text-accent)]" />}
-                      {item.status === 'error'      && <AlertCircle size={12} className="text-red-400" />}
-                      {item.status === 'pending'    && <File size={12} className="text-[var(--text-faint)]" />}
+                    <div
+                      key={item.id}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      className="flex items-center gap-2.5 px-3 border-b border-[var(--border-dim)]/30 hover:bg-white/5 transition-colors group"
+                    >
+                      <div className="shrink-0 w-3.5 flex justify-center">
+                        {item.status === 'processing' && <Loader2 size={11} className="animate-spin text-[var(--text-accent)]" />}
+                        {item.status === 'error'      && <AlertCircle size={11} className="text-red-400" />}
+                        {item.status === 'pending'    && <File size={11} className="text-[var(--text-faint)]" />}
+                      </div>
+                      <p className={`flex-1 text-[11px] truncate font-medium ${item.status === 'error' ? 'text-red-300/90' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>{item.name}</p>
+                      {item.timing && (
+                        <span className="shrink-0 flex items-center gap-1 text-[9px] font-mono text-[var(--text-faint)]">
+                          <Clock size={8} />{item.timing}
+                        </span>
+                      )}
                     </div>
-                    <p className="flex-1 text-xs text-[var(--text-main)] truncate font-medium">{item.name}</p>
-                    {item.timing && (
-                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-mono text-[var(--text-faint)]">
-                        <Clock size={9} />{item.timing}
-                      </span>
-                    )}
-                  </div>
                 )
               })}
             </div>
