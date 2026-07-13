@@ -95,10 +95,10 @@ const SettingAIPanel = memo(() => {
         <button
           onClick={handleSave}
           className={cn(
-            "flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all",
+            "flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all",
             saved
-              ? "border border-black/50 bg-[var(--icon-secondary)]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.2)] text-emerald-400"
-              : "border border-black/50 bg-[#262626] hover:bg-[#333333] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.2)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
+              ? "bg-gradient-to-b from-[var(--icon-secondary)]/20 to-[var(--icon-secondary)]/10 text-emerald-400"
+              : "bg-gradient-to-b from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)]"
           )}
         >
           {saved ? (
