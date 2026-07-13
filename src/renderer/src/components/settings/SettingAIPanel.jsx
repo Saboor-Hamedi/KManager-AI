@@ -97,8 +97,8 @@ const SettingAIPanel = memo(() => {
           className={cn(
             "flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all",
             saved
-              ? "bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)]"
-              : "bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)]"
+              ? "border border-black/50 bg-[var(--icon-secondary)]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.2)] text-emerald-400"
+              : "border border-black/50 bg-[#262626] hover:bg-[#333333] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.2)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
           )}
         >
           {saved ? (
