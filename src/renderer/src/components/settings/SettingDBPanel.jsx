@@ -158,16 +158,16 @@ const SettingDBPanel = memo(() => {
 
       {status && (
         <div className={cn(
-          "text-[10px] font-bold px-3 py-2 rounded border",
+          "text-[10px] font-bold px-3 py-2 rounded-md",
           status.success
-            ? "text-[var(--icon-secondary)] border-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
-            : "text-[var(--icon-danger)] border-[var(--icon-danger)] bg-[var(--icon-danger)]/10"
+            ? "text-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
+            : "text-[var(--icon-danger)] bg-[var(--icon-danger)]/10"
         )}>
           {status.message}
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <button
           onClick={handleTest}
           disabled={testing}
@@ -178,7 +178,7 @@ const SettingDBPanel = memo(() => {
         </button>
 
         {connected ? (
-          <div className="flex-1 flex gap-2">
+          <>
             <button
               onClick={handleInitSchema}
               disabled={testing}
@@ -189,16 +189,16 @@ const SettingDBPanel = memo(() => {
             </button>
             <button
               onClick={handleDisconnect}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
             >
               <WifiOff size={11} />
               Disconnect
             </button>
-          </div>
+          </>
         ) : (
           <button
             onClick={handleConnect}
-            className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all"
           >
             <Wifi size={11} />
             Connect
