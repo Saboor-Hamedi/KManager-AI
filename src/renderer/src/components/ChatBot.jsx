@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
 import { getSetting } from '../lib/settings';
@@ -12,7 +12,27 @@ const ChatBot = ({ appState = {} }) => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [savedResponses, setSavedResponses] = useState({});
   const messagesEndRef = useRef(null);
+
+  const handleSaveResponse = async (idx, text) => {
+    setSavedResponses(prev => ({ ...prev, [idx]: 'saving' }));
+    try {
+      // Use previous user query as the title if available
+      let query = 'ChatBot AI Response';
+      if (idx > 0 && messages[idx - 1].role === 'user') {
+        query = messages[idx - 1].text;
+      }
+      const res = await window.electron.ipcRenderer.invoke('db:ingest-text', { title: query, text });
+      if (res.success) {
+        setSavedResponses(prev => ({ ...prev, [idx]: 'saved' }));
+      } else {
+        setSavedResponses(prev => ({ ...prev, [idx]: 'error' }));
+      }
+    } catch (err) {
+      setSavedResponses(prev => ({ ...prev, [idx]: 'error' }));
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,11 +79,12 @@ const ChatBot = ({ appState = {} }) => {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 p-3 rounded-full bg-[var(--text-accent)] hover:opacity-90 text-[var(--bg-app)] shadow-[0_0_15px_var(--bg-active)] transition-all duration-300 z-50",
-          isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 hover:scale-110"
+          "fixed bottom-6 right-6 flex items-center justify-center w-12 h-12 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:bg-[#2a3644] hover:border-[#4e6074] hover:shadow-[0_6px_25px_rgba(0,0,0,0.6)] hover:-translate-y-1 transition-all duration-300 z-50 group",
+          isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100"
         )}
       >
-        <MessageSquare size={18} />
+        <div className="absolute inset-0 rounded-full bg-[var(--text-accent)]/5 blur-md group-hover:bg-[var(--text-accent)]/15 transition-all" />
+        <MessageSquare size={20} className="relative z-10" />
       </button>
 
       {/* Chat Window */}
@@ -91,33 +112,73 @@ const ChatBot = ({ appState = {} }) => {
         {/* Message Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
           {messages.map((msg, idx) => (
-            <div key={idx} className={cn("flex gap-3", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
-              <div className={cn(
-                "w-6 h-6 shrink-0 rounded flex items-center justify-center mt-1",
-                msg.role === 'user' ? "bg-[var(--bg-panel)] text-[var(--text-muted)]" : "bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]"
-              )}>
-                {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+            <div key={idx} className={cn("flex flex-col gap-1.5", msg.role === 'user' ? "items-end" : "items-start")}>
+              <div className={cn("flex gap-3", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
+                <div className={cn(
+                  "w-6 h-6 shrink-0 rounded flex items-center justify-center mt-1",
+                  msg.role === 'user' ? "bg-[var(--bg-panel)] text-[var(--text-muted)]" : "bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]"
+                )}>
+                  {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                </div>
+                <div className={cn(
+                  "px-3 py-2 rounded-lg text-[11px] leading-relaxed max-w-[85%]",
+                  msg.role === 'user' ? "bg-[var(--bg-active)] text-[var(--text-accent)] rounded-tr-none" : "bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] rounded-tl-none"
+                )}>
+                  <ReactMarkdown
+                    components={{
+                      p: ({node, ...props}) => <p className="mb-1.5 last:mb-0" {...props} />,
+                      strong: ({node, ...props}) => <strong className={cn("font-bold", msg.role === 'user' ? "text-[var(--text-main)]" : "text-[var(--text-accent)]")} {...props} />,
+                      em: ({node, ...props}) => <em className={cn("italic", msg.role === 'user' ? "text-[var(--text-main)]" : "text-[var(--text-muted)]")} {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+                      li: ({node, ...props}) => <li {...props} />,
+                      code: ({node, inline, ...props}) => inline 
+                        ? <code className="bg-black/20 px-1 py-0.5 rounded font-mono text-[10px]" {...props} />
+                        : <code className="block bg-black/20 p-2 rounded font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
+                </div>
               </div>
-              <div className={cn(
-                "px-3 py-2 rounded-lg text-[11px] leading-relaxed max-w-[85%]",
-                msg.role === 'user' ? "bg-[var(--bg-active)] text-[var(--text-accent)] rounded-tr-none" : "bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] rounded-tl-none"
-              )}>
-                <ReactMarkdown
-                  components={{
-                    p: ({node, ...props}) => <p className="mb-1.5 last:mb-0" {...props} />,
-                    strong: ({node, ...props}) => <strong className={cn("font-bold", msg.role === 'user' ? "text-[var(--text-main)]" : "text-[var(--text-accent)]")} {...props} />,
-                    em: ({node, ...props}) => <em className={cn("italic", msg.role === 'user' ? "text-[var(--text-main)]" : "text-[var(--text-muted)]")} {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-                    ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-                    li: ({node, ...props}) => <li {...props} />,
-                    code: ({node, inline, ...props}) => inline 
-                      ? <code className="bg-black/20 px-1 py-0.5 rounded font-mono text-[10px]" {...props} />
-                      : <code className="block bg-black/20 p-2 rounded font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
-                  }}
-                >
-                  {msg.text}
-                </ReactMarkdown>
-              </div>
+
+              {/* Save Button for Bot Responses */}
+              {msg.role === 'bot' && idx > 0 && (
+                <div className="ml-9">
+                  <button
+                    onClick={() => handleSaveResponse(idx, msg.text)}
+                    disabled={savedResponses[idx] === 'saving' || savedResponses[idx] === 'saved'}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-subtle)] text-[10px] font-medium transition-all shadow-sm ${
+                      savedResponses[idx] === 'saved'
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20 cursor-default'
+                        : savedResponses[idx] === 'saving'
+                          ? 'bg-[var(--bg-panel)]/50 text-[var(--text-muted)] cursor-wait opacity-70'
+                          : 'bg-[var(--bg-panel)]/40 hover:bg-[#394b5e]/40 text-[var(--text-muted)] hover:text-gray-300'
+                    }`}
+                  >
+                    {savedResponses[idx] === 'saved' ? (
+                      <>
+                        <div className="flex items-center justify-center w-3 h-3 rounded-full bg-green-500/20 text-green-400">
+                          <svg width="6" height="6" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="2.5 6 5 8.5 9.5 3.5"></polyline>
+                          </svg>
+                        </div>
+                        Saved
+                      </>
+                    ) : savedResponses[idx] === 'saving' ? (
+                      <>
+                        <span className="w-2.5 h-2.5 border border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={10} />
+                        Save Response
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
           {isTyping && (
