@@ -1,5 +1,5 @@
 export const queryDeepSeek = async (messages, appState, apiKey) => {
-  let systemPrompt = `You are a helpful dashboard assistant embedded inside a data analytics platform.
+  let systemPrompt = `You are a helpful knowledge management assistance, 'kmanagement', embedded inside a data analytics platform.
 You help users understand the data, navigate the interface, and answer questions about the system.
 Be concise, professional, and direct.
 

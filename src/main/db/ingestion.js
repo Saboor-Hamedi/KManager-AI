@@ -239,6 +239,43 @@ class IngestionService {
   }
 
   /**
+   * Ingest raw text directly without file extraction (useful for saving AI responses).
+   */
+  async ingestText(title, text, db) {
+    if (!db || !db.isConnected()) {
+      throw new Error('Database not connected')
+    }
+
+    const sanitizedText = this.sanitizeText(text)
+    if (!sanitizedText) {
+      throw new Error('Text is empty after sanitization.')
+    }
+
+    const contentHash = crypto.createHash('sha256').update(sanitizedText).digest('hex')
+    const vaultPath = `ai-response-${contentHash.slice(0, 16)}`
+    const fileSize = Buffer.byteLength(sanitizedText, 'utf8')
+    
+    return await db.transaction(async (client) => {
+      const docInsertRes = await client.query(
+        `INSERT INTO documents (vault_path, file_name, file_type, file_size, content, content_hash)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()
+         RETURNING id`,
+        [vaultPath, title || 'AI Response', 'ai_response', fileSize, sanitizedText, contentHash]
+      )
+
+      const documentId = docInsertRes.rows[0].id
+      const chunksStored = await this.chunkAndEmbedDocument(client, documentId, sanitizedText)
+      
+      return {
+        success: true,
+        documentId,
+        chunksProcessed: chunksStored
+      }
+    })
+  }
+
+  /**
    * Deletes existing embeddings for a document, re-chunks, generates embeddings, and bulk-inserts.
    */
   async chunkAndEmbedDocument(client, documentId, rawText, progressCallback = () => {}, isCancelled = () => false) {

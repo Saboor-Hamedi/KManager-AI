@@ -60,6 +60,23 @@ const DashboardSearch = () => {
   const [fullText, setFullText] = useState('')
   const [loadingText, setLoadingText] = useState(false)
   const [enableRag, setEnableRag] = useState(true)
+  const [savedResponses, setSavedResponses] = useState({})
+
+  const handleSaveResponse = async (msgId, query, answer) => {
+    setSavedResponses(prev => ({ ...prev, [msgId]: 'saving' }))
+    try {
+      const res = await window.electron.ipcRenderer.invoke('db:ingest-text', { title: query, text: answer })
+      if (res.success) {
+        setSavedResponses(prev => ({ ...prev, [msgId]: 'saved' }))
+      } else {
+        setSavedResponses(prev => ({ ...prev, [msgId]: 'error' }))
+        console.error('Failed to save response:', res.message)
+      }
+    } catch (err) {
+      setSavedResponses(prev => ({ ...prev, [msgId]: 'error' }))
+      console.error('Failed to save response:', err)
+    }
+  }
 
   useEffect(() => {
     getSetting('ENABLE_RAG', true).then(val => {
@@ -432,10 +449,50 @@ const DashboardSearch = () => {
                         )}
 
                         {msg.ragAnswer && (
-                          <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none">
-                            <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" />
-                            {msg.ragStatus === 'generating' && (
-                              <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
+                          <div className="flex flex-col gap-3">
+                            <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none">
+                              <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" />
+                              {msg.ragStatus === 'generating' && (
+                                <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
+                              )}
+                            </div>
+                            
+                            {/* Save to DB Button */}
+                            {msg.ragStatus === 'complete' && (
+                              <div className="flex justify-start mt-2">
+                                <button
+                                  onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
+                                  disabled={savedResponses[msg.id] === 'saving' || savedResponses[msg.id] === 'saved'}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${
+                                    savedResponses[msg.id] === 'saved'
+                                      ? 'bg-green-500/10 text-green-400 cursor-default'
+                                      : savedResponses[msg.id] === 'saving'
+                                        ? 'bg-[var(--bg-panel)]/50 text-[var(--text-muted)] cursor-wait opacity-70'
+                                        : 'bg-[var(--bg-panel)]/40 hover:bg-[#394b5e]/40 text-[var(--text-muted)] hover:text-gray-300 shadow-sm'
+                                  }`}
+                                >
+                                  {savedResponses[msg.id] === 'saved' ? (
+                                    <>
+                                      <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-500/20 text-green-400">
+                                        <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="2.5 6 5 8.5 9.5 3.5"></polyline>
+                                        </svg>
+                                      </div>
+                                      Saved to Knowledge Base
+                                    </>
+                                  ) : savedResponses[msg.id] === 'saving' ? (
+                                    <>
+                                      <span className="w-3 h-3 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus size={13} />
+                                      Save to Knowledge Base
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             )}
                           </div>
                         )}

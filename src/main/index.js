@@ -245,6 +245,18 @@ app.whenReady().then(() => {
     return { success: true }
   })
 
+  ipcMain.handle('db:ingest-text', async (event, { title, text }) => {
+    if (!db || !db.isConnected()) return { success: false, message: 'Database not connected' }
+    try {
+      const res = await ingestionService.ingestText(title, text, db)
+      mainWindow?.webContents.send('db:stats-updated') // If applicable, notify frontend
+      return res
+    } catch (err) {
+      console.error('db:ingest-text error:', err)
+      return { success: false, message: err.message }
+    }
+  })
+
   ipcMain.handle('db:test-connection', async (_event, config) => {
     const testDb = new Database(config)
     return await testDb.testConnection(config)
