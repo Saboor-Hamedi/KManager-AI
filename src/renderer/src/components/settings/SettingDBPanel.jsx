@@ -12,7 +12,7 @@ const SettingDBPanel = memo(() => {
     password: ''
   })
   const [status, setStatus] = useState(null)
-  const [testing, setTesting] = useState(false)
+  const [loadingAction, setLoadingAction] = useState(null)
   const [connected, setConnected] = useState(false)
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const SettingDBPanel = memo(() => {
   }
 
   const handleTest = async () => {
-    setTesting(true)
+    setLoadingAction('test')
     setStatus(null)
     await saveSetting('DB_HOST', config.host)
     await saveSetting('DB_PORT', config.port)
@@ -64,11 +64,12 @@ const SettingDBPanel = memo(() => {
     } catch (err) {
       setStatus({ success: false, message: err.message })
     } finally {
-      setTesting(false)
+      setLoadingAction(null)
     }
   }
 
   const handleConnect = async () => {
+    setLoadingAction('connect')
     setStatus(null)
     await saveSetting('DB_HOST', config.host)
     await saveSetting('DB_PORT', config.port)
@@ -84,6 +85,8 @@ const SettingDBPanel = memo(() => {
       setConnected(res.success)
     } catch (err) {
       setStatus({ success: false, message: err.message })
+    } finally {
+      setLoadingAction(null)
     }
   }
 
@@ -94,11 +97,12 @@ const SettingDBPanel = memo(() => {
   }
 
   const handleInitSchema = async () => {
-    setTesting(true)
+    setLoadingAction('init')
     setStatus(null)
     
     // Auto-connect to the newly typed database first so schema runs on the correct one
     await handleConnect()
+    setLoadingAction('init') // re-assert after handleConnect clears it
 
     try {
       const res = await window.electron.ipcRenderer.invoke('db:init-schema')
@@ -106,7 +110,7 @@ const SettingDBPanel = memo(() => {
     } catch (err) {
       setStatus({ success: false, message: err.message })
     } finally {
-      setTesting(false)
+      setLoadingAction(null)
     }
   }
 
@@ -170,26 +174,27 @@ const SettingDBPanel = memo(() => {
       <div className="flex gap-2">
         <button
           onClick={handleTest}
-          disabled={testing}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
+          disabled={loadingAction !== null}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold border border-[var(--border-subtle)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
         >
-          {testing ? <Loader2 size={11} className="animate-spin" /> : <FileKey size={11} />}
-          Test
+          {loadingAction === 'test' ? <Loader2 size={11} className="animate-spin" /> : <FileKey size={11} />}
+          {loadingAction === 'test' ? 'Testing...' : 'Test'}
         </button>
 
         {connected ? (
           <>
             <button
               onClick={handleInitSchema}
-              disabled={testing}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] hover:bg-[var(--icon-secondary)]/20 transition-all disabled:opacity-50"
+              disabled={loadingAction !== null}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold border border-[var(--icon-secondary)]/30 bg-[var(--icon-secondary)]/5 hover:bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] transition-all disabled:opacity-50"
             >
-              {testing ? <Loader2 size={11} className="animate-spin" /> : <Database size={11} />}
-              Init Schema
+              {loadingAction === 'init' ? <Loader2 size={11} className="animate-spin" /> : <Database size={11} />}
+              {loadingAction === 'init' ? 'Initializing...' : 'Init Schema'}
             </button>
             <button
               onClick={handleDisconnect}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+              disabled={loadingAction !== null}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-400 transition-all disabled:opacity-50"
             >
               <WifiOff size={11} />
               Disconnect
@@ -198,10 +203,11 @@ const SettingDBPanel = memo(() => {
         ) : (
           <button
             onClick={handleConnect}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all"
+            disabled={loadingAction !== null}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold border border-transparent bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all disabled:opacity-50"
           >
-            <Wifi size={11} />
-            Connect
+            {loadingAction === 'connect' ? <Loader2 size={11} className="animate-spin" /> : <Wifi size={11} />}
+            {loadingAction === 'connect' ? 'Connecting...' : 'Connect'}
           </button>
         )}
       </div>
