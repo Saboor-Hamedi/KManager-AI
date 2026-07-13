@@ -71,6 +71,7 @@ const SettingDBPropertiesPanel = () => {
           })
           loadStats()
           window.dispatchEvent(new Event('db-stats-updated'))
+          setTimeout(() => setActionState(null), 4000) // Auto-reset after 4s
         } else {
           setActionState({
             type: 'reembed',
@@ -103,8 +104,10 @@ const SettingDBPropertiesPanel = () => {
             progress: 100,
             message: 'All tables truncated and vector indexes cleared instantly.'
           })
+          if (window.api.db.clearQueue) window.api.db.clearQueue()
           loadStats()
           window.dispatchEvent(new Event('db-stats-updated'))
+          setTimeout(() => setActionState(null), 4000) // Auto-reset after 4s
         } else {
           setActionState({
             type: 'truncate',

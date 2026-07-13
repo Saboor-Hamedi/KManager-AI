@@ -42,6 +42,13 @@ const ConfirmModal = React.memo(({
         {/* Subtle top highlight */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
+        <button 
+          onClick={onCancel}
+          className="absolute top-3 right-3 p-1 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors z-10"
+        >
+          <X size={14} />
+        </button>
+
         <div className="p-4">
           <div className="flex items-start gap-3">
             <div className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${isDestructive ? 'bg-red-500/10' : 'bg-white/5'}`}>
