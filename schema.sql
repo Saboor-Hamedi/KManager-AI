@@ -172,10 +172,10 @@ BEGIN
   keyword_search AS (
     SELECT
       dc.id,
-      RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC) AS keyword_rank
+      RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC) AS keyword_rank
     FROM embedding_documents dc
-    WHERE dc.fts_vector @@ plainto_tsquery('simple', query_text)
-    ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC
+    WHERE dc.fts_vector @@ websearch_to_tsquery('simple', query_text)
+    ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC
     LIMIT 100
   ),
   -- word_similarity catches partial/prefix matches and typos better than similarity()
