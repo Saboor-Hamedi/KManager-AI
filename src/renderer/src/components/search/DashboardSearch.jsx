@@ -263,6 +263,7 @@ const DashboardSearch = () => {
             results: mapped, 
             isLoading: false, 
             error: null,
+            isFallback: res.isFallback || false,
             ragStatus: enableRag && mapped.length > 0 ? 'generating' : 'disabled',
             ragAnswer: ''
           } : msg
@@ -423,6 +424,13 @@ const DashboardSearch = () => {
                   <EmptySearchState query={msg.query} />
                 ) : (
                   <div className="flex flex-col w-full">
+                    {msg.isFallback && (
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
+                          No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
+                        </span>
+                      </div>
+                    )}
                     {msg.results.map((item) => (
                       <SearchResultCard
                         key={item.id}

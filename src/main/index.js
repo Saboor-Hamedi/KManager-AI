@@ -429,8 +429,8 @@ app.whenReady().then(() => {
 
   ipcMain.handle('db:search', async (_event, queryText, limit = 10) => {
     try {
-      const rows = await performHybridSearch(db, queryText, limit)
-      return { success: true, rows }
+      const { rows, isFallback } = await performHybridSearch(db, queryText, limit)
+      return { success: true, rows, isFallback }
     } catch (err) {
       console.error('db:search error:', err)
       return { success: false, message: err.message }
