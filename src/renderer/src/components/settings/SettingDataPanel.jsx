@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { UploadCloud, File, CheckCircle2, AlertCircle, Loader2, X, Clock, StopCircle } from 'lucide-react'
 import ConfirmModal from '../layout/ConfirmModal'
 
@@ -15,7 +16,16 @@ const SettingDataPanel = () => {
   const [queue, setQueue] = useState([])
   const [statsVisible, setStatsVisible] = useState(true)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const fileInputRef = useRef(null)
+  const queueParentRef = useRef(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: queue.length,
+    getScrollElement: () => queueParentRef.current,
+    estimateSize: () => 45,
+    overscan: 5,
+  })
 
   const loadStats = async () => {
     setLoadingStats(true)
@@ -119,9 +129,9 @@ const SettingDataPanel = () => {
         <p className="text-xs text-[var(--text-muted)]">Upload PDFs, documents, or raw text to your Knowledge Hub. Files are automatically chunked and embedded via local AI.</p>
       </div>
 
-      {/* Upload Area */}
+      {/* Upload Area / Progress Indicator Merged */}
       <div
-        className={`border-2 border-dashed rounded-xl p-5 text-center transition-all duration-200 cursor-pointer ${
+        className={`relative border-2 border-dashed rounded-xl p-5 text-center transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-center items-center min-h-[140px] ${
           isDragging
             ? 'border-[var(--text-accent)] bg-[var(--text-accent)]/10 scale-[1.01]'
             : 'border-[var(--border-dim)] hover:border-[var(--text-muted)] bg-[var(--bg-app)]'
@@ -131,40 +141,31 @@ const SettingDataPanel = () => {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        <UploadCloud className={`mx-auto mb-2 transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} size={32} strokeWidth={1.5} />
-        <h4 className="text-sm font-bold text-[var(--text-main)] mb-1">Drag and drop files or folders here</h4>
-        <p className="text-xs text-[var(--text-muted)]">or click to browse your computer</p>
-        <p className="text-[10px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf .txt .md .json .csv</p>
+        {ingestState.status === 'idle' || ingestState.status === 'success' ? (
+          <div className="flex flex-col items-center justify-center relative z-10 w-full animate-in fade-in zoom-in duration-300">
+            <UploadCloud className={`mx-auto mb-2 transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} size={32} strokeWidth={1.5} />
+            <h4 className="text-sm font-bold text-[var(--text-main)] mb-1">Drag and drop files or folders here</h4>
+            <p className="text-xs text-[var(--text-muted)]">or click to browse your computer</p>
+            <p className="text-[10px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf .txt .md .json .csv</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center relative z-10 w-full animate-in fade-in zoom-in duration-300">
+            {ingestState.status === 'uploading' && <Loader2 className="animate-spin text-[var(--text-accent)] mb-3" size={32} />}
+            {ingestState.status === 'error' && <AlertCircle className="text-red-500 mb-3" size={32} />}
+            <h4 className="text-sm font-bold text-[var(--text-main)] mb-1 w-full max-w-[80%] truncate px-4">{ingestState.fileName || 'Processing...'}</h4>
+            <p className={`text-xs ${ingestState.status === 'error' ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
+              {ingestState.status === 'error' ? ingestState.message : 'Processing... Drop more files to add to queue'}
+            </p>
+          </div>
+        )}
+
+        {/* Integrated Progress Bar anchored to the bottom */}
+        {ingestState.status === 'uploading' && (
+          <div className="absolute bottom-0 left-0 h-1 bg-[var(--text-accent)] transition-all duration-300 ease-out z-0" style={{ width: `${ingestState.progress}%` }} />
+        )}
+        
         <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.txt,.md,.json,.csv" multiple onChange={handleFileSelect} />
       </div>
-
-      {/* Progress / Status Card */}
-      {ingestState.status !== 'idle' && (
-        <div className={`p-5 rounded-2xl border transition-all ${
-          ingestState.status === 'error'   ? 'border-red-500/30 bg-red-500/10' :
-          ingestState.status === 'success' ? 'border-emerald-500/30 bg-emerald-500/10' :
-          'border-[var(--border-dim)] bg-[var(--bg-app)]'
-        }`}>
-          <div className="flex items-start gap-4">
-            <div className="mt-1">
-              {ingestState.status === 'uploading' && <Loader2 className="animate-spin text-[var(--text-accent)]" size={20} />}
-              {ingestState.status === 'success'   && <CheckCircle2 className="text-emerald-500" size={20} />}
-              {ingestState.status === 'error'     && <AlertCircle className="text-red-500" size={20} />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h5 className="text-sm font-bold text-[var(--text-main)] truncate">{ingestState.fileName || (ingestState.status === 'success' ? 'Processing Complete' : 'Processing...')}</h5>
-              <p className={`text-xs mt-1 ${ingestState.status === 'error' ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
-                {ingestState.message}
-              </p>
-              {ingestState.status === 'uploading' && (
-                <div className="mt-3 h-2 w-full bg-[var(--bg-panel)] rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--text-accent)] transition-all duration-300 ease-out" style={{ width: `${ingestState.progress}%` }} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Queue */}
       {statsVisible && pendingOrErrorQueue.length > 0 && (
@@ -186,22 +187,44 @@ const SettingDataPanel = () => {
             </div>
           </div>
 
-          <div className="overflow-y-auto custom-scrollbar" style={{ minHeight: '120px', maxHeight: '240px' }}>
-            {pendingOrErrorQueue.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--border-dim)]/40 last:border-0 hover:bg-[var(--bg-panel)]/50 transition-colors group">
-                <div className="shrink-0 w-4 flex justify-center">
-                  {item.status === 'processing' && <Loader2 size={12} className="animate-spin text-[var(--text-accent)]" />}
-                  {item.status === 'error'      && <AlertCircle size={12} className="text-red-400" />}
-                  {item.status === 'pending'    && <File size={12} className="text-[var(--text-faint)]" />}
-                </div>
-                <p className="flex-1 text-xs text-[var(--text-main)] truncate font-medium">{item.name}</p>
-                {item.timing && (
-                  <span className="shrink-0 flex items-center gap-1 text-[10px] font-mono text-[var(--text-faint)]">
-                    <Clock size={9} />{item.timing}
-                  </span>
-                )}
-              </div>
-            ))}
+          <div ref={queueParentRef} className="overflow-y-auto custom-scrollbar" style={{ minHeight: '120px', maxHeight: '240px' }}>
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const item = pendingOrErrorQueue[virtualRow.index]
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border-dim)]/40 hover:bg-[var(--bg-panel)]/50 transition-colors group"
+                  >
+                    <div className="shrink-0 w-4 flex justify-center">
+                      {item.status === 'processing' && <Loader2 size={12} className="animate-spin text-[var(--text-accent)]" />}
+                      {item.status === 'error'      && <AlertCircle size={12} className="text-red-400" />}
+                      {item.status === 'pending'    && <File size={12} className="text-[var(--text-faint)]" />}
+                    </div>
+                    <p className="flex-1 text-xs text-[var(--text-main)] truncate font-medium">{item.name}</p>
+                    {item.timing && (
+                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-mono text-[var(--text-faint)]">
+                        <Clock size={9} />{item.timing}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
