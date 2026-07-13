@@ -171,9 +171,9 @@ const SettingDBPanel = memo(() => {
         <button
           onClick={handleTest}
           disabled={testing}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all disabled:opacity-50"
         >
-          {testing ? <Loader2 size={12} className="animate-spin" /> : <FileKey size={12} />}
+          {testing ? <Loader2 size={11} className="animate-spin" /> : <FileKey size={11} />}
           Test
         </button>
 
@@ -182,25 +182,25 @@ const SettingDBPanel = memo(() => {
             <button
               onClick={handleInitSchema}
               disabled={testing}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] hover:bg-[var(--icon-secondary)]/20 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--icon-secondary)]/10 text-[var(--icon-secondary)] hover:bg-[var(--icon-secondary)]/20 transition-all disabled:opacity-50"
             >
-              {testing ? <Loader2 size={12} className="animate-spin" /> : <Database size={12} />}
+              {testing ? <Loader2 size={11} className="animate-spin" /> : <Database size={11} />}
               Init Schema
             </button>
             <button
               onClick={handleDisconnect}
-              className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
             >
-              <WifiOff size={12} />
+              <WifiOff size={11} />
               Disconnect
             </button>
           </div>
         ) : (
           <button
             onClick={handleConnect}
-            className="flex-[2] flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all"
+            className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--text-accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--text-accent)]/20 transition-all"
           >
-            <Wifi size={12} />
+            <Wifi size={11} />
             Connect
           </button>
         )}
