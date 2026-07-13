@@ -33,9 +33,9 @@ const SearchLoadingSkeleton = () => (
 )
 
 const EmptySearchState = ({ query }) => (
-  <div className="flex flex-col items-center justify-center p-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-panel)]/40 text-center gap-3 my-2 animate-in fade-in duration-200">
-    <div className="w-10 h-10 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-muted)] text-base">
-      ◈
+  <div className="flex flex-col items-center justify-center py-8 px-4 rounded-xl bg-[var(--bg-panel)]/40 shadow-sm text-center gap-3 my-2 animate-in fade-in duration-200">
+    <div className="w-10 h-10 rounded-full bg-[var(--bg-panel)]/50 flex items-center justify-center text-[var(--text-faint)]">
+      <Sparkles size={16} className="opacity-60" />
     </div>
     <div className="flex flex-col gap-1 max-w-sm">
       <h4 className="text-[13.5px] font-semibold text-[var(--text-main)]">
@@ -388,9 +388,19 @@ const DashboardSearch = () => {
                 {msg.isLoading ? (
                   <SearchLoadingSkeleton />
                 ) : msg.error ? (
-                  <div className="flex flex-col gap-2 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                    <strong className="font-semibold">Search Failed</strong>
-                    <p>{msg.error}</p>
+                  <div className="flex items-center justify-between p-5 rounded-xl bg-[#873636]/10 shadow-sm animate-in fade-in duration-200">
+                    <div className="flex flex-col gap-1.5">
+                      <strong className="text-[13px] font-semibold text-red-400">Search Failed</strong>
+                      <p className="text-[12px] text-red-400/80">{msg.error}</p>
+                    </div>
+                    {msg.error.toLowerCase().includes('database') || msg.error.toLowerCase().includes('connect') ? (
+                      <button 
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'database' } }))}
+                        className="px-3 py-1.5 rounded-md text-[11px] font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all flex-shrink-0 ml-4"
+                      >
+                        Connect Database
+                      </button>
+                    ) : null}
                   </div>
                 ) : msg.results.length === 0 ? (
                   <EmptySearchState query={msg.query} />
