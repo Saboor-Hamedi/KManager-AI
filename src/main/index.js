@@ -459,7 +459,7 @@ app.whenReady().then(() => {
     }
     try {
       return await ingestionService.reembedAll(db, (progressUpdate) => {
-        event.sender.send('db:ingest-progress', progressUpdate)
+        event.sender.send('db:ingest-progress', { ...progressUpdate, type: 'reembed' })
       })
     } catch (err) {
       console.error('db:reembed-all error:', err)

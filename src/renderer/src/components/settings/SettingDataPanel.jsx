@@ -54,6 +54,9 @@ const SettingDataPanel = () => {
     })
 
     const cleanupProgress = window.api.db.onIngestProgress((update) => {
+      // Ignore re-embed progress updates (they belong in SettingDBPropertiesPanel)
+      if (update.type === 'reembed') return
+
       if (update.status === 'complete' || update.status === 'idle') {
         loadStats()
         window.dispatchEvent(new Event('db-stats-updated'))
