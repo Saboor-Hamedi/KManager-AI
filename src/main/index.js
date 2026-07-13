@@ -332,6 +332,7 @@ app.whenReady().then(() => {
           await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
           await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
           // Replace search_chunks with the full 3-leg hybrid: semantic + FTS + trigram fuzzy
+          await db.query(`DROP FUNCTION IF EXISTS search_chunks(text, vector, integer)`)
           await db.query(`
             CREATE OR REPLACE FUNCTION search_chunks(
               query_text TEXT,
