@@ -168,17 +168,6 @@ const SettingDBPanel = memo(() => {
         ))}
       </div>
 
-      {status && (
-        <div className={cn(
-          "text-[10px] font-bold px-3 py-2 rounded-md",
-          status.success
-            ? "text-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
-            : "text-[var(--icon-danger)] bg-[var(--icon-danger)]/10"
-        )}>
-          {status.message}
-        </div>
-      )}
-
       <div className="flex gap-2">
         <button
           onClick={handleTest}
@@ -219,6 +208,17 @@ const SettingDBPanel = memo(() => {
           </button>
         )}
       </div>
+
+      {status && (
+        <div className={cn(
+          "text-[10px] font-bold px-3 py-2 rounded-md",
+          status.success
+            ? "text-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
+            : "text-[var(--icon-danger)] bg-[var(--icon-danger)]/10"
+        )}>
+          {status.message}
+        </div>
+      )}
     </div>
   )
 })
