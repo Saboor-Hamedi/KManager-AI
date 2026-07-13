@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Database, RefreshCw, Layers, FileText, HardDrive, CheckCircle2, AlertCircle, Trash2, Cpu, AlertTriangle } from 'lucide-react'
+import ConfirmModal from '../layout/ConfirmModal'
 
 const SettingDBPropertiesPanel = () => {
   const [dbStats, setDbStats] = useState(null)
@@ -7,6 +8,7 @@ const SettingDBPropertiesPanel = () => {
   const [error, setError] = useState(null)
   const [actionState, setActionState] = useState(null) // { type: 'reembed' | 'truncate', status: 'progress' | 'success' | 'error', progress: 0, message: '' }
   const [confirmTruncate, setConfirmTruncate] = useState(false)
+  const [confirmReembed, setConfirmReembed] = useState(false)
 
   const loadStats = async () => {
     setLoading(true)
@@ -55,6 +57,7 @@ const SettingDBPropertiesPanel = () => {
   }, [])
 
   const handleReembedAll = async () => {
+    setConfirmReembed(false)
     setActionState({ type: 'reembed', status: 'progress', progress: 5, message: 'Starting knowledge base re-embedding...' })
     try {
       const res = await window.api.db.reembedAll()
@@ -276,67 +279,43 @@ const SettingDBPropertiesPanel = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Re-embed Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-md p-3 flex flex-col justify-between">
-            <div className="space-y-1 mb-4">
+          <div className="bg-[#131313] border border-[#252525] rounded-md p-3">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-gray-200 flex items-center gap-2">
                 <Cpu size={13} className="text-purple-400" />
-                Re-embed Knowledge Base
+                Re-embed DB
               </span>
-              <p className="text-[10px] text-gray-400 leading-relaxed">
-                Re-chunks all archived document content and regenerates semantic embeddings without needing to re-upload files from disk.
-              </p>
+              <button
+                onClick={() => setConfirmReembed(true)}
+                disabled={actionState?.status === 'progress' || totalDocs === 0}
+                className="px-2 py-1 rounded bg-[#a855f7]/20 hover:bg-[#a855f7]/40 text-[#d8b4fe] disabled:opacity-40 text-[10px] font-bold transition-colors border border-[#a855f7]/30"
+              >
+                Re-embed
+              </button>
             </div>
-            <button
-              onClick={handleReembedAll}
-              disabled={actionState?.status === 'progress' || totalDocs === 0}
-              className="w-full px-2 py-1.5 rounded bg-[#a855f7] hover:bg-[#9333ea] disabled:opacity-40 disabled:hover:bg-[#a855f7] text-white text-[11px] font-bold transition-colors shadow-sm"
-            >
-              {actionState?.type === 'reembed' && actionState?.status === 'progress' ? 'Re-embedding...' : 'Re-embed All Documents'}
-            </button>
+            <p className="text-[10px] text-gray-400 leading-relaxed">
+              Re-chunks all archived document content and regenerates semantic embeddings without needing to re-upload files from disk.
+            </p>
           </div>
 
           {/* Truncate All Data Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-md p-3 flex flex-col justify-between">
-            <div className="space-y-1 mb-4">
+          <div className="bg-[#131313] border border-[#252525] rounded-md p-3">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-red-400 flex items-center gap-2">
                 <Trash2 size={13} />
-                Truncate Knowledge Base
+                Truncate DB
               </span>
-              <p className="text-[10px] text-gray-400 leading-relaxed">
-                Lightweight instant truncation (<code className="text-red-300">TRUNCATE TABLE</code>) clears all documents, chunks, and feedback in O(1) time.
-              </p>
-            </div>
-
-            {!confirmTruncate ? (
               <button
                 onClick={() => setConfirmTruncate(true)}
                 disabled={actionState?.status === 'progress' || totalDocs === 0}
-                className="w-full px-2 py-1.5 rounded bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-300 disabled:opacity-40 text-[11px] font-bold transition-colors"
+                className="px-2 py-1 rounded bg-red-500/15 hover:bg-red-500/30 text-red-300 disabled:opacity-40 text-[10px] font-bold transition-colors border border-red-500/30"
               >
-                Truncate All Tables
+                Truncate
               </button>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-red-300">
-                  <AlertTriangle size={12} />
-                  <span>Are you sure? This cannot be undone.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleTruncateAll}
-                    className="flex-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold transition-colors"
-                  >
-                    Confirm Truncate
-                  </button>
-                  <button
-                    onClick={() => setConfirmTruncate(false)}
-                    className="px-2 py-1 rounded bg-[#252525] hover:bg-[#2f2f2f] text-gray-300 text-[11px] font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+            </div>
+            <p className="text-[10px] text-gray-400 leading-relaxed">
+              Lightweight instant truncation (<code className="text-red-300">TRUNCATE TABLE</code>) clears all documents, chunks, and feedback in O(1) time.
+            </p>
           </div>
         </div>
       </div>
@@ -351,6 +330,26 @@ const SettingDBPropertiesPanel = () => {
           Every ingested file is fully archived in the <code className="text-[#a855f7]">documents.content</code> table. Even if local files are deleted or moved on your disk, your search queries and document previews operate directly from PostgreSQL.
         </p>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmTruncate}
+        title="Truncate Database?"
+        message="Are you sure you want to instantly delete all documents and vectors? This cannot be undone."
+        confirmText="Truncate"
+        isDestructive={true}
+        onConfirm={handleTruncateAll}
+        onCancel={() => setConfirmTruncate(false)}
+      />
+
+      <ConfirmModal
+        isOpen={confirmReembed}
+        title="Re-embed Database?"
+        message="This will re-chunk and re-embed all archived documents. This may take a while depending on DB size."
+        confirmText="Re-embed"
+        isDestructive={false}
+        onConfirm={handleReembedAll}
+        onCancel={() => setConfirmReembed(false)}
+      />
     </div>
   )
 }
