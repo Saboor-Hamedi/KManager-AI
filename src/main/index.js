@@ -183,7 +183,7 @@ app.whenReady().then(() => {
             lastProgressTime = now
             mainWindow?.webContents.send('db:ingest-progress', { ...progressUpdate, fileName: item.name })
           }
-        })
+        }, () => cancelIngestionFlag)
         
         const ms = Date.now() - fileStart
         item.timing = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`

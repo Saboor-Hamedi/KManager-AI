@@ -163,7 +163,7 @@ class IngestionService {
   /**
    * Main ingestion workflow with detailed timing output.
    */
-  async ingestFile(filePath, db, progressCallback = () => {}) {
+  async ingestFile(filePath, db, progressCallback = () => {}, isCancelled = () => false) {
     if (!db || !db.isConnected()) {
       throw new Error('Database not connected')
     }
@@ -219,7 +219,7 @@ class IngestionService {
       )
 
       const documentId    = docInsertRes.rows[0].id
-      const chunksStored  = await this.chunkAndEmbedDocument(client, documentId, sanitizedText, progressCallback)
+      const chunksStored  = await this.chunkAndEmbedDocument(client, documentId, sanitizedText, progressCallback, isCancelled)
       const embedTime     = elapsed(t3)
       const totalTime     = elapsed(totalStart)
 
@@ -241,7 +241,7 @@ class IngestionService {
   /**
    * Deletes existing embeddings for a document, re-chunks, generates embeddings, and bulk-inserts.
    */
-  async chunkAndEmbedDocument(client, documentId, rawText, progressCallback = () => {}) {
+  async chunkAndEmbedDocument(client, documentId, rawText, progressCallback = () => {}, isCancelled = () => false) {
     await client.query('DELETE FROM embedding_documents WHERE document_id = $1', [documentId])
 
     const chunks     = this.chunkText(rawText)
@@ -249,6 +249,10 @@ class IngestionService {
     const BATCH_SIZE  = 2 // very low batch size to maximize UI responsiveness during heavy ONNX inference
 
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+      if (isCancelled()) {
+        throw new Error('Cancelled by user')
+      }
+
       // Yield to Electron event loop so UI stays responsive
       await new Promise(resolve => setTimeout(resolve, 30))
 
@@ -292,7 +296,7 @@ class IngestionService {
   /**
    * Re-chunks and re-embeds all documents in PostgreSQL, with per-document timing.
    */
-  async reembedAll(db, progressCallback = () => {}) {
+  async reembedAll(db, progressCallback = () => {}, isCancelled = () => false) {
     if (!db || !db.isConnected()) throw new Error('Database not connected')
 
     const docsRes = await db.query('SELECT id, file_name, content FROM documents')
@@ -301,6 +305,9 @@ class IngestionService {
     const globalStart = startTimer()
 
     for (let idx = 0; idx < docs.length; idx++) {
+      if (isCancelled()) {
+        throw new Error('Cancelled by user')
+      }
       await new Promise(resolve => setTimeout(resolve, 10))
 
       const doc    = docs[idx]
@@ -313,7 +320,7 @@ class IngestionService {
       })
 
       await db.transaction(async (client) => {
-        const processed = await this.chunkAndEmbedDocument(client, doc.id, doc.content, progressCallback)
+        const processed = await this.chunkAndEmbedDocument(client, doc.id, doc.content, progressCallback, isCancelled)
         totalChunksProcessed += processed
       })
 
