@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS embedding_documents (
   chunk_index   INT NOT NULL,                            -- ordinal position in document
   content       TEXT NOT NULL,                            -- chunk plain text (~500 tokens)
   embedding     VECTOR(384),                             -- paraphrase-multilingual-MiniLM-L12-v2 embedding vector
-  fts_vector    TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
+  fts_vector    TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', content)) STORED,
   token_count   INT,                                     -- actual token count for this chunk
   UNIQUE(document_id, chunk_index)
 );
@@ -161,10 +161,10 @@ BEGIN
   keyword_search AS (
     SELECT 
       dc.id, 
-      RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('english', query_text)) DESC) AS keyword_rank
+      RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC) AS keyword_rank
     FROM embedding_documents dc
-    WHERE dc.fts_vector @@ plainto_tsquery('english', query_text)
-    ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('english', query_text)) DESC
+    WHERE dc.fts_vector @@ plainto_tsquery('simple', query_text)
+    ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC
     LIMIT 100
   )
   SELECT
@@ -175,9 +175,9 @@ BEGIN
     d.vault_path,
     d.file_name,
     d.file_type,
-    -- Reciprocal Rank Fusion (k=60 is standard)
+    -- Reciprocal Rank Fusion (k=60 is standard, keyword weighted 2x for product exact matches)
     (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) + 
-     COALESCE(1.0 / (60 + ks.keyword_rank), 0.0))::FLOAT AS similarity
+     COALESCE(2.0 / (60 + ks.keyword_rank), 0.0))::FLOAT AS similarity
   FROM embedding_documents dc
   JOIN documents d ON d.id = dc.document_id
   LEFT JOIN semantic_search ss ON ss.id = dc.id

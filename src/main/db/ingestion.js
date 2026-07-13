@@ -42,13 +42,59 @@ class IngestionService {
       .trim()
   }
 
-  chunkText(text, chunkSize = 400, overlap = 50) {
-    const tokens = text.match(/\S+\s*/g) || []
+  chunkText(text, maxChars = 1500, overlap = 200) {
+    if (!text) return []
+    
+    // First, try splitting by paragraphs
+    const splits = text.split(/\n\s*\n/)
     const chunks = []
-    for (let i = 0; i < tokens.length; i += chunkSize - overlap) {
-      const chunk = tokens.slice(i, i + chunkSize).join('')
-      if (chunk.trim().length > 0) chunks.push(chunk.trim())
+    let currentChunk = ''
+
+    const addChunk = (chunkStr) => {
+      if (chunkStr.trim().length > 0) chunks.push(chunkStr.trim())
     }
+
+    for (let i = 0; i < splits.length; i++) {
+      const split = splits[i].trim()
+      if (!split) continue
+
+      if ((currentChunk.length + split.length) <= maxChars) {
+        currentChunk += (currentChunk ? '\n\n' : '') + split
+      } else {
+        if (currentChunk) addChunk(currentChunk)
+        
+        // If a single paragraph is too big, split it by sentences
+        if (split.length > maxChars) {
+          const sentences = split.match(/[^.!?]+[.!?]+/g) || [split]
+          let subChunk = ''
+          
+          for (const s of sentences) {
+            if ((subChunk.length + s.length) <= maxChars) {
+              subChunk += (subChunk ? ' ' : '') + s
+            } else {
+              if (subChunk) addChunk(subChunk)
+              
+              // Fallback to raw slicing with overlap if a single sentence is massive
+              if (s.length > maxChars) {
+                let start = 0
+                while (start < s.length) {
+                  addChunk(s.slice(start, start + maxChars))
+                  start += maxChars - overlap
+                }
+                subChunk = ''
+              } else {
+                subChunk = s
+              }
+            }
+          }
+          currentChunk = subChunk
+        } else {
+          currentChunk = split
+        }
+      }
+    }
+    if (currentChunk) addChunk(currentChunk)
+    
     return chunks
   }
 
