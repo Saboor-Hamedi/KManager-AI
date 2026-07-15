@@ -9,3 +9,6 @@ out
 
 # Large binaries
 assets/models/
+
+# Documentation (auto-generated brain dump)
+brain/
