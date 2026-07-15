@@ -1,6 +1,6 @@
-import React, { useState, memo, Suspense, lazy } from 'react'
-import { Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react'
-import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText } from './DocumentRenderer'
+import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
+import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X } from 'lucide-react'
+import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
@@ -63,11 +63,28 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
   }
 
   return (
-    <div className="flex items-center bg-[var(--bg-panel)]/60 border border-[var(--border-subtle)] rounded-md overflow-hidden h-6 shrink-0 select-none">
+    <div className="flex items-center bg-[var(--bg-panel)]/80 border-0 rounded-[5px] overflow-hidden h-6 shrink-0 select-none">
+      {/* Slide-over Preview Drawer Button */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation()
+          if (window.__openCitationPreviewModal) {
+            window.__openCitationPreviewModal(item)
+          } else {
+            handleSelect(item)
+          }
+        }}
+        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0 gap-1"
+        title="Open citation preview drawer"
+      >
+        <Eye size={12} />
+        <span className="text-[10px] font-semibold hidden sm:inline">Preview</span>
+      </button>
+
       {/* Copy Button */}
       <button 
         onClick={handleCopy}
-        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-r border-[var(--border-subtle)]"
+        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
         title="Copy section text"
       >
         {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
@@ -76,8 +93,8 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
       {/* Like / Helpful Button */}
       <button 
         onClick={() => handleFeedback('helpful')}
-        className={`h-full px-2 transition-colors flex items-center justify-center border-r border-[var(--border-subtle)] ${
-          feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+        className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
+          feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
         }`}
         title="Helpful result"
       >
@@ -87,8 +104,8 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
       {/* Dislike / Unhelpful Button */}
       <button 
         onClick={() => handleFeedback('unhelpful')}
-        className={`h-full px-2 transition-colors flex items-center justify-center ${
-          feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+        className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
+          feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
         }`}
         title="Not helpful"
       >
@@ -99,13 +116,37 @@ const UnifiedActionBar = memo(({ item, query, handleSelect }) => {
 })
 
 const SearchResultCard = memo(({ item, query, handleSelect }) => {
-  const simPercent = Math.round((item.similarity || 0.75) * 100)
+  // Ensure similarity is clamped between 0 and 1, handling raw float scores safely
+  const rawSim = item.similarity !== undefined && item.similarity !== null ? item.similarity : 0.75
+  const simPercent = Math.min(100, Math.max(0, Math.round(rawSim * 100)))
   const [selected, setSelected] = useState(false)
+  const [showWikiHover, setShowWikiHover] = useState(false)
+  const hoverTimeoutRef = useRef(null)
 
   const onSelect = (item) => {
     setSelected(true)
     handleSelect(item)
   }
+
+  const handleMouseEnter = () => {
+    if (showWikiHover) return
+    hoverTimeoutRef.current = setTimeout(() => {
+      setShowWikiHover(true)
+    }, 150)
+  }
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+  }
+
+  useEffect(() => {
+    if (!showWikiHover) return
+    const handleClickOutside = () => {
+      setShowWikiHover(false)
+    }
+    window.addEventListener('click', handleClickOutside)
+    return () => window.removeEventListener('click', handleClickOutside)
+  }, [showWikiHover])
 
   // Format created_at as a human-readable relative or short date
   const formatDate = (ts) => {
@@ -123,19 +164,62 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
   const createdLabel = formatDate(item.created_at)
 
   return (
-    <div className="group relative transition-all duration-200 overflow-hidden mb-2">
+    <div className="group relative transition-all duration-200 overflow-visible mb-2">
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
           onClick={() => onSelect(item)}
-          className="flex items-center gap-2 cursor-pointer min-w-0 flex-1 hover:opacity-80 transition-opacity"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className="relative flex items-center gap-2 cursor-pointer min-w-0 flex-1 group/title"
         >
-          <h4 className="text-[13px] font-semibold text-[var(--text-main)] truncate hover:text-[var(--text-accent)] transition-colors">
+          <h4 className="text-[13px] font-semibold text-[var(--text-main)] truncate group-hover/title:text-[var(--text-accent)] transition-colors">
             {item.title}
           </h4>
-          <span className="px-1.5 py-0.5 rounded bg-[var(--bg-panel)]/60 text-[10px] text-[var(--text-muted)] font-mono tracking-wider uppercase shrink-0">
-            {simPercent}% match
+          <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] border-0 shrink-0">
+            {simPercent}%
           </span>
+
+          {/* NotebookLM-Style Wiki Hover Popover */}
+          {showWikiHover && (
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              style={{ backgroundColor: '#161922', opacity: 1, backdropFilter: 'none' }}
+              className="absolute left-0 top-full mt-2 z-[99999] w-[450px] max-w-[95vw] rounded-[8px] border border-[#2d3548] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden animate-in fade-in duration-150 text-left select-text"
+            >
+              <div className="flex items-center justify-between px-3 py-2 bg-[#0e1117]/80 border-b border-[#2d3548]/40">
+                <span className="text-[10px] font-semibold text-[#8a95a5] truncate max-w-[220px] uppercase tracking-wider">{item.title}</span>
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <button
+                    onClick={() => navigator.clipboard.writeText(item.content || '')}
+                    className="px-2 py-1 bg-transparent hover:bg-white/5 text-[10px] font-medium text-[#9a9a9a] hover:text-[#e0e0e0] rounded-[4px] border-0 transition-colors"
+                  >
+                    Copy
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowWikiHover(false)
+                      onSelect(item)
+                    }}
+                    className="px-2 py-1 bg-transparent hover:bg-[var(--text-accent)]/10 text-[10px] font-medium text-[var(--text-accent)] rounded-[4px] border-0 transition-colors"
+                  >
+                    Open Full
+                  </button>
+                  <div className="w-[1px] h-3 bg-[#2d3548]/80 mx-1"></div>
+                  <button
+                    onClick={() => setShowWikiHover(false)}
+                    className="w-5 h-5 rounded-[4px] hover:bg-white/10 text-[#7a8595] hover:text-white transition-colors flex items-center justify-center shrink-0 border-0"
+                    title="Close popover"
+                  >
+                    <X size={12} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+              <div className="max-h-[350px] overflow-y-auto custom-scrollbar p-3.5 text-[10px] text-[#c0c0c0] leading-relaxed font-sans break-words bg-[#161922]">
+                <DocumentRenderer className="text-[#c0c0c0] text-[10px] leading-relaxed max-w-full overflow-visible" content={item.content || 'Preview content not available.'} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Bar */}
@@ -150,7 +234,7 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
       )}
 
       {/* Content Chunk Body */}
-      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden">
+      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden text-justify">
         <Suspense fallback={<div className="text-[var(--text-muted)] text-xs py-2">Rendering chunk...</div>}>
           {(() => {
             const ext = item.title ? item.title.split('.').pop().toLowerCase() : ''
@@ -170,7 +254,7 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
             const highlightComponents = {
               ...cleanMarkdownComponents,
               p: ({ node, children, ...props }) => (
-                <p className="mb-1.5 last:mb-0" {...props}>
+                <p className="mb-1.5 last:mb-0 text-justify" {...props}>
                   {typeof children === 'string'
                     ? <HighlightedText text={children} query={query} disabled={selected} />
                     : children}
@@ -186,7 +270,7 @@ const SearchResultCard = memo(({ item, query, handleSelect }) => {
             }
 
             return (
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={highlightComponents}>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={highlightComponents}>
                 {formatMarkdownText(item.content)}
               </ReactMarkdown>
             )

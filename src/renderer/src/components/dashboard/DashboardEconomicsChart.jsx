@@ -38,7 +38,7 @@ const DashboardEconomicsChart = ({ results }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
           <h2 className="text-sm font-black text-[var(--text-main)] tracking-widest uppercase">Cumulative Token Cost</h2>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">Standard RAG vs Hybrid Smart RAG across 50 queries</p>
+          <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">Standard RAG vs Hybrid Smart RAG across {results.chartData.length} historical queries</p>
         </div>
       </div>
       
@@ -46,8 +46,8 @@ const DashboardEconomicsChart = ({ results }) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={economicsData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-dim)" vertical={false} />
-            <XAxis dataKey="query" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
+            <XAxis dataKey="query" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} minTickGap={25} />
+            <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${(val/1000).toFixed(1)}k`} />
             <Tooltip 
               contentStyle={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-dim)', borderRadius: '8px' }}
               itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}

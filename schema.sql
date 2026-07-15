@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS search_logs (
   query_text    TEXT NOT NULL,
   latency_ms    INT NOT NULL,
   result_count  INT NOT NULL,
+  top_similarity FLOAT DEFAULT 0,
   is_fallback   BOOLEAN DEFAULT FALSE,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
@@ -167,7 +168,8 @@ RETURNS TABLE (
   file_name     TEXT,
   file_type     TEXT,
   created_at    TIMESTAMPTZ,
-  similarity    FLOAT
+  similarity    FLOAT,
+  cosine_similarity FLOAT
 )
 LANGUAGE plpgsql
 AS $func$
@@ -214,7 +216,8 @@ BEGIN
     -- RRF: semantic (1x) + exact keyword (2x) + fuzzy (1.5x)
     (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
      COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
-     COALESCE(1.5 / (60 + fs.fuzzy_rank),   0.0))::FLOAT AS similarity
+     COALESCE(1.5 / (60 + fs.fuzzy_rank),   0.0))::FLOAT AS similarity,
+    (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity
   FROM embedding_documents dc
   JOIN documents d ON d.id = dc.document_id
   LEFT JOIN semantic_search ss ON ss.id = dc.id

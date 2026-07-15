@@ -2,12 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import embeddingService from './embeddings.js'
 import crypto from 'crypto'
-
-// ---------------------------------------------------------------------------
-// Simple in-process cache: avoids re-parsing the same PDF bytes twice
-// Key: SHA-256 of the raw file buffer. Value: extracted text string.
-// ---------------------------------------------------------------------------
-const _extractionCache = new Map()
+import pdfIngestionService from '../services/pdfIngestion.js'
 
 // ---------------------------------------------------------------------------
 // Timing helpers
@@ -24,140 +19,24 @@ function elapsed(start) {
 
 class IngestionService {
   /**
-   * Split text into overlapping chunks of roughly `chunkSize` words.
-   */
-  /**
-   * Sanitize text for PostgreSQL UTF-8 — removes null bytes and other
-   * control characters that cause "invalid byte sequence" errors.
+   * Sanitize text for PostgreSQL / SQLite UTF-8.
    */
   sanitizeText(text) {
-    if (!text) return ''
-    return text
-      // Remove null bytes (0x00) — the main culprit from PDF extraction
-      .replace(/\x00/g, '')
-      // Remove other C0/C1 control characters except common whitespace
-      .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
-      // Collapse runs of whitespace introduced by replacements
-      .replace(/  +/g, ' ')
-      .trim()
-  }
-
-  chunkText(text, maxChars = 1500, overlap = 200) {
-    if (!text) return []
-    
-    // First, try splitting by paragraphs
-    const splits = text.split(/\n\s*\n/)
-    const chunks = []
-    let currentChunk = ''
-
-    const addChunk = (chunkStr) => {
-      if (chunkStr.trim().length > 0) chunks.push(chunkStr.trim())
-    }
-
-    for (let i = 0; i < splits.length; i++) {
-      const split = splits[i].trim()
-      if (!split) continue
-
-      if ((currentChunk.length + split.length) <= maxChars) {
-        currentChunk += (currentChunk ? '\n\n' : '') + split
-      } else {
-        if (currentChunk) addChunk(currentChunk)
-        
-        // If a single paragraph is too big, split it by sentences
-        if (split.length > maxChars) {
-          const sentences = split.match(/[^.!?]+[.!?]+/g) || [split]
-          let subChunk = ''
-          
-          for (const s of sentences) {
-            if ((subChunk.length + s.length) <= maxChars) {
-              subChunk += (subChunk ? ' ' : '') + s
-            } else {
-              if (subChunk) addChunk(subChunk)
-              
-              // Fallback to raw slicing with overlap if a single sentence is massive
-              if (s.length > maxChars) {
-                let start = 0
-                while (start < s.length) {
-                  addChunk(s.slice(start, start + maxChars))
-                  start += maxChars - overlap
-                }
-                subChunk = ''
-              } else {
-                subChunk = s
-              }
-            }
-          }
-          currentChunk = subChunk
-        } else {
-          currentChunk = split
-        }
-      }
-    }
-    if (currentChunk) addChunk(currentChunk)
-    
-    return chunks
+    return pdfIngestionService.sanitizeText(text)
   }
 
   /**
-   * Extract text from a file. Results are cached by file-content hash
-   * so re-ingesting the same PDF skips the expensive parse step.
+   * Split text into semantic chunks with overlapping boundaries.
+   */
+  chunkText(text, maxChars = 1500, overlap = 250) {
+    return pdfIngestionService.splitIntoSemanticChunks(text, maxChars, overlap)
+  }
+
+  /**
+   * Extract text from a file via the PDF & multi-format pipeline.
    */
   async extractText(filePath) {
-    const ext = path.extname(filePath).toLowerCase()
-
-    if (ext === '.pdf') {
-      const dataBuffer = await fs.promises.readFile(filePath)
-
-      // Cache by content hash so identical PDFs are only parsed once
-      const bufHash = crypto.createHash('sha256').update(dataBuffer).digest('hex')
-      if (_extractionCache.has(bufHash)) {
-        return _extractionCache.get(bufHash)
-      }
-
-      // pdf-parse v2 ships as an ES module with `export default`.
-      // When Electron's CJS `require()` loads it the function lives on .default.
-      let pdfParse
-      try {
-        const pdfMod = require('pdf-parse')
-        pdfParse = typeof pdfMod === 'function'
-          ? pdfMod
-          : (typeof pdfMod?.default === 'function' ? pdfMod.default : null)
-      } catch (loadErr) {
-        throw new Error(`Failed to load pdf-parse module: ${loadErr.message}`)
-      }
-
-      if (typeof pdfParse !== 'function') {
-        // Last-resort: try dynamic import (works if pdf-parse ships pure ESM)
-        try {
-          const esmMod = await import('pdf-parse')
-          pdfParse = esmMod?.default ?? esmMod
-        } catch (_) { /* ignore */ }
-      }
-
-      if (typeof pdfParse !== 'function') {
-        throw new Error(
-          'pdf-parse could not be loaded as a callable function. ' +
-          'Run: npm install pdf-parse@1 to pin to the stable v1 API.'
-        )
-      }
-
-      const result = await pdfParse(dataBuffer)
-      const text = result.text
-
-      // Store in cache (limit cache to 200 entries to avoid memory leaks)
-      if (_extractionCache.size >= 200) {
-        const firstKey = _extractionCache.keys().next().value
-        _extractionCache.delete(firstKey)
-      }
-      _extractionCache.set(bufHash, text)
-
-      return text
-
-    } else if (ext === '.txt' || ext === '.md' || ext === '.json' || ext === '.csv') {
-      return await fs.promises.readFile(filePath, 'utf8')
-    } else {
-      throw new Error(`Unsupported file type: ${ext}. Supported: .pdf .txt .md .json .csv`)
-    }
+    return await pdfIngestionService.extractText(filePath)
   }
 
   /**

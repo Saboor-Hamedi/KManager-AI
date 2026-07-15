@@ -1,8 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search, Send, Plus, ChevronDown, Mic, ArrowUp, RotateCcw, Sparkles } from 'lucide-react'
 import SearchResultCard from './SearchResultCard'
 import ReferenceDocumentModal from './ReferenceDocumentModal'
 import DocumentRenderer from './DocumentRenderer'
+import Autocompletion from './Autocompletion'
+import CitationPreviewModal from './CitationPreviewModal'
+import PDFUploadZone from './PDFUploadZone'
+import SuggestedPrompts from './SuggestedPrompts'
 import { getSetting, saveSetting } from '../../lib/settings'
 import { streamRagAnswer, checkIsConversational } from '../../lib/deepseek'
 
@@ -62,6 +66,10 @@ const DashboardSearch = () => {
   const [loadingText, setLoadingText] = useState(false)
   const [enableRag, setEnableRag] = useState(true)
   const [savedResponses, setSavedResponses] = useState({})
+  const [autocompleteResults, setAutocompleteResults] = useState([])
+  const [showAutocomplete, setShowAutocomplete] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [previewItem, setPreviewItem] = useState(null)
 
   const handleSaveResponse = async (msgId, query, answer) => {
     setSavedResponses(prev => ({ ...prev, [msgId]: 'saving' }))
@@ -94,6 +102,7 @@ const DashboardSearch = () => {
   const scrollRef = useRef(null)
   const savedScrollTopRef = useRef(0)
   const debounceTimeoutRef = useRef(null)
+  const autocompleteTimeoutRef = useRef(null)
   const isSearchingRef = useRef(false)
   const textareaRef = useRef(null)
 
@@ -205,8 +214,9 @@ const DashboardSearch = () => {
       .finally(() => setLoadingText(false))
   }, [selectedPdf])
 
-  const submitSearch = async () => {
-    if (!query || query.trim() === '' || isSearchingRef.current) return
+  const submitSearch = async (overrideQuery = null) => {
+    const q = (typeof overrideQuery === 'string') ? overrideQuery : query
+    if (!q || q.trim() === '' || isSearchingRef.current) return
 
     // Debounce guard: prevent duplicate submissions fired within 300ms
     if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current)
@@ -214,7 +224,7 @@ const DashboardSearch = () => {
 
     if (selectedPdf) setSelectedPdf(null)
 
-    const searchQuery = query.trim()
+    const searchQuery = q.trim()
     const messageId = Date.now().toString()
     
     setQuery('')
@@ -315,7 +325,35 @@ const DashboardSearch = () => {
   }, [query])
 
   const handleInput = (e) => {
-    setQuery(e.target.value)
+    const val = e.target.value
+    setQuery(val)
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`
+    }
+
+    if (val.trim() === '') {
+      setAutocompleteResults([])
+      setShowAutocomplete(false)
+      return
+    }
+
+    if (autocompleteTimeoutRef.current) clearTimeout(autocompleteTimeoutRef.current)
+    autocompleteTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await window.api.db.lexicalSearch(val, 5)
+        if (results && results.length > 0) {
+          setAutocompleteResults(results)
+          setShowAutocomplete(true)
+          setSelectedIndex(-1)
+        } else {
+          setAutocompleteResults([])
+          setShowAutocomplete(false)
+        }
+      } catch(err) {
+        console.error(err)
+      }
+    }, 150)
   }
 
   const handlePaste = (e) => {
@@ -328,8 +366,53 @@ const DashboardSearch = () => {
   }
 
   const handleKeyDown = (e) => {
+    const extractSuggestion = (content, queryStr) => {
+      if (!content || !queryStr) return ''
+      // Strip common markdown characters to clean up the snippet
+      const cleanContent = content.replace(/[*_~`>#\[\]]/g, '')
+      const lowerContent = cleanContent.toLowerCase()
+      const lowerQuery = queryStr.toLowerCase().trim()
+      const matchIdx = lowerContent.indexOf(lowerQuery)
+      if (matchIdx === -1) return cleanContent.substring(0, 50).replace(/\n/g, ' ') + '...'
+      
+      let start = matchIdx
+      while (start > 0 && !/[\s\n.!?]/.test(cleanContent[start - 1])) start--
+      
+      let end = matchIdx + lowerQuery.length
+      let spaceCount = 0
+      while (end < cleanContent.length && spaceCount < 8) {
+        if (cleanContent[end] === ' ' || cleanContent[end] === '\n') spaceCount++
+        if (['.', '!', '?'].includes(cleanContent[end])) { end++; break }
+        end++
+      }
+      return cleanContent.substring(start, Math.min(end, start + 80)).replace(/\n/g, ' ').trim()
+    }
+
+    if (showAutocomplete && autocompleteResults.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex(prev => (prev < autocompleteResults.length - 1 ? prev + 1 : 0))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex(prev => (prev > 0 ? prev - 1 : autocompleteResults.length - 1))
+        return
+      }
+      if (e.key === 'Enter' && !e.shiftKey && selectedIndex >= 0) {
+        e.preventDefault()
+        const selectedRes = autocompleteResults[selectedIndex]
+        setShowAutocomplete(false)
+        const newQuery = selectedRes.suggestion || extractSuggestion(selectedRes.content, query)
+        setQuery(newQuery)
+        setTimeout(() => submitSearch(newQuery), 50)
+        return
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      setShowAutocomplete(false)
       submitSearch()
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
@@ -345,22 +428,9 @@ const DashboardSearch = () => {
     }
   }
 
-  return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--bg-app)] overflow-hidden relative">
-      
-      {/* Reference Document Popup Modal */}
-      <ReferenceDocumentModal
-        selectedPdf={selectedPdf}
-        onClose={handleCloseModal}
-        fileExists={fileExists}
-      />
-
-      {/* Chat History Feed */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-6 pt-8 pb-48 custom-scrollbar space-y-10 scroll-smooth"
-      >
-        {history.length === 0 ? (
+  const memoizedHistoryFeed = useMemo(() => {
+    if (history.length === 0) {
+      return (
           <div className="h-full flex flex-col items-center justify-center gap-5 select-none px-6">
             <div className="flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-accent)] shadow-sm">
@@ -392,9 +462,11 @@ const DashboardSearch = () => {
               ))}
             </div>
           </div>
-        ) : (
-          history.map(msg => (
-            <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
+        )
+    }
+
+    return history.map(msg => (
+      <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
               
               {/* User Message Bubble matching Antigravity card style */}
               <div className="flex justify-end w-full">
@@ -520,13 +592,55 @@ const DashboardSearch = () => {
 
             </div>
           ))
-        )}
+  }, [history, savedResponses, handleSelect, enableRag])
+
+  return (
+    <div className="flex-1 flex flex-col h-full bg-[var(--bg-app)] overflow-hidden relative">
+      
+      {/* Reference Document Popup Modal */}
+      <ReferenceDocumentModal
+        selectedPdf={selectedPdf}
+        onClose={handleCloseModal}
+        fileExists={fileExists}
+      />
+
+      {/* Slide-over Citation & Chunk Preview Drawer */}
+      <CitationPreviewModal
+        previewItem={previewItem}
+        onClose={() => setPreviewItem(null)}
+        onOpenFullFile={handleSelect}
+        query={query}
+      />
+
+      {/* Smart PDF & Multi-Format Ingestion Bar & Drop Zone */}
+      <PDFUploadZone />
+
+      {/* Chat History Feed */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-6 pt-8 pb-48 custom-scrollbar space-y-10 scroll-smooth"
+      >
+        {memoizedHistoryFeed}
       </div>
 
       {/* Antigravity-Style AI Composer Card */}
-      <div className="pl-6 pr-14 sm:px-6 pb-2 pt-1 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)] to-transparent shrink-0">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex flex-col bg-[var(--bg-card)] rounded-xl transition-all duration-200 overflow-hidden shadow-sm">
+      <div className="px-4 sm:px-6 pb-2 pt-1 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)] to-transparent shrink-0">
+        <div className="max-w-2xl mx-auto relative">
+          
+          <Autocompletion 
+            results={autocompleteResults} 
+            visible={showAutocomplete} 
+            query={query} 
+            selectedIndex={selectedIndex}
+            onSelect={(res) => {
+              setShowAutocomplete(false)
+              const newQuery = res.suggestion || (res.content ? res.content.substring(0, 50) : '')
+              setQuery(newQuery)
+              setTimeout(() => submitSearch(newQuery), 50)
+            }} 
+          />
+
+          <div className={`flex flex-col bg-[var(--bg-card)] transition-all duration-200 overflow-hidden shadow-sm ${showAutocomplete && autocompleteResults.length > 0 ? 'rounded-b-xl rounded-t-none' : 'rounded-xl'}`}>
             {/* Top Row: Auto-growing Textarea */}
             <textarea 
               ref={textareaRef}

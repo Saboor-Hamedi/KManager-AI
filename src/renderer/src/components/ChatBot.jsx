@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer';
 import { cn } from '../lib/utils';
 import { getSetting } from '../lib/settings';
 import { queryDeepSeek } from '../lib/deepseek';
@@ -125,19 +127,21 @@ const ChatBot = ({ appState = {} }) => {
                   msg.role === 'user' ? "bg-[var(--bg-active)] text-[var(--text-accent)] rounded-tr-none" : "bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] rounded-tl-none"
                 )}>
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
                     components={{
-                      p: ({node, ...props}) => <p className="mb-1.5 last:mb-0" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-1.5 last:mb-0 text-justify" {...props} />,
                       strong: ({node, ...props}) => <strong className={cn("font-bold", msg.role === 'user' ? "text-[var(--text-main)]" : "text-[var(--text-accent)]")} {...props} />,
                       em: ({node, ...props}) => <em className={cn("italic", msg.role === 'user' ? "text-[var(--text-main)]" : "text-[var(--text-muted)]")} {...props} />,
                       ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
                       ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
                       li: ({node, ...props}) => <li {...props} />,
                       code: ({node, inline, ...props}) => inline 
-                        ? <code className="bg-black/20 px-1 py-0.5 rounded font-mono text-[10px]" {...props} />
-                        : <code className="block bg-black/20 p-2 rounded font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+                        ? <code className="bg-black/20 px-1 py-0.5 rounded-[5px] border-0 font-mono text-[10px]" {...props} />
+                        : <code className="block bg-black/20 p-2 rounded-[5px] border-0 font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
                     }}
                   >
-                    {msg.text}
+                    {formatMarkdownText(msg.text)}
                   </ReactMarkdown>
                 </div>
               </div>

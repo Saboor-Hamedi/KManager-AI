@@ -272,7 +272,7 @@ app.whenReady().then(() => {
         )
         RETURNS TABLE (
           id UUID, document_id UUID, chunk_index INT, content TEXT,
-          vault_path TEXT, file_name TEXT, file_type TEXT, similarity FLOAT
+          vault_path TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMPTZ, similarity FLOAT, cosine_similarity FLOAT
         )
         LANGUAGE plpgsql AS $$
         BEGIN
@@ -295,10 +295,11 @@ app.whenReady().then(() => {
             WHERE similarity(dc.content, query_text) > 0.08
             ORDER BY similarity(dc.content, query_text) DESC LIMIT 100
           )
-          SELECT dc.id, dc.document_id, dc.chunk_index, dc.content, d.vault_path, d.file_name, d.file_type,
+          SELECT dc.id, dc.document_id, dc.chunk_index, dc.content, d.vault_path, d.file_name, d.file_type, d.created_at,
             (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
              COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
-             COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity
+             COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity,
+            (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity
           FROM embedding_documents dc
           JOIN documents d ON d.id = dc.document_id
           LEFT JOIN semantic_search ss ON ss.id = dc.id
@@ -360,7 +361,7 @@ app.whenReady().then(() => {
             )
             RETURNS TABLE (
               id UUID, document_id UUID, chunk_index INT, content TEXT,
-              vault_path TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMPTZ, similarity FLOAT
+              vault_path TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMPTZ, similarity FLOAT, cosine_similarity FLOAT
             )
             LANGUAGE plpgsql AS $func$
             BEGIN
@@ -390,7 +391,8 @@ app.whenReady().then(() => {
                 d.vault_path, d.file_name, d.file_type, d.created_at,
                 (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
                  COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
-                 COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity
+                 COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity,
+                (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity
               FROM embedding_documents dc
               JOIN documents d ON d.id = dc.document_id
               LEFT JOIN semantic_search ss ON ss.id = dc.id
@@ -466,11 +468,33 @@ app.whenReady().then(() => {
       return { success: false, message: err.message }
     }
   })
+  ipcMain.handle('db:lexical-search', async (_event, { query, limit = 5 }) => {
+    try {
+      if (!query || query.trim() === '') return []
+      
+      const result = await db.query(`
+        SELECT 
+          dc.id, 
+          dc.content, 
+          d.file_name,
+          d.vault_path
+        FROM embedding_documents dc
+        JOIN documents d ON dc.document_id = d.id
+        WHERE dc.content ILIKE $1
+        LIMIT $2
+      `, [`%${query}%`, limit])
+      
+      return result.rows
+    } catch (err) {
+      console.error('db:lexical-search error:', err)
+      return []
+    }
+  })
 
   ipcMain.handle('db:get-analytics', async () => {
     if (!db || !db.isConnected()) return { success: false }
     try {
-      // Get real database metrics
+      // Get real database averages
       const latencyRes = await db.query('SELECT AVG(latency_ms) as avg_lat, AVG(top_similarity) as avg_sim, COUNT(*) as total FROM search_logs')
       const feedbackRes = await db.query(`
         SELECT 
@@ -480,7 +504,40 @@ app.whenReady().then(() => {
       `)
       const statsRes = await db.query('SELECT * FROM get_document_stats()')
       
-      const searchLogs = await db.query('SELECT latency_ms as standard FROM search_logs ORDER BY created_at DESC LIMIT 50')
+      // Fetch up to 1,000 complete query logs ordered by timestamp ascending for real time-series
+      const searchLogs = await db.query(`
+        SELECT id, query_text, latency_ms, top_similarity, result_count, is_fallback, created_at 
+        FROM search_logs 
+        ORDER BY created_at ASC 
+        LIMIT 1000
+      `)
+
+      // Fetch recent activity items (searches, feedback, doc ingestions) for real activity feed
+      const recentSearches = await db.query(`
+        SELECT id, query_text as title, latency_ms, top_similarity, created_at, 'search' as type 
+        FROM search_logs 
+        ORDER BY created_at DESC 
+        LIMIT 25
+      `)
+      const recentFeedback = await db.query(`
+        SELECT id, query_text as title, score, created_at, 'feedback' as type 
+        FROM search_feedback 
+        ORDER BY created_at DESC 
+        LIMIT 25
+      `)
+      const recentDocs = await db.query(`
+        SELECT id, file_name as title, file_type, created_at, 'ingest' as type 
+        FROM documents 
+        ORDER BY created_at DESC 
+        LIMIT 15
+      `)
+
+      // Combine and sort by timestamp descending
+      const combinedActivity = [
+        ...recentSearches.rows.map(r => ({ ...r, eventType: 'search' })),
+        ...recentFeedback.rows.map(r => ({ ...r, eventType: 'feedback' })),
+        ...recentDocs.rows.map(r => ({ ...r, eventType: 'ingest' }))
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 30)
 
       return {
         success: true,
@@ -492,7 +549,8 @@ app.whenReady().then(() => {
           positiveFeedback: feedbackRes.rows[0]?.positive ? Number(feedbackRes.rows[0].positive) : 0,
           totalDocs: statsRes.rows[0]?.total_docs || 0,
           totalChunks: statsRes.rows[0]?.total_chunks || 0,
-          recentLatencies: searchLogs.rows.reverse()
+          recentQueries: searchLogs.rows,
+          activityFeed: combinedActivity
         }
       }
     } catch (err) {
@@ -609,7 +667,11 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('system:resolve-paths', async (_event, paths) => {
-    const validExts = ['.pdf', '.txt', '.md', '.json', '.csv', '.doc', '.docx', '.xlsx']
+    const validExts = [
+      '.pdf', '.txt', '.md', '.json', '.csv',
+      '.html', '.xml', '.log', '.doc', '.docx', '.xlsx',
+      '.py', '.js', '.jsx', '.ts', '.tsx', '.sql', '.sh', '.yml', '.yaml'
+    ]
     const results = []
     
     async function scan(currentPath) {
