@@ -304,26 +304,26 @@ const DashboardSearch = () => {
   const submitFollowUp = async (replyText, parentMsg, targetItem) => {
     if (!replyText || replyText.trim() === '') return;
     
-    // Create new follow up message in history
     const messageId = Date.now().toString();
-    const isGlobal = !targetItem;
-    
-    const followUpMsg = {
+    const resultId = targetItem ? (targetItem.uniqueResultId || targetItem.id) : null;
+
+    // Add reply to parent message's replies array
+    const newReply = {
       id: messageId,
+      resultId: resultId,
       query: replyText,
-      timestamp: new Date().toISOString(),
-      results: targetItem ? [targetItem] : (parentMsg.results || []),
-      isLoading: true,
-      error: null,
       ragStatus: 'generating',
       ragAnswer: '',
-      ragError: null,
-      isFollowUp: true,
-      parentMsgId: parentMsg.id,
-      targetResultId: targetItem ? targetItem.uniqueResultId : null
+      ragError: null
     };
 
-    setHistory(prev => [...prev, followUpMsg]);
+    setHistory(prev => prev.map(msg =>
+      msg.id === parentMsg.id
+        ? { ...msg, replies: [...(msg.replies || []), newReply] }
+        : msg
+    ));
+
+    setCollapsedReplies(prev => ({ ...prev, [parentMsg.id]: false }));
 
     setTimeout(() => {
       if (scrollRef.current) {
@@ -331,7 +331,6 @@ const DashboardSearch = () => {
       }
     }, 50);
 
-    // Run RAG on the target document or all documents
     if (enableRag) {
       try {
         const apiKey = await getSetting('DEEPSEEK_API_KEY', '')
@@ -339,36 +338,33 @@ const DashboardSearch = () => {
           ? [targetItem]
           : (parentMsg.results || []).slice(0, 5)
 
-        await streamRagAnswer(replyText, relevantChunks, apiKey, (chunk) => {
-          setHistory(prev => prev.map(msg => {
-            if (msg.id === messageId) {
-              return { ...msg, ragAnswer: msg.ragAnswer + chunk };
-            }
-            return msg;
-          }));
-          setTimeout(() => {
-            if (scrollRef.current) {
-              const maxScroll = scrollRef.current.scrollHeight - scrollRef.current.clientHeight;
-              if (maxScroll - scrollRef.current.scrollTop < 100) {
-                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-              }
-            }
-          }, 10);
+        await streamRagAnswer(replyText, relevantChunks, apiKey, (accumulated) => {
+          setHistory(prev => prev.map(msg =>
+            msg.id === parentMsg.id
+              ? { ...msg, replies: msg.replies.map(r => r.id === messageId ? { ...r, ragAnswer: accumulated } : r) }
+              : msg
+          ));
         });
-        
-        setHistory(prev => prev.map(msg => 
-          msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
+
+        setHistory(prev => prev.map(msg =>
+          msg.id === parentMsg.id
+            ? { ...msg, replies: msg.replies.map(r => r.id === messageId ? { ...r, ragStatus: 'done' } : r) }
+            : msg
         ));
       } catch (err) {
         console.error('Follow-up RAG error:', err);
-        setHistory(prev => prev.map(msg => 
-          msg.id === messageId ? { ...msg, ragStatus: 'error', ragError: err.message } : msg
+        setHistory(prev => prev.map(msg =>
+          msg.id === parentMsg.id
+            ? { ...msg, replies: msg.replies.map(r => r.id === messageId ? { ...r, ragStatus: 'error', ragError: err.message } : r) }
+            : msg
         ));
       }
     } else {
-       setHistory(prev => prev.map(msg => 
-          msg.id === messageId ? { ...msg, ragStatus: 'disabled', isLoading: false } : msg
-        ));
+      setHistory(prev => prev.map(msg =>
+        msg.id === parentMsg.id
+          ? { ...msg, replies: msg.replies.map(r => r.id === messageId ? { ...r, ragStatus: 'disabled' } : r) }
+          : msg
+      ));
     }
   }
 
