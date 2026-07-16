@@ -136,7 +136,7 @@ const DashboardSearch = () => {
     setSelectedPdf(null)
   }, [])
 
-  // Smooth auto-scroll chat to bottom only when history updates
+  // Smooth auto-scroll chat to bottom only when history length changes (new message added/removed)
   useEffect(() => {
     if (scrollRef.current) {
       const el = scrollRef.current
@@ -145,7 +145,7 @@ const DashboardSearch = () => {
         el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
       }
     }
-  }, [history])
+  }, [history.length])
 
   // Escape key closes open reference modal
   useEffect(() => {
@@ -348,6 +348,13 @@ const DashboardSearch = () => {
               ? { ...msg, replies: msg.replies.map(r => r.id === messageId ? { ...r, ragAnswer: accumulated } : r) }
               : msg
           ));
+          if (scrollRef.current) {
+            const el = scrollRef.current
+            const maxScroll = el.scrollHeight - el.clientHeight
+            if (maxScroll - el.scrollTop < 100) {
+              el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+            }
+          }
         });
 
         setHistory(prev => prev.map(msg =>
