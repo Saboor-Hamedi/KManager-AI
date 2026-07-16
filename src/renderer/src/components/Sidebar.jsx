@@ -8,22 +8,22 @@ const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => 
   <button
     onClick={onClick}
     className={cn(
-      'flex items-center w-full py-3 transition-all duration-200 group relative outline-none border-0',
-      collapsed ? 'justify-center px-0' : 'px-4',
+      'flex items-center w-full py-3.5 transition-all duration-200 group relative outline-none border-0',
+      collapsed ? 'justify-center px-0' : 'px-5',
       active
         ? 'bg-[var(--bg-active)] text-[var(--text-accent)]'
         : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
     )}
   >
     {active && (
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--text-accent)]" />
+      <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[var(--text-accent)] rounded-full" />
     )}
     <Icon
-      size={16}
+      size={18}
       className={cn('shrink-0', active ? 'text-[var(--text-accent)]' : 'group-hover:text-[var(--text-main)]')}
     />
     {!collapsed && (
-      <span className="ml-4 text-[12px] font-medium tracking-wide truncate">{label}</span>
+      <span className="ml-4 text-[13px] font-semibold tracking-wide truncate">{label}</span>
     )}
   </button>
 ))
@@ -40,7 +40,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
     <div
       className={cn(
         'h-full bg-[var(--bg-sidebar)] border-r border-[var(--border-dim)] flex flex-col transition-all duration-300 overflow-hidden shrink-0',
-        collapsed ? 'w-14' : 'w-56'
+        collapsed ? 'w-16' : 'w-60'
       )}
     >
       <SidebarHeader collapsed={collapsed} toggleCollapsed={toggleCollapsed} />

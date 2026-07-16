@@ -102,13 +102,16 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
                           if (window.innerWidth < 768) setIsSidebarOpen(false)
                         }}
                         className={`
-                          w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs transition-colors
+                          w-full flex items-center gap-2.5 pl-3 pr-2 py-2 text-sm transition-colors relative
                           ${isActive 
-                            ? 'bg-[var(--bg-active)] text-[var(--text-accent)] font-medium' 
-                            : 'text-[var(--text-main)] hover:bg-[var(--bg-panel)]'}
+                            ? 'bg-[var(--bg-active)] text-[var(--text-accent)] font-semibold' 
+                            : 'text-[var(--text-muted)] hover:bg-[var(--bg-panel)] hover:text-[var(--text-main)]'}
                         `}
                       >
-                        <FileText size={14} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-faint)]'} />
+                        {isActive && (
+                          <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[var(--text-accent)] rounded-full" />
+                        )}
+                        <FileText size={15} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-faint)]'} />
                         <span className="truncate text-left">{doc.title}</span>
                       </button>
                     )

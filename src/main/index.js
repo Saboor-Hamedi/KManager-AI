@@ -718,6 +718,18 @@ app.whenReady().then(() => {
       const categories = {}
       const entries = fs.readdirSync(brainPath, { withFileTypes: true })
 
+      // Always include root-level .md files as GENERAL category
+      const generalDocs = entries
+        .filter(e => e.isFile() && e.name.endsWith('.md'))
+        .map(f => {
+          const title = f.name.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          return { title, path: path.join(brainPath, f.name), type: 'md' }
+        })
+      if (generalDocs.length > 0) {
+        categories['GENERAL'] = generalDocs
+      }
+
+      // Process subdirectory categories
       for (const entry of entries) {
         if (!entry.isDirectory()) continue
         const categoryDir = path.join(brainPath, entry.name)
@@ -728,14 +740,6 @@ app.whenReady().then(() => {
         if (docs.length > 0) {
           categories[entry.name.toUpperCase()] = docs
         }
-      }
-
-      if (Object.keys(categories).length === 0) {
-        const rootDocs = fs.readdirSync(brainPath).filter(f => f.endsWith('.md')).map(f => {
-          const title = f.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-          return { title, path: path.join(brainPath, f), type: 'md' }
-        })
-        if (rootDocs.length > 0) categories['GENERAL'] = rootDocs
       }
 
       return categories
