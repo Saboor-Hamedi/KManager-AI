@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { DownloadCloud, RefreshCcw, X, Info } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Download, RefreshCcw, X } from 'lucide-react'
 
 const UpdateNotification = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false)
@@ -22,6 +21,12 @@ const UpdateNotification = () => {
     const unsubProgress = window.api.update.onUpdateProgress((progressObj) => {
       setDownloading(true)
       setProgress(progressObj.percent)
+      if (progressObj.percent >= 100) {
+        setTimeout(() => {
+          setDownloading(false)
+          setDownloaded(true)
+        }, 400)
+      }
     })
 
     const unsubDownloaded = window.api.update.onUpdateDownloaded(() => {
@@ -49,77 +54,71 @@ const UpdateNotification = () => {
   if (!updateAvailable) return null
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="fixed bottom-6 right-6 w-80 bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl shadow-xl overflow-hidden z-50 font-sans"
-      >
-        <div className="flex items-start p-4">
-          <div className="mt-0.5 mr-3 text-blue-500">
-            <Info size={20} />
-          </div>
-          
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-[var(--text-main)] mb-1">
-              {downloaded ? 'Update Ready to Install' : 'Update Available'}
-            </h3>
-            
-            <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">
-              {downloaded 
-                ? 'A new version of KManager AI is ready. Restart to apply the update.'
-                : `Version ${version} is available. Would you like to download it now?`}
-            </p>
-
-            {downloading && (
-              <div className="mb-3">
-                <div className="h-1.5 w-full bg-[var(--bg-highlight)] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
+    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg shadow-lg overflow-hidden min-w-[200px]">
+        {/* Available / Downloading state */}
+        {!downloaded && (
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-[var(--text-main)] truncate">
+                {downloading
+                  ? `Downloading ${Math.round(progress)}%`
+                  : `Update v${version} available`
+                }
+              </p>
+              {downloading && (
+                <div className="mt-1.5 h-1 bg-[var(--bg-panel)] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--text-accent)] rounded-full transition-all duration-200"
+                    style={{ width: `${Math.max(progress, 4)}%` }}
                   />
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-1.5 text-right">
-                  {Math.round(progress)}%
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              {!downloading && !downloaded && (
-                <button 
-                  onClick={handleDownload}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-xs font-medium transition-colors"
-                >
-                  <DownloadCloud size={14} />
-                  Download Update
-                </button>
-              )}
-              
-              {downloaded && (
-                <button 
-                  onClick={handleInstall}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-md text-xs font-medium transition-colors"
-                >
-                  <RefreshCcw size={14} />
-                  Restart to Update
-                </button>
               )}
             </div>
-          </div>
 
-          {!downloading && !downloaded && (
-            <button 
-              onClick={() => setDismissed(true)}
-              className="p-1 text-[var(--text-muted)] hover:bg-[var(--bg-highlight)] rounded-md transition-colors"
+            {!downloading && (
+              <>
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--text-accent)]/10 hover:bg-[var(--text-accent)]/20 text-[var(--text-accent)] text-xs font-semibold transition-colors animate-pulse shrink-0"
+                >
+                  <Download size={13} />
+                  <span>Download</span>
+                </button>
+                <button
+                  onClick={() => setDismissed(true)}
+                  className="p-1 rounded hover:bg-[var(--bg-panel)] text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </>
+            )}
+
+            {downloading && (
+              <span className="text-xs font-mono text-[var(--text-accent)] font-semibold shrink-0 tabular-nums">
+                {Math.round(progress)}%
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Downloaded / Ready to restart state */}
+        {downloaded && (
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <p className="text-xs font-semibold text-[var(--text-main)] flex-1">
+              Update ready to install
+            </p>
+            <button
+              onClick={handleInstall}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold transition-colors animate-pulse shrink-0"
             >
-              <X size={16} />
+              <RefreshCcw size={13} />
+              <span>Restart</span>
             </button>
-          )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
