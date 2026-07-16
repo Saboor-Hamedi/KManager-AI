@@ -73,7 +73,7 @@ const AnalyticsTable = memo(({ data }) => {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1 bg-[var(--bg-app)]/60 border border-[var(--border-dim)] rounded-lg text-xs text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-[var(--border-subtle)] w-48 transition-colors"
+                className="pl-8 pr-3 py-1 bg-[var(--bg-panel)] rounded-lg text-xs text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-[var(--border-subtle)] w-48 transition-colors"
               />
             </div>
 
@@ -133,7 +133,7 @@ const AnalyticsTable = memo(({ data }) => {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-dim)]/40 text-xs font-mono">
+            <tbody className="divide-y divide-[var(--border-subtle)] text-xs font-mono">
               {filteredData.slice(0, 50).map((q, idx) => {
                 const coh = q.metrics?.hybridCoherence || 95
                 const rel = q.metrics?.hybridRelevance || 90
@@ -147,7 +147,7 @@ const AnalyticsTable = memo(({ data }) => {
                       {q.queryText}
                     </td>
                     <td className="py-2 px-3 font-sans">
-                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono text-[var(--text-muted)] bg-[var(--bg-panel)] border border-[var(--border-dim)]">
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono text-[var(--text-muted)] bg-[var(--bg-panel)]">
                         {q.isConv ? 'Conversational' : 'Vector'}
                       </span>
                     </td>

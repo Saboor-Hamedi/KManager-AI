@@ -21,8 +21,8 @@ const LatencyComparisonFigure = memo(({ data }) => {
       const pct = point.standard > 0 ? Math.round((savings / point.standard) * 100) : 0
       
       return (
-        <div className="bg-[var(--bg-panel)] border border-[var(--border-dim)] p-2.5 rounded-lg shadow-md text-xs z-50 min-w-[180px]">
-          <div className="font-semibold text-[var(--text-main)] border-b border-[var(--border-dim)] pb-1.5 mb-1.5 truncate max-w-[220px]" title={point.queryText}>
+        <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] p-2.5 rounded-lg shadow-md text-xs z-50 min-w-[180px]">
+          <div className="font-semibold text-[var(--text-main)] border-b border-[var(--border-subtle)] pb-1.5 mb-1.5 truncate max-w-[220px]" title={point.queryText}>
             {label}: {point.queryText}
           </div>
           <div className="space-y-1 font-mono">
@@ -34,7 +34,7 @@ const LatencyComparisonFigure = memo(({ data }) => {
               <span>Hybrid:</span>
               <span>{point.hybrid}ms</span>
             </div>
-            <div className="pt-1 border-t border-[var(--border-dim)]/40 flex justify-between items-center text-[var(--text-muted)]">
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex justify-between items-center text-[var(--text-muted)]">
               <span>Saved:</span>
               <span>{savings}ms ({pct}%)</span>
             </div>

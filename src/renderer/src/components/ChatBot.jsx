@@ -81,12 +81,12 @@ const ChatBot = ({ appState = {} }) => {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 flex items-center justify-center w-12 h-12 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:bg-[#2a3644] hover:border-[#4e6074] hover:shadow-[0_6px_25px_rgba(0,0,0,0.6)] hover:-translate-y-1 transition-all duration-300 z-50 group",
+          "fixed bottom-24 right-6 flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:bg-[#2a3644] hover:border-[#4e6074] hover:shadow-[0_6px_25px_rgba(0,0,0,0.6)] hover:-translate-y-1 transition-all duration-300 z-40 group",
           isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100"
         )}
       >
         <div className="absolute inset-0 rounded-full bg-[var(--text-accent)]/5 blur-md group-hover:bg-[var(--text-accent)]/15 transition-all" />
-        <MessageSquare size={20} className="relative z-10" />
+        <MessageSquare size={18} className="relative z-10" />
       </button>
 
       {/* Chat Window */}

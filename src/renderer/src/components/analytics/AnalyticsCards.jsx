@@ -13,7 +13,7 @@ const MetricCard = memo(({ title, value, trend, trendLabel }) => (
     </div>
     
     {trendLabel && (
-      <div className="mt-2 pt-2 border-t border-[var(--border-dim)]/40 flex items-center justify-between">
+      <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
         <span className="text-[10px] text-[var(--text-muted)] truncate">{trendLabel}</span>
       </div>
     )}

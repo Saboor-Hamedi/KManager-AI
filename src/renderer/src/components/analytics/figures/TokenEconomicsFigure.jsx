@@ -42,8 +42,8 @@ const TokenEconomicsFigure = memo(({ data }) => {
     if (active && payload && payload.length) {
       const p = payload[0].payload
       return (
-        <div className="bg-[var(--bg-panel)] border border-[var(--border-dim)] p-2.5 rounded-lg shadow-md text-xs z-50 min-w-[170px] font-mono">
-          <p className="font-semibold text-[var(--text-main)] border-b border-[var(--border-dim)] pb-1 mb-1.5">{label} Cost</p>
+        <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] p-2.5 rounded-lg shadow-md text-xs z-50 min-w-[170px] font-mono">
+          <p className="font-semibold text-[var(--text-main)] border-b border-[var(--border-subtle)] pb-1 mb-1.5">{label} Cost</p>
           <div className="space-y-1">
             <div className="flex justify-between text-[var(--text-muted)]">
               <span>Standard:</span>
@@ -53,7 +53,7 @@ const TokenEconomicsFigure = memo(({ data }) => {
               <span>Hybrid:</span>
               <span>{(p.Hybrid_RAG / 1000).toFixed(1)}k</span>
             </div>
-            <div className="pt-1 border-t border-[var(--border-dim)]/40 flex justify-between text-[var(--text-muted)]">
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex justify-between text-[var(--text-muted)]">
               <span>Saved:</span>
               <span>{(p.savings / 1000).toFixed(1)}k</span>
             </div>

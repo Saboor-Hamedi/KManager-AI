@@ -45,8 +45,8 @@ const TradeoffScatterFigure = memo(({ data }) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload
       return (
-        <div className="bg-[var(--bg-panel)] border border-[var(--border-dim)] p-2.5 rounded-lg shadow-md text-xs z-50 max-w-[200px]">
-          <p className="font-semibold text-[var(--text-main)] border-b border-[var(--border-dim)] pb-1 mb-1.5 truncate" title={point.name}>{point.name}</p>
+        <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] p-2.5 rounded-lg shadow-md text-xs z-50 max-w-[200px]">
+          <p className="font-semibold text-[var(--text-main)] border-b border-[var(--border-subtle)] pb-1 mb-1.5 truncate" title={point.name}>{point.name}</p>
           <div className="space-y-1 font-mono">
             <p className="flex justify-between gap-4">
               <span className="text-[var(--text-muted)]">Latency:</span>

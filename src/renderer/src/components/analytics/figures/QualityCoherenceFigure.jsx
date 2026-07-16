@@ -19,8 +19,8 @@ const QualityCoherenceFigure = memo(({ data }) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload
       return (
-        <div className="bg-[var(--bg-panel)] border border-[var(--border-dim)] p-2.5 rounded-lg shadow-md text-xs z-50 min-w-[180px]">
-          <div className="font-semibold text-[var(--text-main)] border-b border-[var(--border-dim)] pb-1.5 mb-1.5 truncate max-w-[200px]" title={point.queryText}>
+        <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] p-2.5 rounded-lg shadow-md text-xs z-50 min-w-[180px]">
+          <div className="font-semibold text-[var(--text-main)] border-b border-[var(--border-subtle)] pb-1.5 mb-1.5 truncate max-w-[200px]" title={point.queryText}>
             {label}: {point.queryText}
           </div>
           <div className="space-y-1 font-mono">

@@ -54,7 +54,7 @@ const LatencyBottleneckFigure = memo(({ data }) => {
 
       <div className="space-y-3 mt-2">
         {steps.map((step, idx) => (
-          <div key={idx} className="bg-[var(--bg-panel)]/40 border border-[var(--border-dim)]/60 rounded-lg p-3 transition-colors">
+          <div key={idx} className="bg-[var(--bg-panel)]/40 border border-[var(--border-dim)] rounded-lg p-3 transition-colors">
             <div className="flex items-center justify-between mb-1.5">
               <div>
                 <span className="text-xs font-medium text-[var(--text-main)]">{step.name}</span>
