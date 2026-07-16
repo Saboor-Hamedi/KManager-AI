@@ -326,15 +326,6 @@ const DashboardSearch = () => {
 
     setCollapsedReplies(prev => ({ ...prev, [parentMsg.id]: false }));
 
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({
-          top: scrollRef.current.scrollHeight,
-          behavior: 'smooth'
-        })
-      }
-    }, 50);
-
     if (enableRag) {
       try {
         const apiKey = await getSetting('DEEPSEEK_API_KEY', '')
