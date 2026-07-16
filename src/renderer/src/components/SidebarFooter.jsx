@@ -6,9 +6,9 @@ const SidebarFooterItem = memo(({ icon: Icon, label, shortcut, collapsed, onClic
   <button
     onClick={onClick}
     className={cn(
-      "flex items-center w-full py-3 transition-all duration-200 group relative focus:outline-none outline-none border-0",
-      collapsed ? "justify-center px-0" : "px-4",
-      "text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] rounded-md"
+      "flex items-center w-full py-2.5 transition-all duration-200 group relative focus:outline-none outline-none border-0",
+      collapsed ? "justify-center px-0" : "px-5",
+      "text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]"
     )}
   >
     <Icon size={16} className="shrink-0 group-hover:text-[var(--text-accent)] transition-colors" />
@@ -24,7 +24,7 @@ const SidebarFooterItem = memo(({ icon: Icon, label, shortcut, collapsed, onClic
 ))
 
 const SidebarFooter = memo(({ collapsed, onOpenSettings, onOpenTheme, onOpenDocs }) => (
-  <div className={cn("shrink-0 flex flex-col gap-0.5 py-2 border-t border-[var(--border-dim)]", collapsed ? "px-2.5" : "px-3.5")}>
+  <div className={cn("shrink-0 flex flex-col py-1.5 border-t border-[var(--border-dim)]", collapsed ? "px-0" : "px-0")}>
     <SidebarFooterItem
       icon={BookOpen}
       label="Documentation"

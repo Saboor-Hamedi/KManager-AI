@@ -38,12 +38,13 @@ const ThemeModal = ({ isOpen, onClose }) => {
   return (
     <div className="modal-overlay theme-modal-overlay" onClick={onClose}>
       <div className="modal-container theme-modal-container bg-[var(--bg-app)]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-dim)]">
-          <div className="flex items-center gap-2 text-[var(--text-main)]">
-            <Palette size={16} />
-            <h2 className="text-xs font-bold tracking-wide">Appearance</h2>
+        <div className="h-8 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0 select-none">
+          <div className="flex items-center gap-2 px-3">
+            <Palette size={15} className="text-[var(--text-accent)]" />
+            <h2 className="text-xs font-semibold text-[var(--text-main)]">Appearance</h2>
           </div>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
+          <div className="flex-1" />
+          <button onClick={onClose} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center" title="Close (Esc)">
             <X size={16} />
           </button>
         </div>

@@ -92,10 +92,21 @@ const Documentation = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
+  const handleContentClick = (e) => {
+    const link = e.target.closest('a')
+    if (link) {
+      const href = link.getAttribute('href')
+      if (href && href.endsWith('.md') && !href.startsWith('http')) {
+        e.preventDefault()
+        handleNavigate(href)
+      }
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={onClose}>
       <div 
-        className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl shadow-[0_0_60px_-15px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden w-[85vw] h-[80vh] max-w-[1200px] animate-in zoom-in-95 duration-200 ring-1 ring-white/5" 
+        className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-[5px] shadow-[0_0_60px_-15px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden w-[85vw] h-[80vh] max-w-[1200px] animate-in zoom-in-95 duration-200 ring-1 ring-white/5" 
         onClick={(e) => e.stopPropagation()}
       >
         <DocHeader 
@@ -117,7 +128,7 @@ const Documentation = ({ isOpen, onClose }) => {
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-app)] relative h-full">
-            <div className="flex-1 overflow-y-auto px-8 py-10 md:px-16 lg:px-24 custom-scrollbar scroll-smooth">
+            <div className="flex-1 overflow-y-auto px-8 py-10 md:px-16 lg:px-24 custom-scrollbar scroll-smooth" onClick={handleContentClick}>
               <div className="max-w-3xl mx-auto w-full pb-20 relative">
                 
                 {isLoading ? (
