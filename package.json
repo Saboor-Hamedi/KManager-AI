@@ -22,7 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e",
-    "workbench": "vitest run --reporter=verbose --no-color 2>&1 | tee test_output.log && echo 'Tests complete. See test_output.log for details.'"
+    "workbench": "node scripts/workbench.js"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
