@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 import { cn } from '../lib/utils'
-import { LayoutDashboard, Users, Search, BookOpen } from 'lucide-react'
+import { LayoutDashboard, Users, Search } from 'lucide-react'
 import SidebarHeader from './SidebarHeader'
 import SidebarFooter from './SidebarFooter'
 
@@ -34,7 +34,6 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
     { id: 'search',    label: 'Search',    icon: Search },
     { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
     { id: 'users',     label: 'Users',     icon: Users },
-    { id: 'documentation', label: 'Documentation (Ctrl + D)', icon: BookOpen },
   ]
 
   return (
@@ -51,20 +50,14 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
           <SidebarItem
             key={item.id}
             {...item}
-            active={activeTab === item.id && item.id !== 'documentation'}
+            active={activeTab === item.id}
             collapsed={collapsed}
-            onClick={() => {
-              if (item.id === 'documentation') {
-                onOpenDocs()
-              } else {
-                setActiveTab(item.id)
-              }
-            }}
+            onClick={() => setActiveTab(item.id)}
           />
         ))}
       </div>
 
-      <SidebarFooter collapsed={collapsed} onOpenSettings={onOpenSettings} onOpenTheme={onOpenTheme} />
+      <SidebarFooter collapsed={collapsed} onOpenSettings={onOpenSettings} onOpenTheme={onOpenTheme} onOpenDocs={onOpenDocs} />
     </div>
   )
 })

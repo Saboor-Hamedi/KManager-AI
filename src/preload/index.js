@@ -43,7 +43,9 @@ const api = {
     resolvePaths: (paths) => ipcRenderer.invoke('system:resolve-paths', paths),
     selectFolder: () => ipcRenderer.invoke('system:select-folder'),
     registerEscape: () => ipcRenderer.invoke('system:register-escape'),
-    unregisterEscape: () => ipcRenderer.invoke('system:unregister-escape')
+    unregisterEscape: () => ipcRenderer.invoke('system:unregister-escape'),
+    readBrainDocs: () => ipcRenderer.invoke('system:read-brain-docs'),
+    readFileContent: (filePath) => ipcRenderer.invoke('system:read-file-content', filePath)
   },
   windowControls: {
     minimize: () => ipcRenderer.send('window:minimize'),

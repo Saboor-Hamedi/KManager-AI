@@ -708,6 +708,54 @@ app.whenReady().then(() => {
     return result.filePaths
   })
 
+  ipcMain.handle('system:read-brain-docs', async () => {
+    try {
+      const brainPath = path.join(app.getAppPath(), 'brain')
+      if (!fs.existsSync(brainPath)) {
+        return { GENERAL: [{ title: 'No Documentation', path: '', type: 'md' }] }
+      }
+
+      const categories = {}
+      const entries = fs.readdirSync(brainPath, { withFileTypes: true })
+
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue
+        const categoryDir = path.join(brainPath, entry.name)
+        const docs = fs.readdirSync(categoryDir).filter(f => f.endsWith('.md')).map(f => {
+          const title = f.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          return { title, path: path.join(categoryDir, f), type: 'md' }
+        })
+        if (docs.length > 0) {
+          categories[entry.name.toUpperCase()] = docs
+        }
+      }
+
+      if (Object.keys(categories).length === 0) {
+        const rootDocs = fs.readdirSync(brainPath).filter(f => f.endsWith('.md')).map(f => {
+          const title = f.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          return { title, path: path.join(brainPath, f), type: 'md' }
+        })
+        if (rootDocs.length > 0) categories['GENERAL'] = rootDocs
+      }
+
+      return categories
+    } catch (err) {
+      console.error('Failed to read brain docs:', err)
+      return { GENERAL: [{ title: 'Error loading docs', path: '', type: 'md' }] }
+    }
+  })
+
+  ipcMain.handle('system:read-file-content', async (_event, filePath) => {
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return null
+      const content = fs.readFileSync(filePath, 'utf8')
+      return content
+    } catch (err) {
+      console.error('Failed to read file:', err)
+      return null
+    }
+  })
+
   createWindow()
 
   app.on('activate', function () {
