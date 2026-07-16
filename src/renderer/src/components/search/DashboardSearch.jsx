@@ -139,10 +139,11 @@ const DashboardSearch = () => {
   // Smooth auto-scroll chat to bottom only when history updates
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth'
-      })
+      const el = scrollRef.current
+      const maxScroll = el.scrollHeight - el.clientHeight
+      if (maxScroll - el.scrollTop < 150) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      }
     }
   }, [history])
 
@@ -327,7 +328,10 @@ const DashboardSearch = () => {
 
     setTimeout(() => {
       if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        scrollRef.current.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: 'smooth'
+        })
       }
     }, 50);
 

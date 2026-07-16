@@ -1,85 +1,142 @@
-# KManager AI — Roadmap & Feature Suggestions (`suggestions.md`)
+# KManager AI — Roadmap & Feature Suggestions
 
-This document tracks all planned, in-progress, and completed enhancements to turn KManager AI into the ultimate local "Source of Truth" search and intelligence platform. Each feature is broken down into modular JS/JSX files to keep the codebase clean, maintainable, and high-performing.
-
----
-
-## 🟢 Checklist & Execution Status
-
-- [x] **Feature 1: Interactive "Related Topics & Suggested Prompts" Pills** (Completed)
-- [x] **Feature 2: Document Citation Preview & Jump-To-Source Modal** (Completed & Verified)
-- [x] **Feature 3: Smart PDF & Multi-Format Ingestion Pipeline (`pdf-parse`)** (Completed & Verified)
-- [x] **Feature 4: Hybrid RAG Search (Vector Similarity + BM25 Keyword Match)** (Completed & Verified)
-- [x] **Feature 5: Lightweight Local Semantic Re-Ranking** (Completed & Verified)
+This document tracks planned enhancements to turn KManager AI into an advanced local knowledge management platform, beyond ordinary chatbot capabilities.
 
 ---
 
-## 📌 Feature 1: Interactive "Related Topics & Suggested Prompts" Pills
+## Checklist & Execution Status
 
-### **Objective**
-Right below every AI RAG answer or search response, dynamically generate 3–4 clickable, high-relevance prompt suggestions and related topics (e.g., `💡 Compare this with the 2024 findings...`, `💡 Summarize methodology from Source 1...`). Clicking a pill immediately triggers that follow-up search/chat, turning static retrieval into an effortless exploration flow.
-
-### **Modular Architecture (`JS/JSX`)**
-- `src/renderer/src/components/search/SuggestedPrompts.jsx`: Clean, dedicated UI component that displays interactive pills with subtle hover animations and click handlers.
-- `src/renderer/src/lib/deepseek.js`: Add helper/logic or prompt instruction so DeepSeek can optionally output or we can generate suggested follow-up queries, or derive them locally/via API.
-
-### **Status & Notes**
-- **Status:** `[x] Completed & Verified`
-- **Notes:** Kept modular in `SuggestedPrompts.jsx` and imported cleanly into `DashboardSearch.jsx` to prevent cluttering the main search component.
+- [ ] Feature 1: Local Multi-Model RAG (Ollama / LlamaCPP)
+- [ ] Feature 2: Adaptive Semantic Chunking
+- [ ] Feature 3: RAG Quality Auto-Scoring
+- [ ] Feature 4: Knowledge Graph from Documents
+- [ ] Feature 5: Smart Query Decomposition
+- [ ] Feature 6: Bidirectional Auto-Linking Between Documents
+- [ ] Feature 7: Timeline View
+- [ ] Feature 8: Conversational State Machine
 
 ---
 
-## 📌 Feature 2: Document Citation Preview & Jump-To-Source Modal
+## Feature 1: Local Multi-Model RAG
 
-### **Objective**
-When the AI cites `[Source 1: Clinical_Trial_Report.pdf]` or when a user clicks a source badge, open a sleek, slide-over preview modal on the right side of the screen that shows the exact paragraph inside the full document context.
+### Objective
+Add support for local LLMs via Ollama or LlamaCPP alongside the existing DeepSeek integration. Users could run Llama 3, Mistral, Qwen, Phi, or any GGUF model locally for fully offline RAG -- no API key needed, no data ever leaves the machine. This eliminates the last remaining cloud dependency and makes the product truly air-gapped.
 
-### **Modular Architecture (`JS/JSX`)**
-- `src/renderer/src/components/search/CitationPreviewModal.jsx`: Slide-over drawer component (`AnimatePresence`) displaying full document text with highlighted query terms and copy/export actions.
+### Modular Architecture
+- `src/main/services/llm.js`: Abstraction layer that supports multiple backends (DeepSeek API, Ollama REST API, local subprocess for llama.cpp). Single interface (`generate()` / `stream()`) regardless of backend.
+- `src/renderer/src/components/settings/SettingAIPanel.jsx`: Extend with model selection dropdown showing available local models and connection status.
 
-### **Status & Notes**
-- **Status:** `[x] Completed & Verified`
-- **Notes:** Created `CitationPreviewModal.jsx` slide-over drawer, added `sourcecite:` token encoding in `DocumentRenderer.jsx`, and added quick `Preview` buttons in `SearchResultCard.jsx`. Fully tested & verified with clean build.
-
----
-
-## 📌 Feature 3: Smart PDF & Multi-Format Ingestion Pipeline (`pdf-parse`)
-
-### **Objective**
-Enable drag-and-drop or directory watching to ingest PDFs, Word documents, and Markdown notes directly into the vector database (`sqlite-vss` / embeddings). Preserves page numbers, table formatting, and document titles.
-
-### **Modular Architecture (`JS/JSX`)**
-- `src/main/services/pdfIngestion.js`: Main process service utilizing `pdf-parse` or equivalent to extract clean text, split into semantic chunks with overlapping boundaries, and index into IPC DB.
-- `src/renderer/src/components/search/PDFUploadZone.jsx`: Dedicated UI component allowing users to upload or select a directory of PDFs to index.
-
-### **Status & Notes**
-- **Status:** `[x] Completed & Verified`
-- **Notes:** Created `src/main/services/pdfIngestion.js` (smart multi-format extraction and overlapping semantic chunker) and `src/renderer/src/components/search/PDFUploadZone.jsx` (compact drop zone & directory indexing bar embedded inside `DashboardSearch.jsx`). Verified with clean electron-vite build.
+### Impact
+Eliminates the final internet dependency. True air-gapped operation with no external API calls. Users can choose between speed (DeepSeek API) and privacy (local models).
 
 ---
 
-## 📌 Feature 4: Hybrid RAG Search (Vector Similarity + BM25 Keyword Match)
+## Feature 2: Adaptive Semantic Chunking
 
-### **Objective**
-Combine dense vector embeddings (which understand broad semantic meanings) with sparse exact-keyword matching (BM25 score) so technical terminology, gene names (`eQTL`, `pLDDT`), and exact document codes never get missed.
+### Objective
+Replace the current fixed 1500-char window chunking with semantic boundary detection. Split at natural paragraph breaks, section headers (detected via markdown heading syntax or formatting), and concept boundaries. Store parent-child relationships between chunks (section -> document) so retrieval can return coherent sections instead of arbitrary slices.
 
-### **Modular Architecture (`JS/JSX`)**
-- `src/main/services/hybridSearch.js`: Combines vector similarity (`similarity`) with exact keyword match scoring (`content LIKE ...` or token overlap) using Reciprocal Rank Fusion (RRF).
+### Modular Architecture
+- `src/main/services/pdfIngestion.js`: Enhance `splitIntoSemanticChunks()` to detect markdown headers, numbered sections, and natural paragraph clusters as boundary markers.
+- `schema.sql`: Add a `parent_chunk_id` column to `embedding_documents` for hierarchical chunk relationships.
 
-### **Status & Notes**
-- **Status:** `[x] Completed & Verified`
-- **Notes:** Created `src/main/services/hybridSearch.js` implementing true Reciprocal Rank Fusion (RRF) and BM25 exact keyword scoring combined with dense vector cosine similarity. Delegated from `Hybrid.js` and verified with clean electron-vite build (`✓ built in 57.55s`). Guarantees 100% recall for both conceptual queries and exact keyword lookups.
+### Impact
+Coherent context instead of mid-sentence cutoffs. Better RAG quality because the LLM receives complete thoughts, not truncated snippets.
 
 ---
 
-## 📌 Feature 5: Lightweight Local Semantic Re-Ranking
+## Feature 3: RAG Quality Auto-Scoring
 
-### **Objective**
-Retrieve top 15–20 candidate chunks from the database, then re-rank them using a local scoring algorithm before passing the top 3–5 hyper-relevant chunks to DeepSeek, ensuring zero hallucination or noise.
+### Objective
+After each RAG response, run an automatic evaluation pipeline that scores:
+- **Faithfulness**: Does the answer contradict the source chunks? (Use DeepSeek or a local model to check)
+- **Relevance**: Does it address the user's query directly?
+- **Completeness**: Did it miss key information present in the sources?
 
-### **Modular Architecture (`JS/JSX`)**
-- `src/renderer/src/lib/reranker.js` (or main service): Re-orders chunks by scoring exact query overlap and semantic density.
+Store scores in the existing `search_feedback` table. Use the accumulated data to identify which chunking strategies, retrieval parameters, and prompt formats produce the best results for your specific corpus.
 
-### **Status & Notes**
-- **Status:** `[x] Completed & Verified`
-- **Notes:** Created `src/renderer/src/lib/reranker.js` (scoring exact multi-word phrase overlap, n-gram/token ratio, information structure, and MMR Maximal Marginal Relevance diversity pruning). Wired directly into `DashboardSearch.jsx` to retrieve 20 hybrid candidates and distill down to the top 5 hyper-relevant chunks before feeding the DeepSeek RAG prompt. Verified cleanly (`✓ built in 41.41s`).
+### Modular Architecture
+- `src/renderer/src/lib/qualityScorer.js`: New module that sends the query, chunks, and answer to an LLM for automated scoring.
+- `src/main/index.js`: New IPC handler for quality scoring. Store results in a new `quality_scores` table or extend `search_logs`.
+
+### Impact
+Self-improving system. Over time, the system learns which strategies work best for your data. Also provides real quality metrics for the analytics dashboard instead of synthetic benchmark data.
+
+---
+
+## Feature 4: Knowledge Graph from Documents
+
+### Objective
+Extract entities, relationships, and concepts from ingested documents using the LLM or local NLP. Build a graph that connects related documents via shared concepts, authors, topics, or extracted entities. Display an interactive graph visualization for exploration.
+
+### Modular Architecture
+- `src/main/services/knowledgeGraph.js`: New service that runs entity extraction on ingested documents, builds relationship edges, and stores them in a new `graph_edges` table.
+- `src/renderer/src/components/KnowledgeGraph.jsx`: Interactive graph visualization using Cytoscape (already a dependency via Mermaid diagrams).
+- `src/renderer/src/components/search/DashboardSearch.jsx`: Add a "Graph View" toggle that switches between list and graph display of search results.
+
+### Impact
+Unique differentiator from every other RAG tool. Users can visually explore their knowledge base -- find connected documents they didn't know existed, discover relationships between concepts, and navigate by association rather than just by search.
+
+---
+
+## Feature 5: Smart Query Decomposition
+
+### Objective
+For complex or compound questions, automatically break them into sub-queries, search each independently, then synthesize a merged answer. Example: "Compare the treatment protocols in the 2023 and 2024 guidelines" decomposes into searches for "2023 guidelines treatment protocol" and "2024 guidelines treatment protocol", then merges the results.
+
+### Modular Architecture
+- `src/renderer/src/lib/queryDecomposer.js`: New module that sends the query to an LLM with instructions to return a JSON array of independent sub-queries.
+- `src/renderer/src/components/search/DashboardSearch.jsx`: Execute sub-queries in parallel (or sequentially), collect results, then feed merged context to the RAG synthesis step.
+
+### Impact
+Enables multi-document synthesis and comparative analysis -- something single-query RAG systems fundamentally struggle with.
+
+---
+
+## Feature 6: Bidirectional Auto-Linking
+
+### Objective
+When a document contains a term that exists as a tag or keyword in another document, automatically create a bidirectional link between them. This is similar to Obsidian's backlinks but generated automatically during ingestion. Render these links as clickable badges within DocumentRenderer.
+
+### Modular Architecture
+- `src/main/db/ingestion.js`: After auto-tagging, query for existing documents that share the same tags and create link entries in a new `document_links` table.
+- `src/renderer/src/components/search/DocumentRenderer.jsx`: Render backlinks as a "Linked Documents" section at the bottom of each document view, styled as clickable pill badges.
+
+### Impact
+The knowledge base grows connections organically with zero user effort. Users discover related documents they didn't know existed, enabling serendipitous exploration.
+
+---
+
+## Feature 7: Timeline View
+
+### Objective
+Show ingested documents on a chronological timeline based on creation date, modification date, or extracted dates from document content. Allow filtering by date range. Particularly powerful for research, legal, compliance, and project documentation use cases.
+
+### Modular Architecture
+- `src/renderer/src/components/TimelineView.jsx`: New view that renders documents on a horizontal or vertical timeline, with zoom controls for date range.
+- Could use Recharts (already a dependency) or a purpose-built timeline component.
+- Accessible via a new sidebar nav item or a tab within the Analytics view.
+
+### Impact
+Temporal navigation of your knowledge base. Users can ask "what did I add last month?" and see everything in context.
+
+---
+
+## Feature 8: Conversational State Machine
+
+### Objective
+Instead of passing raw chat history, maintain a structured state object that tracks:
+- Current topic / document being discussed
+- Referenced sources (with chunk IDs)
+- User's apparent goal (exploring, comparing, verifying)
+- Previous questions and answers (summarized)
+
+Use this state to proactively suggest related documents, offer follow-up actions, and provide contextually aware responses without relying solely on raw token history.
+
+### Modular Architecture
+- `src/renderer/src/lib/conversationState.js`: New module that manages a structured state object, with functions for updating state based on user input and generating state summaries for the LLM prompt.
+- `src/renderer/src/lib/deepseek.js`: Inject structured state into the system prompt alongside raw history.
+- `src/renderer/src/components/search/DashboardSearch.jsx`: Use state to drive proactive suggestions and contextual UI cues.
+
+### Impact
+Proactive assistance instead of purely reactive Q&A. The system understands what you're trying to do and helps you do it, rather than just answering one question at a time.
