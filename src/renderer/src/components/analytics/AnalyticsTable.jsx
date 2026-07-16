@@ -78,13 +78,13 @@ const AnalyticsTable = memo(({ data }) => {
             </div>
 
             {/* Route Filter (Single Words) */}
-            <div className="flex bg-[var(--bg-app)]/60 border border-[var(--border-dim)] rounded-lg p-0.5 text-xs">
+            <div className="flex bg-[var(--bg-app)]/60 rounded-lg p-0.5 text-xs">
               {['all', 'conv', 'complex'].map(r => (
                 <button
                   key={r}
                   onClick={() => setFilterRoute(r)}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
-                    filterRoute === r ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]/50' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    filterRoute === r ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm' : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
                   }`}
                 >
                   {r === 'all' ? 'All' : r === 'conv' ? 'Conversational' : 'Vector'}
@@ -95,7 +95,7 @@ const AnalyticsTable = memo(({ data }) => {
         </div>
 
         {/* Compact, Single-Word Table Container */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[520px] min-h-[400px] rounded-lg border border-[var(--border-dim)] bg-[var(--bg-app)]/40 w-full">
+        <div className="overflow-x-auto overflow-y-auto max-h-[520px] min-h-[400px] rounded-lg bg-[var(--bg-app)]/40 w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[var(--border-dim)] bg-[var(--bg-panel)]/50 text-[11px] font-medium text-[var(--text-muted)]">

@@ -67,11 +67,11 @@ const QualityCoherenceFigure = memo(({ data }) => {
 
         <div className="flex flex-wrap items-center justify-end gap-3 sm:ml-auto">
           {/* Mode Toggle (Single Words) */}
-          <div className="flex bg-[var(--bg-app)]/60 border border-[var(--border-dim)] rounded-lg p-0.5 text-xs">
+          <div className="flex bg-[var(--bg-app)]/60 rounded-lg p-0.5 text-xs">
             <button
               onClick={() => setViewMode('trend')}
               className={`px-2.5 py-1 rounded-md transition-colors ${
-                viewMode === 'trend' ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]/50' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                viewMode === 'trend' ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm' : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
               }`}
             >
               Trend
@@ -79,7 +79,7 @@ const QualityCoherenceFigure = memo(({ data }) => {
             <button
               onClick={() => setViewMode('summary')}
               className={`px-2.5 py-1 rounded-md transition-colors ${
-                viewMode === 'summary' ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]/50' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                viewMode === 'summary' ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm' : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
               }`}
             >
               Summary
@@ -87,15 +87,15 @@ const QualityCoherenceFigure = memo(({ data }) => {
           </div>
 
           {viewMode === 'trend' && (
-            <div className="flex bg-[var(--bg-app)]/60 border border-[var(--border-dim)] rounded-lg p-0.5 text-xs">
+            <div className="flex bg-[var(--bg-app)]/60 rounded-lg p-0.5 text-xs">
               {['15', '25', '50', 'all'].map(win => (
                 <button
                   key={win}
                   onClick={() => setTimeWindow(win)}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
                     timeWindow === win
-                      ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]/50'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm'
+                      : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
                   }`}
                 >
                   {win === 'all' ? 'All' : win}

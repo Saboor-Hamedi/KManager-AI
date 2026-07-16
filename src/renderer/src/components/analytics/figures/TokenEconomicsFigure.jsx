@@ -80,15 +80,15 @@ const TokenEconomicsFigure = memo(({ data }) => {
 
         {/* Range Selector Tabs on Right Side */}
         <div className="flex flex-wrap items-center justify-end gap-3 sm:ml-auto">
-          <div className="flex bg-[var(--bg-app)]/60 border border-[var(--border-dim)] rounded-lg p-0.5 text-xs">
+          <div className="flex bg-[var(--bg-app)]/60 rounded-lg p-0.5 text-xs">
             {['15', '25', '50', 'all'].map(win => (
               <button
                 key={win}
                 onClick={() => setTimeWindow(win)}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   timeWindow === win
-                    ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]/50'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm/50'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
                 }`}
               >
                 {win === 'all' ? 'All' : win}

@@ -59,7 +59,7 @@ const AnalyticsContainer = () => {
 
         <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
           {/* Subtle Compact Section Tabs (No Icons) */}
-          <div className="flex bg-[var(--bg-app)]/60 border border-[var(--border-dim)] rounded-lg p-0.5 text-xs">
+          <div className="flex bg-[var(--bg-app)]/60 rounded-lg p-0.5 text-xs">
             {[
               { id: 'all', label: 'Overview' },
               { id: 'cards', label: 'Cards' },
@@ -72,8 +72,8 @@ const AnalyticsContainer = () => {
                 onClick={() => setActiveSection(tab.id)}
                 className={`px-3 py-1 rounded-md transition-colors ${
                   activeSection === tab.id
-                    ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]/50'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
                 }`}
               >
                 {tab.label}
@@ -85,7 +85,7 @@ const AnalyticsContainer = () => {
           <button
             onClick={fetchMetrics}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-panel)] hover:bg-[var(--border-dim)] border border-[var(--border-dim)] text-[var(--text-main)] text-xs font-medium rounded-lg disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-panel)] hover:bg-[var(--border-dim)] text-[var(--text-main)] text-xs font-medium rounded-lg disabled:opacity-50 transition-colors"
           >
             {isLoading ? <Loader2 size={13} className="animate-spin text-[var(--text-muted)]" /> : <RefreshCw size={13} className="text-[var(--text-muted)]" />}
             <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
