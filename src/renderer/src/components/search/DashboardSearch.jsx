@@ -334,20 +334,12 @@ const DashboardSearch = () => {
     // Run RAG on the target document or all documents
     if (enableRag) {
       try {
-        let contextText = '';
-        if (targetItem && targetItem.content) {
-          contextText = targetItem.content;
-        } else if (parentMsg.results && parentMsg.results.length > 0) {
-          contextText = parentMsg.results.map(r => r.content).join('\n\n---\n\n');
-        }
+        const apiKey = await getSetting('DEEPSEEK_API_KEY', '')
+        const relevantChunks = targetItem
+          ? [targetItem]
+          : (parentMsg.results || []).slice(0, 5)
 
-        const isConversational = await checkIsConversational(replyText);
-        let finalContext = contextText;
-        if (isConversational) {
-           finalContext = `Previous conversation context:\nUser: ${parentMsg.query}\nAI: ${parentMsg.ragAnswer}\n\nDocument context:\n${contextText}`;
-        }
-        
-        await streamRagAnswer(replyText, finalContext, (chunk) => {
+        await streamRagAnswer(replyText, relevantChunks, apiKey, (chunk) => {
           setHistory(prev => prev.map(msg => {
             if (msg.id === messageId) {
               return { ...msg, ragAnswer: msg.ragAnswer + chunk };
