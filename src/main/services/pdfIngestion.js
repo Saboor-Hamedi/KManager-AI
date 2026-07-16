@@ -20,6 +20,13 @@ export class PDFIngestionService {
   }
 
   /**
+   * Clears the extraction cache (used when truncating the database)
+   */
+  clearCache() {
+    _extractionCache.clear()
+  }
+
+  /**
    * Sanitize text for PostgreSQL / SQLite storage, stripping null bytes and invalid characters.
    */
   sanitizeText(text) {

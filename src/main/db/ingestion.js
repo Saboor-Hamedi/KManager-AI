@@ -70,6 +70,25 @@ class IngestionService {
     }
     const extractTime = elapsed(t1)
 
+    // ── Auto-Tagging (Automated Knowledge Extraction) ─────────────
+    const extractKeywords = (text) => {
+      const stopWords = new Set(['the','and','to','of','a','in','that','is','for','on','it','as','with','this','was','at','by','an','be','from','or','are','not','but','which','all','have','they','we','been','has','will','more','their','can','about','if','when','would','there','what','so','up','out','who','into','its','then','them','some','could'])
+      const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+      const freqs = {}
+      for (const w of words) {
+        if (w.length > 3 && !stopWords.has(w) && isNaN(w)) {
+          freqs[w] = (freqs[w] || 0) + 1
+        }
+      }
+      return Object.entries(freqs)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(x => x[0])
+    }
+    const tags = extractKeywords(sanitizedText)
+    const metadataObj = { tags, extracted_at: new Date().toISOString() }
+    const metadataStr = JSON.stringify(metadataObj)
+
     // ── Step 2: Hash + Chunk ─────────────────────────────────────────────
     const t2 = startTimer()
     progressCallback({ status: 'chunking', progress: 25, message: `✂️  Chunking text (extracted in ${extractTime})...` })
@@ -90,11 +109,11 @@ class IngestionService {
       const t3 = startTimer()
 
       const docInsertRes = await client.query(
-        `INSERT INTO documents (vault_path, file_name, file_type, file_size, content, content_hash)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()
+        `INSERT INTO documents (vault_path, file_name, file_type, file_size, content, content_hash, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, metadata = EXCLUDED.metadata, updated_at = NOW()
          RETURNING id`,
-        [filePath, fileName, fileType, fileSize, sanitizedText, contentHash]
+        [filePath, fileName, fileType, fileSize, sanitizedText, contentHash, metadataStr]
       )
 
       const documentId    = docInsertRes.rows[0].id
@@ -265,7 +284,9 @@ class IngestionService {
     if (!db || !db.isConnected()) throw new Error('Database not connected')
     const t = startTimer()
     await db.query('TRUNCATE TABLE search_feedback, embedding_documents, documents RESTART IDENTITY CASCADE')
-    _extractionCache.clear()
+    if (pdfIngestionService && typeof pdfIngestionService.clearCache === 'function') {
+      pdfIngestionService.clearCache()
+    }
     const time = elapsed(t)
     console.log(`[IngestionService] truncateAll completed in ${time}`)
     return { success: true, time }

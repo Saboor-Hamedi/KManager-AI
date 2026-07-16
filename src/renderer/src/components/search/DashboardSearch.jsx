@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search, Send, Plus, ChevronDown, Mic, ArrowUp, RotateCcw, Sparkles } from 'lucide-react'
 import SearchResultCard from './SearchResultCard'
-import ReferenceDocumentModal from './ReferenceDocumentModal'
+import Preview from './Preview'
 import DocumentRenderer from './DocumentRenderer'
 import Autocompletion from './Autocompletion'
-import CitationPreviewModal from './CitationPreviewModal'
 import PDFUploadZone from './PDFUploadZone'
 import SuggestedPrompts from './SuggestedPrompts'
+import EmptySearchState from './EmptySearchState'
+import InlineChat from './InlineChat'
 import { getSetting, saveSetting } from '../../lib/settings'
 import { streamRagAnswer, checkIsConversational } from '../../lib/deepseek'
 
@@ -36,24 +37,7 @@ const SearchLoadingSkeleton = () => (
   </div>
 )
 
-const EmptySearchState = ({ query, onConnect }) => (
-  <div className="flex flex-col items-center justify-center py-8 px-4 text-center gap-3 my-2 animate-in fade-in duration-200">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-faint)] opacity-40">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      <line x1="11" y1="8" x2="11" y2="14" />
-      <line x1="8" y1="11" x2="14" y2="11" />
-    </svg>
-    <div className="flex flex-col gap-1 max-w-sm">
-      <h4 className="text-[13px] font-medium text-[var(--text-muted)]">
-        No matching documents found
-      </h4>
-      <p className="text-[12px] text-[var(--text-faint)] leading-relaxed">
-        We couldn't find documents matching <span className="font-mono text-[var(--text-muted)] not-italic">"{query}"</span>. Try adjusting your keywords.
-      </p>
-    </div>
-  </div>
-)
+
 
 const DashboardSearch = () => {
   const [query, setQuery] = useState('')
@@ -70,6 +54,8 @@ const DashboardSearch = () => {
   const [showAutocomplete, setShowAutocomplete] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [previewItem, setPreviewItem] = useState(null)
+  const [activeReplyId, setActiveReplyId] = useState(null)
+  const [collapsedReplies, setCollapsedReplies] = useState({})
 
   const handleSaveResponse = async (msgId, query, answer) => {
     setSavedResponses(prev => ({ ...prev, [msgId]: 'saving' }))
@@ -315,6 +301,85 @@ const DashboardSearch = () => {
     }
   }
 
+  const submitFollowUp = async (replyText, parentMsg, targetItem) => {
+    if (!replyText || replyText.trim() === '') return;
+    
+    // Create new follow up message in history
+    const messageId = Date.now().toString();
+    const isGlobal = !targetItem;
+    
+    const followUpMsg = {
+      id: messageId,
+      query: replyText,
+      timestamp: new Date().toISOString(),
+      results: targetItem ? [targetItem] : (parentMsg.results || []),
+      isLoading: true,
+      error: null,
+      ragStatus: 'generating',
+      ragAnswer: '',
+      ragError: null,
+      isFollowUp: true,
+      parentMsgId: parentMsg.id,
+      targetResultId: targetItem ? targetItem.uniqueResultId : null
+    };
+
+    setHistory(prev => [...prev, followUpMsg]);
+
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 50);
+
+    // Run RAG on the target document or all documents
+    if (enableRag) {
+      try {
+        let contextText = '';
+        if (targetItem && targetItem.content) {
+          contextText = targetItem.content;
+        } else if (parentMsg.results && parentMsg.results.length > 0) {
+          contextText = parentMsg.results.map(r => r.content).join('\n\n---\n\n');
+        }
+
+        const isConversational = await checkIsConversational(replyText);
+        let finalContext = contextText;
+        if (isConversational) {
+           finalContext = `Previous conversation context:\nUser: ${parentMsg.query}\nAI: ${parentMsg.ragAnswer}\n\nDocument context:\n${contextText}`;
+        }
+        
+        await streamRagAnswer(replyText, finalContext, (chunk) => {
+          setHistory(prev => prev.map(msg => {
+            if (msg.id === messageId) {
+              return { ...msg, ragAnswer: msg.ragAnswer + chunk };
+            }
+            return msg;
+          }));
+          setTimeout(() => {
+            if (scrollRef.current) {
+              const maxScroll = scrollRef.current.scrollHeight - scrollRef.current.clientHeight;
+              if (maxScroll - scrollRef.current.scrollTop < 100) {
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+              }
+            }
+          }, 10);
+        });
+        
+        setHistory(prev => prev.map(msg => 
+          msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
+        ));
+      } catch (err) {
+        console.error('Follow-up RAG error:', err);
+        setHistory(prev => prev.map(msg => 
+          msg.id === messageId ? { ...msg, ragStatus: 'error', ragError: err.message } : msg
+        ));
+      }
+    } else {
+       setHistory(prev => prev.map(msg => 
+          msg.id === messageId ? { ...msg, ragStatus: 'disabled', isLoading: false } : msg
+        ));
+    }
+  }
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -505,13 +570,33 @@ const DashboardSearch = () => {
                         </span>
                       </div>
                     )}
-                    {msg.results.map((item) => (
-                      <SearchResultCard
-                        key={item.id}
-                        item={item}
-                        query={msg.query}
-                        handleSelect={handleSelect}
-                      />
+                    {!msg.isFollowUp && msg.results.map((item, idx) => (
+                      <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
+                        <SearchResultCard
+                          item={item}
+                          query={msg.query}
+                          handleSelect={handleSelect}
+                          onReply={() => {
+                            if (activeReplyId === `${msg.id}-${idx}`) {
+                              setActiveReplyId(null);
+                            } else {
+                              setActiveReplyId(`${msg.id}-${idx}`);
+                            }
+                          }}
+                          isActiveReply={activeReplyId === `${msg.id}-${idx}`}
+                        />
+                        <div className="mt-2 mb-4">
+                          <InlineChat 
+                            resultId={`${item.id || 'res'}-${idx}`}
+                            msg={msg}
+                            activeReplyId={activeReplyId}
+                            compositeId={`${msg.id}-${idx}`}
+                            collapsedReplies={collapsedReplies}
+                            setCollapsedReplies={setCollapsedReplies}
+                            submitFollowUp={(val) => submitFollowUp(val, msg, { ...item, uniqueResultId: `${item.id || 'res'}-${idx}` })}
+                          />
+                        </div>
+                      </div>
                     ))}
 
                     {/* RAG Synthesized Answer Card BELOW retrieved sources */}
@@ -539,42 +624,66 @@ const DashboardSearch = () => {
                               )}
                             </div>
                             
-                            {/* Save to DB Button */}
+                            {/* Save to DB Button & Export Report Button */}
                             {msg.ragStatus === 'done' && (
-                              <div className="flex justify-start mt-2">
-                                <button
-                                  onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
-                                  disabled={savedResponses[msg.id] === 'saving' || savedResponses[msg.id] === 'saved'}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${
-                                    savedResponses[msg.id] === 'saved'
-                                      ? 'bg-green-500/10 text-green-400 cursor-default'
-                                      : savedResponses[msg.id] === 'saving'
-                                        ? 'bg-[var(--bg-panel)]/50 text-[var(--text-muted)] cursor-wait opacity-70'
-                                        : 'bg-[var(--bg-panel)]/40 hover:bg-[#394b5e]/40 text-[var(--text-muted)] hover:text-gray-300 shadow-sm'
-                                  }`}
-                                >
-                                  {savedResponses[msg.id] === 'saved' ? (
-                                    <>
-                                      <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-500/20 text-green-400">
-                                        <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                          <polyline points="2.5 6 5 8.5 9.5 3.5"></polyline>
-                                        </svg>
-                                      </div>
-                                      Saved to Knowledge Base
-                                    </>
-                                  ) : savedResponses[msg.id] === 'saving' ? (
-                                    <>
-                                      <span className="w-3 h-3 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
-                                      Saving...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Plus size={13} />
-                                      Save to Knowledge Base
-                                    </>
-                                  )}
-                                </button>
-                              </div>
+                              <>
+                                <div className="flex justify-start mt-2 items-center">
+                                  <button
+                                    onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
+                                    disabled={savedResponses[msg.id] === 'saving' || savedResponses[msg.id] === 'saved'}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${
+                                      savedResponses[msg.id] === 'saved'
+                                        ? 'bg-green-500/10 text-green-400 cursor-default'
+                                        : savedResponses[msg.id] === 'saving'
+                                          ? 'bg-[var(--bg-panel)]/50 text-[var(--text-muted)] cursor-wait opacity-70'
+                                          : 'bg-[var(--bg-panel)]/40 hover:bg-[#394b5e]/40 text-[var(--text-muted)] hover:text-gray-300 shadow-sm'
+                                    }`}
+                                  >
+                                    {savedResponses[msg.id] === 'saved' ? (
+                                      <>
+                                        <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-500/20 text-green-400">
+                                          <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="2.5 6 5 8.5 9.5 3.5"></polyline>
+                                          </svg>
+                                        </div>
+                                        Saved to Knowledge Base
+                                      </>
+                                    ) : savedResponses[msg.id] === 'saving' ? (
+                                      <>
+                                        <span className="w-3 h-3 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
+                                        Saving...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Plus size={13} />
+                                        Save to Knowledge Base
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                {/* Suggested Prompts and Global Threaded Replies */}
+                                <div className="mt-6">
+                                  <SuggestedPrompts msg={msg} onSelectPrompt={(p) => {
+                                    setQuery(p);
+                                    if (textareaRef.current) {
+                                      textareaRef.current.focus();
+                                      textareaRef.current.style.height = 'auto';
+                                      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+                                    }
+                                  }} />
+                                  
+                                  <InlineChat 
+                                    resultId={null}
+                                    msg={msg}
+                                    activeReplyId={activeReplyId}
+                                    compositeId={`${msg.id}-global`}
+                                    collapsedReplies={collapsedReplies}
+                                    setCollapsedReplies={setCollapsedReplies}
+                                    submitFollowUp={(val) => submitFollowUp(val, msg, null)}
+                                    showForm={false}
+                                  />
+                                </div>
+                              </>
                             )}
                           </div>
                         )}
@@ -592,25 +701,14 @@ const DashboardSearch = () => {
 
             </div>
           ))
-  }, [history, savedResponses, handleSelect, enableRag])
+  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies])
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--bg-app)] overflow-hidden relative">
+    <div className="flex-1 flex flex-row h-full bg-[var(--bg-app)] overflow-hidden relative">
       
-      {/* Reference Document Popup Modal */}
-      <ReferenceDocumentModal
-        selectedPdf={selectedPdf}
-        onClose={handleCloseModal}
-        fileExists={fileExists}
-      />
+      {/* Left Area: Chat Feed */}
+      <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ${selectedPdf ? 'w-1/2 border-r border-[var(--border-subtle)]' : 'w-full'}`}>
 
-      {/* Slide-over Citation & Chunk Preview Drawer */}
-      <CitationPreviewModal
-        previewItem={previewItem}
-        onClose={() => setPreviewItem(null)}
-        onOpenFullFile={handleSelect}
-        query={query}
-      />
 
       {/* Smart PDF & Multi-Format Ingestion Bar & Drop Zone */}
       <PDFUploadZone />
@@ -709,10 +807,22 @@ const DashboardSearch = () => {
                   <ArrowUp size={16} strokeWidth={2.5} />
                 </button>
               </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Right Reference Panel */}
+      {selectedPdf && (
+        <div className="w-1/2 h-full flex flex-col bg-[var(--bg-app)] border-l border-[var(--border-subtle)] overflow-hidden animate-in slide-in-from-right duration-200">
+          <Preview
+            selectedPdf={selectedPdf}
+            onClose={handleCloseModal}
+            fileExists={fileExists}
+          />
+        </div>
+      )}
 
     </div>
   )
