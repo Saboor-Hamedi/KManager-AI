@@ -11,11 +11,13 @@ import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts'
 import DashboardSearch from './components/search/DashboardSearch'
 import AnalyticsView from './components/analytics/AnalyticsView'
 import UsersView from './components/users/UsersView'
+import Documentation from './components/Documentation'
 
 function App() {
   const [activeTab, setActiveTab] = useState('search')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isThemeOpen, setIsThemeOpen] = useState(false)
+  const [isDocsOpen, setIsDocsOpen] = useState(false)
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed')
@@ -74,6 +76,7 @@ function App() {
     onToggleSidebar: toggleSidebar,
     onToggleTheme: useCallback(() => setIsThemeOpen(prev => !prev), []),
     onToggleSettings: useCallback(() => setIsSettingsOpen(prev => !prev), []),
+    onToggleDocs: useCallback(() => setIsDocsOpen(prev => !prev), []),
   })
 
   return (
@@ -86,6 +89,7 @@ function App() {
           setActiveTab={setActiveTab} 
           onOpenSettings={() => setIsSettingsOpen(true)} 
           onOpenTheme={() => setIsThemeOpen(true)}
+          onOpenDocs={() => setIsDocsOpen(true)}
           collapsed={sidebarCollapsed}
           toggleCollapsed={toggleSidebar}
         />
@@ -131,6 +135,7 @@ function App() {
       <ChatBot />
       <Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} />
+      <Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />
     </div>
   )
 }

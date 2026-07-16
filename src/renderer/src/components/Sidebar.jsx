@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 import { cn } from '../lib/utils'
-import { LayoutDashboard, Users, Search } from 'lucide-react'
+import { LayoutDashboard, Users, Search, BookOpen } from 'lucide-react'
 import SidebarHeader from './SidebarHeader'
 import SidebarFooter from './SidebarFooter'
 
@@ -29,11 +29,12 @@ const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => 
 ))
 
 // State is now owned by App.jsx so Ctrl+B and the header button can control it
-const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, collapsed, toggleCollapsed }) => {
+const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, onOpenDocs, collapsed, toggleCollapsed }) => {
   const items = [
     { id: 'search',    label: 'Search',    icon: Search },
     { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
     { id: 'users',     label: 'Users',     icon: Users },
+    { id: 'documentation', label: 'Documentation (Ctrl + D)', icon: BookOpen },
   ]
 
   return (
@@ -50,9 +51,15 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, co
           <SidebarItem
             key={item.id}
             {...item}
-            active={activeTab === item.id}
+            active={activeTab === item.id && item.id !== 'documentation'}
             collapsed={collapsed}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => {
+              if (item.id === 'documentation') {
+                onOpenDocs()
+              } else {
+                setActiveTab(item.id)
+              }
+            }}
           />
         ))}
       </div>

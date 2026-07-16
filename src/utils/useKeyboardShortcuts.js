@@ -179,6 +179,15 @@ export const useKeyboardShortcuts = (shortcuts) => {
           }
         }
       }
+
+      // Documentation: Ctrl+D
+      if (isCmd && !e.shiftKey && key === 'd') {
+        if (shortcutsRef.current.onToggleDocs) {
+          e.preventDefault()
+          e.stopPropagation()
+          shortcutsRef.current.onToggleDocs()
+        }
+      }
     }
 
     window.addEventListener('keydown', handleOtherKeys, { capture: true })
