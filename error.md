@@ -1,24 +1,31 @@
-• electron-builder  version=26.8.1 os=10.0.26200
-  • loaded configuration  file=B:\biomarkers\electron-builder.yml
-  ⨯ Invalid configuration object. electron-builder 26.8.1 has been initialized using a configuration object that does not match the API schema.
- - configuration.nsis has an unknown property 'compression'. These properties are valid:
-   object { allowElevation?, allowToChangeInstallationDirectory?, artifactName?, buildUniversalInstaller?, createDesktopShortcut?, createStartMenuShortcut?, customNsisBinary?, customNsisResources?, deleteAppDataOnUninstall?, differentialPackage?, displayLanguageSelector?, guid?, include?, installerHeader?, installerHeaderIcon?, installerIcon?, installerLanguages?, installerSidebar?, language?, license?, menuCategory?, multiLanguageInstaller?, oneClick?, packElevateHelper?, perMachine?, preCompressedFileExtensions?, publish?, removeDefaultUninstallWelcomePage?, runAfterFinish?, script?, selectPerMachineByDefault?, shortcutName?, unicode?, uninstallDisplayName?, uninstallUrlHelp?, uninstallUrlInfoAbout?, uninstallUrlReadme?, uninstallUrlUpdateInfo?, uninstallerIcon?, uninstallerSidebar?, useZip?, warningsAsErrors? }
-     How to fix:
-     1. Open https://www.electron.build/nsis
-     2. Search the option name on the page (or type in into Search to find across the docs).
-       * Not found? The option was deprecated or not exists (check spelling).
-       * Found? Check that the option in the appropriate place. e.g. "title" only in the "dmg", not in the root.
-  failedTask=build stackTrace=ValidationError: Invalid configuration object. electron-builder 26.8.1 has been initialized using a configuration object that does not match the API schema.
- - configuration.nsis has an unknown property 'compression'. These properties are valid:
-   object { allowElevation?, allowToChangeInstallationDirectory?, artifactName?, buildUniversalInstaller?, createDesktopShortcut?, createStartMenuShortcut?, customNsisBinary?, customNsisResources?, deleteAppDataOnUninstall?, differentialPackage?, displayLanguageSelector?, guid?, include?, installerHeader?, installerHeaderIcon?, installerIcon?, installerLanguages?, installerSidebar?, language?, license?, menuCategory?, multiLanguageInstaller?, oneClick?, packElevateHelper?, perMachine?, preCompressedFileExtensions?, publish?, removeDefaultUninstallWelcomePage?, runAfterFinish?, script?, selectPerMachineByDefault?, shortcutName?, unicode?, uninstallDisplayName?, uninstallUrlHelp?, uninstallUrlInfoAbout?, uninstallUrlReadme?, uninstallUrlUpdateInfo?, uninstallerIcon?, uninstallerSidebar?, useZip?, warningsAsErrors? }
-     How to fix:
-     1. Open https://www.electron.build/nsis
-     2. Search the option name on the page (or type in into Search to find across the docs).
-       * Not found? The option was deprecated or not exists (check spelling).
-       * Found? Check that the option in the appropriate place. e.g. "title" only in the "dmg", not in the root.
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     at validate (B:\biomarkers\node_modules\@develar\schema-utils\dist\validate.js:86:11)
-    at validateConfiguration (B:\biomarkers\node_modules\app-builder-lib\src\util\config\config.ts:239:3)
-    at Packager.validateConfig (B:\biomarkers\node_modules\app-builder-lib\src\packager.ts:398:5)
-    at Packager.build (B:\biomarkers\node_modules\app-builder-lib\src\packager.ts:406:5)
-    at executeFinally (B:\biomarkers\node_modules\builder-util\src\promise.ts:12:14)
-@Saboor ➜ biomarkers git(kmanagement)  
+This is my data on the database: 
+Total Documents
+475
+Archived in PostgreSQL
+Vector Chunks
+5867
+Indexed via pgvector
+Avg Chunks / Doc
+12.4
+Semantic density ratio
+Ingested File Formats
+5 format(s)
+md
+85%
+402 files
+ai_response
+12%
+58 files
+pdf
+2%
+9 files
+json
+1%
+5 files
+py
+0%
+1 file
+______
+
+
+this is the response of the @chatBot

@@ -17,6 +17,8 @@ You have deep knowledge of KManager AI's capabilities:
 - Active View: ${appState?.activeTab || 'Unknown'}
 - Total Documents: ${appState?.totalDocuments || 0}
 - Total Vector Chunks: ${appState?.totalChunks || 0}
+- Documents Added Today: ${appState?.documentsToday || 0}
+- Documents Added This Week: ${appState?.documentsThisWeek || 0}
 - Recent Searches: ${appState?.recentSearches || 0}
 - Last Activity: ${appState?.lastActivity || 'N/A'}
 

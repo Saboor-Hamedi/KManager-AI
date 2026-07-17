@@ -70,9 +70,7 @@ const UserMessage = memo(({ text }) => (
 
 const ChatBot = ({ appState = {} }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { role: 'bot', text: 'Hello. How can I help you?' }
-  ])
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [savedResponses, setSavedResponses] = useState({})
@@ -87,15 +85,19 @@ const ChatBot = ({ appState = {} }) => {
     if (!isOpen) return
     const fetchStats = async () => {
       try {
-        const [statsRes, analyticsRes] = await Promise.allSettled([
+        const [statsRes, analyticsRes, todayRes, weekRes] = await Promise.allSettled([
           window.api.db.stats(),
-          window.api.db.getAnalytics()
+          window.api.db.getAnalytics(),
+          window.api.db.query("SELECT COUNT(*)::int as count FROM documents WHERE created_at >= CURRENT_DATE"),
+          window.api.db.query("SELECT COUNT(*)::int as count FROM documents WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'")
         ])
         const stats = statsRes.value?.stats
         const metrics = analyticsRes.value?.metrics
         setDbStats({
           totalDocuments: stats?.total_docs || 0,
           totalChunks: stats?.total_chunks || 0,
+          documentsToday: todayRes.value?.rows?.[0]?.count || 0,
+          documentsThisWeek: weekRes.value?.rows?.[0]?.count || 0,
           recentSearches: metrics?.totalSearches || 0,
           lastActivity: metrics?.activityFeed?.[0]?.created_at || ''
         })
@@ -201,7 +203,7 @@ const ChatBot = ({ appState = {} }) => {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 custom-scrollbar">
           <div className="flex flex-col gap-3">
-            {messages.length <= 1 && !isTyping && (
+            {messages.length === 0 && !isTyping && (
               <div className="flex flex-col items-center justify-center text-center py-6 px-4">
                 <div className="w-8 h-8 rounded-lg bg-[var(--bg-active)] flex items-center justify-center mb-2">
                   <Bot size={16} className="text-[var(--text-accent)]" />
@@ -223,7 +225,6 @@ const ChatBot = ({ appState = {} }) => {
               </div>
             )}
             {messages.map((msg, idx) => (
-              idx === 0 && messages.length <= 1 ? null :
               msg.role === 'user'
                 ? <UserMessage key={idx} text={msg.text} />
                 : <BotMessage key={idx} text={msg.text} idx={idx} onSave={handleSaveResponse} savedState={savedResponses[idx]} />
