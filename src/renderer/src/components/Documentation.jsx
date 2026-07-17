@@ -163,10 +163,10 @@ const Documentation = ({ isOpen, onClose }) => {
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-app)] relative h-full">
             <div className="flex-1 overflow-y-auto px-6 py-6 md:px-10 lg:px-16 custom-scrollbar scroll-smooth" onClick={handleContentClick}>
-              <div className="max-w-3xl mx-auto w-full pb-10 relative">
+              <div className="max-w-3xl mx-auto w-full h-full relative">
                 
                 {isLoading ? (
-                  <div className="flex flex-col items-center justify-center h-40 gap-3 animate-pulse">
+                  <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-3 animate-pulse">
                     <div className="w-8 h-8 rounded-full border-2 border-[var(--text-accent)] border-t-transparent animate-spin" />
                     <span className="text-xs font-medium text-[var(--text-muted)]">Loading document...</span>
                   </div>

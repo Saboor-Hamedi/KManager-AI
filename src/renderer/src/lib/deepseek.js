@@ -110,16 +110,6 @@ export const streamRagAnswer = async (query, retrievedChunks, apiKey, onChunk, h
 3. **Be thorough**: Write at least 3 well-structured paragraphs unless asked for a short answer.
 4. **Format well**: Use Markdown -- bold for key terms, bullet points for lists, code blocks when relevant.
 5. **No trailing questions**: Never end with "Would you like me to...", "Let me know if...", or similar follow-ups.`;
-   - Always provide comprehensive, detailed answers. **Generate at least three well-structured paragraphs** for your explanation unless the user specifically asks for a single sentence.
-3. **Beautiful ChatGPT-Style Formatting:**
-   - Use clean, beautiful Markdown formatting.
-   - Use bold text (**like this**) to highlight key terms, metrics, or important concepts.
-   - Use bullet points when listing items.
-   - Provide high-quality code blocks with language highlighting if applicable.
-4. **Conversational Continuity:**
-   - Maintain natural context across multi-turn conversations.
-5. **No Trailing Questions or Offers:**
-   - Never end your response with open-ended follow-up questions, suggestions, or offers (such as "Would you like me to elaborate on any specific aspect...", or "Let me know if you need clarification"). State the facts, explanation, or analysis cleanly and end directly right there.`;
 
   const formattedHistory = (history || [])
     .filter(m => m && m.content && typeof m.content === 'string' && m.content.trim() !== '')
