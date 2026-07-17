@@ -171,7 +171,7 @@ const Documentation = ({ isOpen, onClose }) => {
                     <span className="text-xs font-medium text-[var(--text-muted)]">Loading document...</span>
                   </div>
                 ) : activeDoc ? (
-                  <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
+                  <div key={activeDoc.path} className="animate-in slide-in-from-bottom-3 fade-in duration-300">
                     <DocumentRenderer content={docContent} fileTitle={activeDoc.title} onNavigate={handleNavigate} />
                     {(prev || next) && (
                       <div className="flex items-center justify-between mt-8 pt-6 border-t border-[var(--border-subtle)]">
