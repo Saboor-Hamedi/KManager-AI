@@ -76,8 +76,54 @@ const ChatBot = ({ appState = {} }) => {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [savedResponses, setSavedResponses] = useState({})
+  const [dbStats, setDbStats] = useState({})
   const messagesEndRef = useRef(null)
   const scrollRef = useRef(null)
+
+  const enhancedAppState = { ...appState, ...dbStats }
+
+  // Fetch DB stats for system awareness
+  useEffect(() => {
+    if (!isOpen) return
+    const fetchStats = async () => {
+      try {
+        const [statsRes, analyticsRes] = await Promise.allSettled([
+          window.api.db.stats(),
+          window.api.db.getAnalytics()
+        ])
+        const stats = statsRes.value?.stats
+        const metrics = analyticsRes.value?.metrics
+        setDbStats({
+          totalDocuments: stats?.total_docs || 0,
+          totalChunks: stats?.total_chunks || 0,
+          recentSearches: metrics?.totalSearches || 0,
+          lastActivity: metrics?.activityFeed?.[0]?.created_at || ''
+        })
+      } catch {}
+    }
+    fetchStats()
+  }, [isOpen])
+
+  const sendQuickPrompt = async (text) => {
+    if (!text.trim() || isTyping) return
+    const userMsg = { role: 'user', content: text }
+    setMessages(prev => [...prev, { role: 'user', text }])
+    setIsTyping(true)
+    try {
+      const apiKey = await getSetting('DEEPSEEK_API_KEY', import.meta.env.VITE_DEEPSEEK_API_KEY || '')
+      if (!apiKey || apiKey === 'your_deepseek_api_key_here') {
+        setMessages(prev => [...prev, { role: 'bot', text: 'Error: DeepSeek API key not configured.' }])
+        setIsTyping(false)
+        return
+      }
+      const botReply = await queryDeepSeek([...messages, userMsg], enhancedAppState, apiKey)
+      setMessages(prev => [...prev, { role: 'bot', text: botReply }])
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'bot', text: `Error: ${error.message}` }])
+    } finally {
+      setIsTyping(false)
+    }
+  }
 
   const handleSaveResponse = useCallback(async (idx, text) => {
     setSavedResponses(prev => ({ ...prev, [idx]: 'saving' }))
@@ -113,7 +159,7 @@ const ChatBot = ({ appState = {} }) => {
         setIsTyping(false)
         return
       }
-      const botReply = await queryDeepSeek([...messages, userMsg], appState, apiKey)
+      const botReply = await queryDeepSeek([...messages, userMsg], enhancedAppState, apiKey)
       setMessages(prev => [...prev, { role: 'bot', text: botReply }])
     } catch (error) {
       console.error(error)
@@ -157,23 +203,22 @@ const ChatBot = ({ appState = {} }) => {
           <div className="flex flex-col gap-3">
             {messages.length <= 1 && !isTyping && (
               <div className="flex flex-col items-center justify-center text-center py-6 px-4">
-                <div className="w-10 h-10 rounded-xl bg-[var(--bg-active)] border border-[var(--border-subtle)] flex items-center justify-center mb-3">
-                  <Bot size={20} className="text-[var(--text-accent)]" />
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-active)] flex items-center justify-center mb-2">
+                  <Bot size={16} className="text-[var(--text-accent)]" />
                 </div>
-                <h3 className="text-sm font-semibold text-[var(--text-main)] mb-1">KManager AI Assistant</h3>
-                <p className="text-[10px] text-[var(--text-muted)] mb-4 max-w-[200px] leading-relaxed">
-                  I can help you search your knowledge base, explain features, and navigate the system.
+                <h3 className="text-xs font-semibold text-[var(--text-main)] mb-0.5">KManager AI</h3>
+                <p className="text-[10px] text-[var(--text-muted)] mb-3 max-w-[200px] leading-relaxed">
+                  {dbStats.totalDocuments
+                    ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
+                    : 'Ask me about your knowledge base, features, or how to get started.'}
                 </p>
-                <div className="flex flex-col gap-1.5 w-full max-w-[220px]">
-                  <button onClick={() => setInput('How do I search my documents?')} className="w-full text-left px-3 py-1.5 rounded-md bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)]">
-                    How do I search my documents?
-                  </button>
-                  <button onClick={() => setInput('What can KManager AI do?')} className="w-full text-left px-3 py-1.5 rounded-md bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)]">
-                    What can KManager AI do?
-                  </button>
-                  <button onClick={() => setInput('How do I connect to a database?')} className="w-full text-left px-3 py-1.5 rounded-md bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)]">
-                    How do I connect to a database?
-                  </button>
+                <div className="flex flex-col gap-1 w-full max-w-[200px]">
+                  {['How do I search my documents?', 'What can KManager AI do?', 'How do I connect to a database?'].map((s) => (
+                    <button key={s} onClick={() => sendQuickPrompt(s)}
+                      className="w-full text-left px-2 py-1 text-[10px] text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-panel)] rounded transition-colors">
+                      {s}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

@@ -15,6 +15,10 @@ You have deep knowledge of KManager AI's capabilities:
 
 ### CURRENT SYSTEM STATE ###
 - Active View: ${appState?.activeTab || 'Unknown'}
+- Total Documents: ${appState?.totalDocuments || 0}
+- Total Vector Chunks: ${appState?.totalChunks || 0}
+- Recent Searches: ${appState?.recentSearches || 0}
+- Last Activity: ${appState?.lastActivity || 'N/A'}
 
 ### STRICT FORMATTING INSTRUCTIONS ###
 1. Be concise - limit responses to 2-3 short paragraphs
