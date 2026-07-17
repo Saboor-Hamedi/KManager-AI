@@ -66,7 +66,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative select-text">
           {/* ── PDF: render directly via file:// ── */}
           {isPdf && fileExists && fileSrc ? (
             <webview
@@ -76,7 +76,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
             />
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)]">
+            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] cursor-default">
               <div className="max-w-3xl mx-auto">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
@@ -94,7 +94,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
             </div>
           ) : (
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)]">
+            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] cursor-default">
               <div className="max-w-3xl mx-auto">
                 {!isReady ? (
                   <div className="flex flex-col gap-4 animate-pulse py-6">
