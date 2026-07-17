@@ -165,7 +165,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const createdLabel = formatDate(item.created_at)
 
   return (
-    <div className="group relative transition-all duration-200 overflow-visible mb-2 bg-[var(--bg-card)]/30 border border-[var(--border-dim)] rounded-lg p-3 hover:bg-[var(--bg-card)]/50">
+    <div className="group relative transition-all duration-200 overflow-visible mb-2 bg-[var(--bg-card)]/30 border border-[var(--border-subtle)] rounded-lg p-3 hover:bg-[var(--bg-card)]/50">
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 

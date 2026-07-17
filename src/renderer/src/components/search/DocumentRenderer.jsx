@@ -170,7 +170,7 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
 
   return (
     <div className="my-3 rounded-[5px] overflow-hidden border-0 bg-[var(--bg-card)] max-w-full shadow-sm">
-      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)]/30 flex items-center justify-between text-xs font-semibold text-[var(--text-main)] h-8">
+      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between text-xs font-semibold text-[var(--text-main)] h-8">
         <span className="font-mono uppercase text-[var(--text-accent)] tracking-wider text-[11px]">{title || language || 'CODE'}</span>
         <CodeCopyButton code={code} />
       </div>
@@ -445,8 +445,8 @@ const cleanMarkdownComponents = {
       <table className="w-full text-left border-collapse text-[13px] text-[var(--text-main)]" {...props} />
     </div>
   ),
-  thead: ({node, ...props}) => <thead className="bg-[var(--bg-panel)] border-b border-[var(--border-subtle)]/40 font-bold text-[var(--text-main)]" {...props} />,
-  tbody: ({node, ...props}) => <tbody className="divide-y divide-[var(--border-subtle)]/30" {...props} />,
+  thead: ({node, ...props}) => <thead className="bg-[var(--bg-panel)] border-b border-[var(--border-subtle)] font-bold text-[var(--text-main)]" {...props} />,
+  tbody: ({node, ...props}) => <tbody className="divide-y divide-[var(--border-subtle)]" {...props} />,
   tr: ({node, ...props}) => <tr className="hover:bg-[var(--bg-active)] transition-colors" {...props} />,
   th: ({node, ...props}) => <th className="px-4 py-3 font-semibold text-[var(--text-main)] uppercase tracking-wider text-[11px] whitespace-nowrap" {...props} />,
   td: ({node, ...props}) => <td className="px-4 py-3 text-[var(--text-main)] break-words" {...props} />,
