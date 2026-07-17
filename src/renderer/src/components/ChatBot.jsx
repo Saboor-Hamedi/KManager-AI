@@ -155,7 +155,30 @@ const ChatBot = ({ appState = {} }) => {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 custom-scrollbar">
           <div className="flex flex-col gap-3">
+            {messages.length <= 1 && !isTyping && (
+              <div className="flex flex-col items-center justify-center text-center py-6 px-4">
+                <div className="w-10 h-10 rounded-xl bg-[var(--bg-active)] border border-[var(--border-subtle)] flex items-center justify-center mb-3">
+                  <Bot size={20} className="text-[var(--text-accent)]" />
+                </div>
+                <h3 className="text-sm font-semibold text-[var(--text-main)] mb-1">KManager AI Assistant</h3>
+                <p className="text-[10px] text-[var(--text-muted)] mb-4 max-w-[200px] leading-relaxed">
+                  I can help you search your knowledge base, explain features, and navigate the system.
+                </p>
+                <div className="flex flex-col gap-1.5 w-full max-w-[220px]">
+                  <button onClick={() => setInput('How do I search my documents?')} className="w-full text-left px-3 py-1.5 rounded-md bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)]">
+                    How do I search my documents?
+                  </button>
+                  <button onClick={() => setInput('What can KManager AI do?')} className="w-full text-left px-3 py-1.5 rounded-md bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)]">
+                    What can KManager AI do?
+                  </button>
+                  <button onClick={() => setInput('How do I connect to a database?')} className="w-full text-left px-3 py-1.5 rounded-md bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)]">
+                    How do I connect to a database?
+                  </button>
+                </div>
+              </div>
+            )}
             {messages.map((msg, idx) => (
+              idx === 0 && messages.length <= 1 ? null :
               msg.role === 'user'
                 ? <UserMessage key={idx} text={msg.text} />
                 : <BotMessage key={idx} text={msg.text} idx={idx} onSave={handleSaveResponse} savedState={savedResponses[idx]} />
