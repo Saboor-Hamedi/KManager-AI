@@ -53,7 +53,6 @@ const BotMessage = memo(({ text, idx, onSave, savedState }) => (
         </div>
       </div>
     </div>
-  </div>
 ))
 
 const UserMessage = memo(({ text }) => (
