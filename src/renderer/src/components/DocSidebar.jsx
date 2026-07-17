@@ -82,15 +82,16 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
             const isCollapsed = !searchQuery && collapsedCategories[category]
 
             return (
-              <div key={category} className="px-2.5 mb-2.5">
+              <div key={category} className="px-2.5 mb-2">
                 <button 
                   onClick={() => toggleCategory(category)}
-                  className="w-full flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] py-1.5 px-2.5 rounded-md uppercase tracking-widest transition-colors outline-none"
+                  className="w-full flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] py-1.5 px-2.5 rounded-md uppercase tracking-widest hover:bg-[var(--bg-active)] transition-colors outline-none"
                 >
                   <span>{category}</span>
-                  <ChevronDown size={11} className={`transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                  <ChevronDown size={11} className={`text-[var(--text-faint)] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
                 </button>
-                <div className={`space-y-0.5 overflow-hidden transition-all duration-200 ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
+                <div className={`overflow-hidden transition-all duration-200 ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
+                  <div className="space-y-0.5 pt-0.5 ml-1 pl-2 border-l border-[var(--border-subtle)]">
                   {sortedDocs.map(doc => {
                     const isActive = activeDoc?.path === doc.path
                     return (
