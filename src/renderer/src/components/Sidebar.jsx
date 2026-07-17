@@ -4,7 +4,7 @@ import { LayoutDashboard, Users, Search } from 'lucide-react'
 import SidebarHeader from './SidebarHeader'
 import SidebarFooter from './SidebarFooter'
 
-const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => (
+const SidebarItem = memo(({ icon: Icon, label, shortcut, active, collapsed, onClick }) => (
   <button
     onClick={onClick}
     className={cn(
@@ -23,7 +23,12 @@ const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => 
       className={cn('shrink-0', active ? 'text-[var(--text-accent)]' : 'group-hover:text-[var(--text-main)]')}
     />
     {!collapsed && (
-      <span className="ml-4 text-[12px] font-semibold tracking-wide truncate">{label}</span>
+      <>
+        <span className="ml-4 text-[12px] font-semibold tracking-wide truncate">{label}</span>
+        {shortcut && (
+          <kbd className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-faint)] opacity-0 group-hover:opacity-100 transition-opacity">{shortcut}</kbd>
+        )}
+      </>
     )}
   </button>
 ))
@@ -31,7 +36,7 @@ const SidebarItem = memo(({ icon: Icon, label, active, collapsed, onClick }) => 
 // State is now owned by App.jsx so Ctrl+B and the header button can control it
 const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, onOpenDocs, collapsed, toggleCollapsed }) => {
   const items = [
-    { id: 'search',    label: 'Search',    icon: Search },
+    { id: 'search',    label: 'Search',    shortcut: 'Ctrl+P', icon: Search },
     { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
     { id: 'users',     label: 'Users',     icon: Users },
   ]
