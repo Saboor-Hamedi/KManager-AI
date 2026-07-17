@@ -40,14 +40,7 @@ const SuggestedPrompts = memo(({ msg, onSelectPrompt }) => {
   }
 
   return (
-    <div className="mt-4 select-none animate-in fade-in duration-300">
-      <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-        <span>Related Topics & Suggested Prompts</span>
-        {isLoadingDynamic && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)] animate-pulse ml-1" title="Refining suggestions with AI..." />
-        )}
-      </div>
-
+    <div className="select-none animate-in fade-in duration-300">
       <div className="flex flex-wrap gap-2">
         {prompts.map((promptText, idx) => (
           <button
