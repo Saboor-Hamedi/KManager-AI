@@ -1,8 +1,19 @@
 import React, { useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
 
-const Autocompletion = ({ results, visible, query, onSelect, selectedIndex }) => {
+const Autocompletion = ({ results, visible, query, onSelect, selectedIndex, onClose }) => {
   const containerRef = useRef(null)
+
+  useEffect(() => {
+    if (!visible) return
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.()
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [visible, onClose])
 
   const getSuggestion = (content, queryStr) => {
     if (!content || !queryStr) return { text: '', matchIdx: -1 }

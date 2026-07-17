@@ -714,6 +714,7 @@ const DashboardSearch = () => {
             visible={showAutocomplete} 
             query={query} 
             selectedIndex={selectedIndex}
+            onClose={() => setShowAutocomplete(false)}
             onSelect={(res) => {
               setShowAutocomplete(false)
               const newQuery = res.suggestion || (res.content ? res.content.substring(0, 50) : '')
