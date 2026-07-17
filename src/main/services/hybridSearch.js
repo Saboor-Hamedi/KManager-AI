@@ -10,7 +10,7 @@
  */
 export function expandQuery(queryText) {
   if (!queryText) return ''
-  const q = queryText.trim()
+  const q = trimWhitespace(queryText)
   // Already a proper phrase — no expansion needed
   if (q.length >= 6 || q.includes(' ')) return q
 
@@ -18,11 +18,19 @@ export function expandQuery(queryText) {
   return `${q} (related topic or concept)`
 }
 
+function trimWhitespace(str) {
+  if (!str) return ''
+  let start = 0, end = str.length - 1
+  while (start <= end && str[start] === ' ') start++
+  while (end >= start && str[end] === ' ') end--
+  return str.slice(start, end + 1)
+}
+
 const STOP_WORDS = new Set([
   'the','a','an','is','it','not','or','and','to','of','in','that','for',
-  'on','are','was','but','this','lets','check','get','have','what','why',
+  'on','are','was','but','this','get','have','what','why',
   'how','does','do','can','will','would','could','should','its','been',
-  'has','had','very','just','really','well','there','their','they','them',
+  'has','had','very','just','really','there','their','they','them',
   'then','some','with','out','up','all','if','no','so','my','me','we','he',
   'she','his','her','be','at','by','from','about','into','over','after'
 ])
@@ -30,7 +38,7 @@ const STOP_WORDS = new Set([
 function isLowInformationQuery(query) {
   const tokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 2)
   const meaningful = tokens.filter(t => !STOP_WORDS.has(t))
-  return meaningful.length < 2
+  return meaningful.length < 3
 }
 
 function extractMeaningfulTerms(query) {
@@ -182,11 +190,11 @@ export async function performHybridSearchService(db, embeddingService, queryText
   if (!db || !db.isConnected()) {
     throw new Error('Database not connected')
   }
-  if (!queryText || queryText.trim() === '') {
+  if (!queryText || trimWhitespace(queryText) === '') {
     return { rows: [], isFallback: false }
   }
 
-  const originalQuery = queryText.trim()
+  const originalQuery = trimWhitespace(queryText)
   const expandedQuery = expandQuery(originalQuery)
 
   // Embed the expanded query

@@ -35,12 +35,14 @@ const SidebarFooter = memo(({ collapsed, onOpenSettings, onOpenTheme, onOpenDocs
     <SidebarFooterItem
       icon={Palette}
       label="Appearance"
+       shortcut="Ctrl+T"
       collapsed={collapsed}
       onClick={onOpenTheme}
     />
     <SidebarFooterItem
       icon={Settings}
       label="Settings"
+       shortcut="Ctrl+,"
       collapsed={collapsed}
       onClick={onOpenSettings}
     />
