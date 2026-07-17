@@ -63,7 +63,7 @@ const SettingUpdate = () => {
     setError('')
     window.api.update.check()
     checkTimeoutRef.current = setTimeout(() => {
-      setStatus('idle')
+      setStatus('uptodate')
     }, CHECK_TIMEOUT)
   }
 
@@ -119,7 +119,7 @@ const SettingUpdate = () => {
       {status === 'uptodate' && (
         <div className="bg-emerald-500/5 rounded-lg px-4 py-3 border border-emerald-500/20">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-emerald-400" />
+            {/* <Sparkles size={14} className="text-emerald-400" /> */}
             <p className="text-xs font-medium text-emerald-300">KManager AI is up to date</p>
           </div>
         </div>

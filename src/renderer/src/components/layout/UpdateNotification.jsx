@@ -81,7 +81,7 @@ const UpdateNotification = () => {
         {/* Up to date */}
         {state === 'uptodate' && (
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <Sparkles size={14} className="text-emerald-400 shrink-0" />
+            {/* <Sparkles size={14} className="text-emerald-400 shrink-0" /> */}
             <p className="text-xs font-medium text-[var(--text-main)] flex-1">KManager AI is up to date</p>
             <button onClick={() => setDismissed(true)} className="p-0.5 rounded hover:bg-[var(--bg-panel)] text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors shrink-0">
               <X size={13} />

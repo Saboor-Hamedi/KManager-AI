@@ -17,7 +17,7 @@ const tabs = [
 ]
 
 const Setting = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState('database')
+  const [activeTab, setActiveTab] = useState('system')
 
   React.useEffect(() => {
     const handleOpenSettings = (e) => {
