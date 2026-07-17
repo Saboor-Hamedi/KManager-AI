@@ -94,7 +94,7 @@ function App() {
           toggleCollapsed={toggleSidebar}
         />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <Header toggleSidebar={toggleSidebar} />
+          <Header toggleSidebar={toggleSidebar} collapsed={sidebarCollapsed} />
 
         {/* ── Search view — always mounted so state (history, query) survives tab switches ── */}
         <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'search' ? 'flex' : 'hidden'}`}>
