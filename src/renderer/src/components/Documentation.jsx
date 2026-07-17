@@ -174,7 +174,7 @@ const Documentation = ({ isOpen, onClose }) => {
                   <div key={activeDoc.path} className="animate-in slide-in-from-bottom-3 fade-in duration-300">
                     <DocumentRenderer content={docContent} fileTitle={activeDoc.title} onNavigate={handleNavigate} />
                     {(prev || next) && (
-                      <div className="flex items-center justify-between mt-8 pt-6 border-t border-[var(--border-subtle)]">
+                      <div className="flex items-center justify-between mt-8 pt-6 pb-8 border-t border-[var(--border-subtle)]">
                         <div>
                           {prev && (
                             <button
