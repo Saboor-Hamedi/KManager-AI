@@ -13,20 +13,21 @@ const BotMessage = memo(({ text, idx, onSave, savedState }) => (
       <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
         <Bot size={12} />
       </div>
-      <div className="px-3 py-2 rounded-lg text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] rounded-tl-none max-w-[85%]">
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
-          p: ({node, ...props}) => <p className="mb-1 last:mb-0 text-justify" {...props} />,
-          strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
-          em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
-          ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-          ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-          li: ({node, ...props}) => <li {...props} />,
-          code: ({node, inline, ...props}) => inline
-            ? <code className="bg-black/20 px-1 py-0.5 rounded-[5px] font-mono text-[10px]" {...props} />
-            : <code className="block bg-black/20 p-2 rounded-[5px] font-mono text-[10px] mb-1 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
-        }}>
-          {formatMarkdownText(text)}
-        </ReactMarkdown>
+      <div className="px-3 py-2 rounded-lg text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] rounded-tl-none max-w-[85%] min-w-0" style={{ overflowWrap: 'break-word' }}>
+        <div style={{ overflowWrap: 'break-word' }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
+            p: ({node, ...props}) => <p className="mb-1 last:mb-0" {...props} />,
+            strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
+            em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
+            ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+            ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+            li: ({node, ...props}) => <li {...props} />,
+            code: ({node, inline, ...props}) => inline
+              ? <code className="bg-black/20 px-1 py-0.5 rounded-[5px] font-mono text-[10px]" {...props} />
+              : <code className="block bg-black/20 p-2 rounded-[5px] font-mono text-[10px] mb-1 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+          }}>
+            {formatMarkdownText(text)}
+          </ReactMarkdown>
         {idx > 0 && (
           <button
             onClick={() => onSave(idx, text)}
@@ -48,6 +49,8 @@ const BotMessage = memo(({ text, idx, onSave, savedState }) => (
             )}
           </button>
         )}
+        </div>
+        </div>
       </div>
     </div>
   </div>
@@ -59,7 +62,7 @@ const UserMessage = memo(({ text }) => (
       <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-panel)] text-[var(--text-muted)]">
         <User size={12} />
       </div>
-      <div className="px-3 py-2 rounded-lg text-[11px] leading-relaxed bg-[var(--bg-active)] text-[var(--text-accent)] rounded-tr-none max-w-[85%]">
+      <div className="px-3 py-2 rounded-lg text-[11px] leading-relaxed bg-[var(--bg-active)] text-[var(--text-accent)] rounded-tr-none max-w-[85%] break-words">
         {text}
       </div>
     </div>
@@ -163,7 +166,7 @@ const ChatBot = ({ appState = {} }) => {
                 <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
                   <Bot size={12} />
                 </div>
-                <div className="px-3 py-2 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-tl-none flex items-center gap-1">
+                <div className="px-3 py-2 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-tl-none flex items-center gap-1 break-words">
                   <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" />
                   <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
                   <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
