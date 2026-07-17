@@ -18,6 +18,25 @@ export function expandQuery(queryText) {
   return `${q} (related topic or concept)`
 }
 
+const STOP_WORDS = new Set([
+  'the','a','an','is','it','not','or','and','to','of','in','that','for',
+  'on','are','was','but','this','lets','check','get','have','what','why',
+  'how','does','do','can','will','would','could','should','its','been',
+  'has','had','very','just','really','well','there','their','they','them',
+  'then','some','with','out','up','all','if','no','so','my','me','we','he',
+  'she','his','her','be','at','by','from','about','into','over','after'
+])
+
+function isLowInformationQuery(query) {
+  const tokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 2)
+  const meaningful = tokens.filter(t => !STOP_WORDS.has(t))
+  return meaningful.length < 2
+}
+
+function extractMeaningfulTerms(query) {
+  return query.toLowerCase().split(/\s+/).filter(t => t.length > 2 && !STOP_WORDS.has(t))
+}
+
 /**
  * Calculate BM25 scores over a list of document chunks for exact keyword & term matching.
  */
@@ -206,7 +225,65 @@ export async function performHybridSearchService(db, embeddingService, queryText
   const fallbackBm25 = computeBM25Scores(originalQuery, fallback.rows || [])
   const fallbackFused = computeReciprocalRankFusion(fallbackBm25)
 
-  return { rows: fallbackFused.slice(0, limit), isFallback: true }
+  if (fallbackFused.length > 0) {
+    return { rows: fallbackFused.slice(0, limit), isFallback: true }
+  }
+
+  // 3. LOW-INFORMATION QUERY HANDLING
+  if (isLowInformationQuery(originalQuery)) {
+    const meaningfulTerms = extractMeaningfulTerms(originalQuery)
+
+    // 3a. Try with just the meaningful terms
+    if (meaningfulTerms.length > 0) {
+      const refinedQuery = meaningfulTerms.join(' ')
+      const refinedVector = await embeddingService.embedQuery(refinedQuery)
+      const refinedVectorStr = '[' + refinedVector.join(',') + ']'
+
+      const refinedFallback = await db.query(
+        `SELECT dc.id, dc.document_id, dc.chunk_index, dc.content,
+           d.vault_path, d.file_name, d.file_type, d.created_at,
+           (1 - (dc.embedding <=> $1::vector))::FLOAT AS similarity,
+           (1 - (dc.embedding <=> $1::vector))::FLOAT AS cosine_similarity
+         FROM embedding_documents dc
+         JOIN documents d ON d.id = dc.document_id
+         WHERE dc.embedding IS NOT NULL
+         ORDER BY dc.embedding <=> $1::vector
+         LIMIT $2`,
+        [refinedVectorStr, limit * 3]
+      )
+
+      if (refinedFallback.rows.length > 0) {
+        const bm25Refined = computeBM25Scores(refinedQuery, refinedFallback.rows)
+        const fusedRefined = computeReciprocalRankFusion(bm25Refined)
+        if (fusedRefined.length > 0) {
+          return { rows: fusedRefined.slice(0, limit), isFallback: true, queryRefined: true, refinedQuery }
+        }
+      }
+    }
+
+    // 3b. Last resort: ILIKE search for any meaningful term
+    const termFilter = meaningfulTerms.slice(0, 2)
+    if (termFilter.length > 0) {
+      const likeConditions = termFilter.map((_, i) => `dc.content ILIKE $${i + 2}`).join(' OR ')
+      const lastResort = await db.query(
+        `SELECT dc.id, dc.document_id, dc.chunk_index, dc.content,
+           d.vault_path, d.file_name, d.file_type, d.created_at,
+           (1 - (dc.embedding <=> $1::vector))::FLOAT AS similarity
+         FROM embedding_documents dc
+         JOIN documents d ON d.id = dc.document_id
+         WHERE dc.embedding IS NOT NULL AND (${likeConditions})
+         ORDER BY dc.embedding <=> $1::vector
+         LIMIT $${termFilter.length + 2}`,
+        [vectorString, ...termFilter, limit]
+      )
+
+      if (lastResort.rows.length > 0) {
+        return { rows: lastResort.rows, isFallback: true, lowInfoQuery: true }
+      }
+    }
+  }
+
+  return { rows: [], isFallback: false }
 }
 
 export default {

@@ -123,6 +123,20 @@ const HistoryFeed = ({
                         </span>
                       </div>
                     )}
+                    {msg.queryRefined && msg.refinedQuery && (
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
+                          Searched with refined terms: <span className="text-[var(--text-main)] font-mono not-italic">"{msg.refinedQuery}"</span>
+                        </span>
+                      </div>
+                    )}
+                    {msg.lowInfoQuery && (
+                      <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+                        <span className="text-[10px] font-medium text-amber-300">
+                          Try using more specific keywords for better results
+                        </span>
+                      </div>
+                    )}
                     {!msg.isFollowUp && msg.results.map((item, idx) => (
                       <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
                         <SearchResultCard

@@ -452,7 +452,8 @@ app.whenReady().then(() => {
   ipcMain.handle('db:search', async (_event, queryText, limit = 10) => {
     try {
       const start = Date.now()
-      const { rows, isFallback } = await performHybridSearch(db, queryText, limit)
+      const result = await performHybridSearch(db, queryText, limit)
+      const { rows, isFallback, queryRefined, refinedQuery, lowInfoQuery } = result
       const latency = Date.now() - start
       const topSim = rows.length > 0 ? rows[0].similarity || 0 : 0
       
@@ -462,7 +463,7 @@ app.whenReady().then(() => {
         [queryText, latency, rows.length, topSim, isFallback]
       ).catch(e => console.error('Failed to log search:', e))
 
-      return { success: true, rows, isFallback }
+      return { success: true, rows, isFallback, queryRefined, refinedQuery, lowInfoQuery }
     } catch (err) {
       console.error('db:search error:', err)
       return { success: false, message: err.message }
