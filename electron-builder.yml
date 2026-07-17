@@ -17,7 +17,6 @@ win:
   executableName: kmanager
   compression: maximum
 nsis:
-  compression: maximum
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
