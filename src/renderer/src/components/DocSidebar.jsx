@@ -84,10 +84,10 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
             <div key={category} className="px-2.5 mb-2">
               <button 
                 onClick={() => toggleCategory(category)}
-                className="w-full flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] py-1.5 px-2.5 rounded-md uppercase tracking-widest hover:bg-[var(--bg-active)] transition-colors outline-none"
-              >
-                <span>{category}</span>
-                <ChevronDown size={11} className={`text-[var(--text-faint)] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                className="w-full flex items-center justify-between text-[10px] font-bold text-[var(--text-main)] hover:text-[var(--text-accent)] py-1.5 px-2.5 rounded-md uppercase tracking-widest hover:bg-[var(--bg-active)] transition-colors outline-none"
+                >
+                  <span>{category}</span>
+                  <ChevronDown size={11} className={`text-[var(--text-muted)] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
               </button>
               <div className={`overflow-hidden transition-all duration-200 ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
                 <div className="space-y-0.5 pt-0.5 ml-1 pl-2 border-l border-[var(--border-subtle)]">
@@ -102,7 +102,7 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
                         className={`w-full flex items-center gap-2 pl-3 pr-2 py-1.5 text-xs transition-colors relative ${isActive ? 'bg-[var(--bg-active)] text-[var(--text-accent)] font-semibold' : 'text-[var(--text-muted)] hover:bg-[var(--bg-panel)] hover:text-[var(--text-main)]'}`}
                       >
                         {isActive && <div className="absolute left-0 top-0.5 bottom-0.5 w-0.5 bg-[var(--text-accent)] rounded-full" />}
-                        <FileText size={13} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-faint)]'} />
+                        <FileText size={13} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
                         <span className="truncate text-left">{doc.title}</span>
                       </button>
                     )

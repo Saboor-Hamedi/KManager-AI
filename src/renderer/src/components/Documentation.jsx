@@ -128,8 +128,8 @@ const Documentation = ({ isOpen, onClose }) => {
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-app)] relative h-full">
-            <div className="flex-1 overflow-y-auto px-8 py-10 md:px-16 lg:px-24 custom-scrollbar scroll-smooth" onClick={handleContentClick}>
-              <div className="max-w-3xl mx-auto w-full pb-20 relative">
+            <div className="flex-1 overflow-y-auto px-6 py-6 md:px-10 lg:px-16 custom-scrollbar scroll-smooth" onClick={handleContentClick}>
+              <div className="max-w-3xl mx-auto w-full pb-10 relative">
                 
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center h-40 gap-3 animate-pulse">
