@@ -92,23 +92,34 @@ const Documentation = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
-  // Compute prev/next navigation within the same category
+  // Compute prev/next navigation across ALL docs
   const getNavDocs = () => {
     if (!activeDoc) return { prev: null, next: null }
-    for (const category of Object.keys(docs)) {
-      const sorted = [...docs[category]].sort((a, b) => {
-        const aIsIntro = a.title.toLowerCase().includes('introduction')
-        const bIsIntro = b.title.toLowerCase().includes('introduction')
-        if (aIsIntro && !bIsIntro) return -1
-        if (!aIsIntro && bIsIntro) return 1
-        return a.title.localeCompare(b.title)
-      })
-      const idx = sorted.findIndex(d => d.path === activeDoc.path)
-      if (idx !== -1) {
-        return {
-          prev: idx > 0 ? sorted[idx - 1] : null,
-          next: idx < sorted.length - 1 ? sorted[idx + 1] : null
-        }
+
+    const sortDocs = (list) => [...list].sort((a, b) => {
+      const aIsIntro = a.title.toLowerCase().includes('introduction')
+      const bIsIntro = b.title.toLowerCase().includes('introduction')
+      if (aIsIntro && !bIsIntro) return -1
+      if (!aIsIntro && bIsIntro) return 1
+      return a.title.localeCompare(b.title)
+    })
+
+    const allDocs = []
+    const categoryOrder = Object.keys(docs).sort((a, b) => {
+      if (a === 'GENERAL') return -1
+      if (b === 'GENERAL') return 1
+      return a.localeCompare(b)
+    })
+
+    for (const cat of categoryOrder) {
+      allDocs.push(...sortDocs(docs[cat]))
+    }
+
+    const idx = allDocs.findIndex(d => d.path === activeDoc.path)
+    if (idx !== -1) {
+      return {
+        prev: idx > 0 ? allDocs[idx - 1] : null,
+        next: idx < allDocs.length - 1 ? allDocs[idx + 1] : null
       }
     }
     return { prev: null, next: null }
