@@ -37,6 +37,9 @@ const api = {
     get: (key, defaultValue) => ipcRenderer.invoke('config:get', key, defaultValue),
     set: (key, value) => ipcRenderer.invoke('config:set', key, value)
   },
+  app: {
+    version: () => ipcRenderer.invoke('app:version')
+  },
   system: {
     openFile: (filePath) => ipcRenderer.invoke('system:open-file', filePath),
     fileExists: (filePath) => ipcRenderer.invoke('system:file-exists', filePath),
@@ -60,6 +63,11 @@ const api = {
       const listener = (event, info) => callback(info)
       ipcRenderer.on('update-available', listener)
       return () => ipcRenderer.removeListener('update-available', listener)
+    },
+    onUpdateNotAvailable: (callback) => {
+      const listener = (event, info) => callback(info)
+      ipcRenderer.on('update-not-available', listener)
+      return () => ipcRenderer.removeListener('update-not-available', listener)
     },
     onUpdateDownloaded: (callback) => {
       const listener = (event, info) => callback(info)

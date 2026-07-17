@@ -1,48 +1,61 @@
-import React, { useState, useEffect } from 'react'
-import { Download, RefreshCcw, X } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Download, RefreshCcw, X, Sparkles } from 'lucide-react'
+
+const CHECK_TIMEOUT = 10000
 
 const UpdateNotification = () => {
-  const [updateAvailable, setUpdateAvailable] = useState(false)
-  const [downloading, setDownloading] = useState(false)
-  const [downloaded, setDownloaded] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [state, setState] = useState('idle')
   const [version, setVersion] = useState('')
+  const [progress, setProgress] = useState(0)
   const [dismissed, setDismissed] = useState(false)
+  const checkTimeoutRef = useRef(null)
 
   useEffect(() => {
     if (!window.api?.update) return
 
     const unsubAvailable = window.api.update.onUpdateAvailable((info) => {
+      clearTimeout(checkTimeoutRef.current)
       setVersion(info.version)
-      setUpdateAvailable(true)
-      setDismissed(false)
+      setState('available')
+    })
+
+    const unsubNotAvailable = window.api.update.onUpdateNotAvailable(() => {
+      clearTimeout(checkTimeoutRef.current)
+      setState('uptodate')
     })
 
     const unsubProgress = window.api.update.onUpdateProgress((progressObj) => {
-      setDownloading(true)
+      setState('downloading')
       setProgress(progressObj.percent)
       if (progressObj.percent >= 100) {
-        setTimeout(() => {
-          setDownloading(false)
-          setDownloaded(true)
-        }, 400)
+        setTimeout(() => setState('downloaded'), 400)
       }
     })
 
     const unsubDownloaded = window.api.update.onUpdateDownloaded(() => {
-      setDownloading(false)
-      setDownloaded(true)
+      setState('downloaded')
     })
 
     return () => {
-      if (unsubAvailable) unsubAvailable()
-      if (unsubProgress) unsubProgress()
-      if (unsubDownloaded) unsubDownloaded()
+      clearTimeout(checkTimeoutRef.current)
+      unsubAvailable()
+      unsubNotAvailable()
+      unsubProgress()
+      unsubDownloaded()
     }
   }, [])
 
+  const handleCheck = () => {
+    setState('checking')
+    setDismissed(false)
+    window.api.update.check()
+    checkTimeoutRef.current = setTimeout(() => {
+      setState('idle')
+    }, CHECK_TIMEOUT)
+  }
+
   const handleDownload = () => {
-    setDownloading(true)
+    setState('downloading')
     window.api.update.download()
   }
 
@@ -50,73 +63,80 @@ const UpdateNotification = () => {
     window.api.update.install()
   }
 
-  if (dismissed && !downloaded) return null
-  if (!updateAvailable) return null
+  if (dismissed) return null
+  if (state === 'idle') return null
 
   return (
     <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg shadow-lg overflow-hidden min-w-[200px]">
-        {/* Available / Downloading state */}
-        {!downloaded && (
+      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg shadow-lg overflow-hidden min-w-[220px] max-w-[300px]">
+
+        {/* Checking */}
+        {state === 'checking' && (
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-[var(--text-main)] truncate">
-                {downloading
-                  ? `Downloading ${Math.round(progress)}%`
-                  : `Update v${version} available`
-                }
-              </p>
-              {downloading && (
-                <div className="mt-1.5 h-1 bg-[var(--bg-panel)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[var(--text-accent)] rounded-full transition-all duration-200"
-                    style={{ width: `${Math.max(progress, 4)}%` }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {!downloading && (
-              <>
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--text-accent)]/10 hover:bg-[var(--text-accent)]/20 text-[var(--text-accent)] text-xs font-semibold transition-colors animate-pulse shrink-0"
-                >
-                  <Download size={13} />
-                  <span>Download</span>
-                </button>
-                <button
-                  onClick={() => setDismissed(true)}
-                  className="p-1 rounded hover:bg-[var(--bg-panel)] text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors shrink-0"
-                >
-                  <X size={14} />
-                </button>
-              </>
-            )}
-
-            {downloading && (
-              <span className="text-xs font-mono text-[var(--text-accent)] font-semibold shrink-0 tabular-nums">
-                {Math.round(progress)}%
-              </span>
-            )}
+            <span className="w-3 h-3 rounded-full border-2 border-[var(--text-accent)] border-t-transparent animate-spin shrink-0" />
+            <p className="text-xs font-medium text-[var(--text-muted)]">Checking for updates...</p>
           </div>
         )}
 
-        {/* Downloaded / Ready to restart state */}
-        {downloaded && (
+        {/* Up to date */}
+        {state === 'uptodate' && (
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <p className="text-xs font-semibold text-[var(--text-main)] flex-1">
-              Update ready to install
-            </p>
+            <Sparkles size={14} className="text-emerald-400 shrink-0" />
+            <p className="text-xs font-medium text-[var(--text-main)] flex-1">KManager AI is up to date</p>
+            <button onClick={() => setDismissed(true)} className="p-0.5 rounded hover:bg-[var(--bg-panel)] text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors shrink-0">
+              <X size={13} />
+            </button>
+          </div>
+        )}
+
+        {/* Available */}
+        {state === 'available' && (
+          <div className="flex flex-col">
+            <div className="flex items-center gap-3 px-3 pt-2.5 pb-2">
+              <p className="text-xs font-semibold text-[var(--text-main)] flex-1 truncate">Update v{version} available</p>
+              <button onClick={() => setDismissed(true)} className="p-0.5 rounded hover:bg-[var(--bg-panel)] text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors shrink-0">
+                <X size={13} />
+              </button>
+            </div>
+            <div className="px-3 pb-2.5">
+              <button
+                onClick={handleDownload}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--text-accent)] hover:bg-[var(--text-accent)]/80 text-white text-xs font-semibold transition-all animate-pulse"
+              >
+                <Download size={13} />
+                <span>Download Update</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Downloading */}
+        {state === 'downloading' && (
+          <div className="px-3 py-2.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs font-medium text-[var(--text-main)]">Downloading...</p>
+              <span className="text-xs font-mono text-[var(--text-accent)] font-semibold">{Math.round(progress)}%</span>
+            </div>
+            <div className="h-1 bg-[var(--bg-panel)] rounded-full overflow-hidden">
+              <div className="h-full bg-[var(--text-accent)] rounded-full transition-all duration-200" style={{ width: `${Math.max(progress, 4)}%` }} />
+            </div>
+          </div>
+        )}
+
+        {/* Downloaded - Ready to Restart */}
+        {state === 'downloaded' && (
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <p className="text-xs font-semibold text-emerald-400 flex-1">Update ready</p>
             <button
               onClick={handleInstall}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold transition-colors animate-pulse shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold transition-all animate-pulse shadow-lg shadow-emerald-500/20"
             >
               <RefreshCcw size={13} />
               <span>Restart</span>
             </button>
           </div>
         )}
+
       </div>
     </div>
   )

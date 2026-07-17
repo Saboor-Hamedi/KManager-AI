@@ -784,6 +784,11 @@ autoUpdater.on('update-available', (info) => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-available', info)
 })
 
+autoUpdater.on('update-not-available', (info) => {
+  log.info('No update available.')
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-not-available', info)
+})
+
 autoUpdater.on('update-downloaded', (info) => {
   log.info('Update downloaded')
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-downloaded', info)
@@ -803,6 +808,10 @@ ipcMain.handle('update:download', () => {
 
 ipcMain.handle('update:install', () => {
   autoUpdater.quitAndInstall()
+})
+
+ipcMain.handle('app:version', () => {
+  return app.getVersion()
 })
 
 app.on('window-all-closed', () => {

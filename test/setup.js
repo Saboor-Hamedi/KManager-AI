@@ -44,6 +44,7 @@ globalThis.window.api = {
     download: () => Promise.resolve(),
     install: () => Promise.resolve(),
     onUpdateAvailable: () => () => {},
+    onUpdateNotAvailable: () => () => {},
     onUpdateDownloaded: () => () => {},
     onUpdateProgress: () => () => {}
   },
