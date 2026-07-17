@@ -1,9 +1,24 @@
-[plugin:vite:react-babel] B:\biomarkers\src\renderer\src\components\search\DashboardSearch.jsx: Missing initializer in destructuring declaration. (476:7)
-  479 |     setHistory([])
-B:/biomarkers/src/renderer/src/components/search/DashboardSearch.jsx:476:7
-489 |            <div className="h-full flex flex-col items-center justify-center gap-5 select-none px-6">
-490 |              <div className="flex flex-col items-center text-center gap-2">
-491 |                <div className="w-10 h-10 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex ite...
-    |                                             ^
-492 |                  <span className="text-sm font-black tracking-tighter">KM</span>
-493 |                </div>
+• electron-builder  version=26.8.1 os=10.0.26200
+  • loaded configuration  file=B:\biomarkers\electron-builder.yml
+  ⨯ Invalid configuration object. electron-builder 26.8.1 has been initialized using a configuration object that does not match the API schema.
+ - configuration.nsis has an unknown property 'compression'. These properties are valid:
+   object { allowElevation?, allowToChangeInstallationDirectory?, artifactName?, buildUniversalInstaller?, createDesktopShortcut?, createStartMenuShortcut?, customNsisBinary?, customNsisResources?, deleteAppDataOnUninstall?, differentialPackage?, displayLanguageSelector?, guid?, include?, installerHeader?, installerHeaderIcon?, installerIcon?, installerLanguages?, installerSidebar?, language?, license?, menuCategory?, multiLanguageInstaller?, oneClick?, packElevateHelper?, perMachine?, preCompressedFileExtensions?, publish?, removeDefaultUninstallWelcomePage?, runAfterFinish?, script?, selectPerMachineByDefault?, shortcutName?, unicode?, uninstallDisplayName?, uninstallUrlHelp?, uninstallUrlInfoAbout?, uninstallUrlReadme?, uninstallUrlUpdateInfo?, uninstallerIcon?, uninstallerSidebar?, useZip?, warningsAsErrors? }
+     How to fix:
+     1. Open https://www.electron.build/nsis
+     2. Search the option name on the page (or type in into Search to find across the docs).
+       * Not found? The option was deprecated or not exists (check spelling).
+       * Found? Check that the option in the appropriate place. e.g. "title" only in the "dmg", not in the root.
+  failedTask=build stackTrace=ValidationError: Invalid configuration object. electron-builder 26.8.1 has been initialized using a configuration object that does not match the API schema.
+ - configuration.nsis has an unknown property 'compression'. These properties are valid:
+   object { allowElevation?, allowToChangeInstallationDirectory?, artifactName?, buildUniversalInstaller?, createDesktopShortcut?, createStartMenuShortcut?, customNsisBinary?, customNsisResources?, deleteAppDataOnUninstall?, differentialPackage?, displayLanguageSelector?, guid?, include?, installerHeader?, installerHeaderIcon?, installerIcon?, installerLanguages?, installerSidebar?, language?, license?, menuCategory?, multiLanguageInstaller?, oneClick?, packElevateHelper?, perMachine?, preCompressedFileExtensions?, publish?, removeDefaultUninstallWelcomePage?, runAfterFinish?, script?, selectPerMachineByDefault?, shortcutName?, unicode?, uninstallDisplayName?, uninstallUrlHelp?, uninstallUrlInfoAbout?, uninstallUrlReadme?, uninstallUrlUpdateInfo?, uninstallerIcon?, uninstallerSidebar?, useZip?, warningsAsErrors? }
+     How to fix:
+     1. Open https://www.electron.build/nsis
+     2. Search the option name on the page (or type in into Search to find across the docs).
+       * Not found? The option was deprecated or not exists (check spelling).
+       * Found? Check that the option in the appropriate place. e.g. "title" only in the "dmg", not in the root.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     at validate (B:\biomarkers\node_modules\@develar\schema-utils\dist\validate.js:86:11)
+    at validateConfiguration (B:\biomarkers\node_modules\app-builder-lib\src\util\config\config.ts:239:3)
+    at Packager.validateConfig (B:\biomarkers\node_modules\app-builder-lib\src\packager.ts:398:5)
+    at Packager.build (B:\biomarkers\node_modules\app-builder-lib\src\packager.ts:406:5)
+    at executeFinally (B:\biomarkers\node_modules\builder-util\src\promise.ts:12:14)
+@Saboor ➜ biomarkers git(kmanagement)  
