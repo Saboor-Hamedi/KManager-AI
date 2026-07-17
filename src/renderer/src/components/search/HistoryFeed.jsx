@@ -223,7 +223,7 @@ const HistoryFeed = ({
                                     ) : (
                                       <>
                                         <Plus size={13} />
-                                        Save to Knowledge Base
+                                        Save
                                       </>
                                     )}
                                   </button>
