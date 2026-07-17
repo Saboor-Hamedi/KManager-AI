@@ -1,10 +1,10 @@
 {
-  "name": "biomarkers",
-  "version": "1.0.3",
-  "description": "An Electron application with React",
+  "name": "kmanager",
+  "version": "1.0.4",
+  "description": "Fully-offline knowledge management studio with hybrid semantic search, local AI embeddings, and RAG synthesis.",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Saboor Hamedi",
+  "homepage": "https://github.com/Saboor-Hamedi/biomarkers",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

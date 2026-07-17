@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: biomarkers
+appId: com.saboorhamedbi.kmanager
+productName: KManager AI
 compression: maximum
 directories:
   buildResources: build
@@ -14,7 +14,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: biomarkers
+  executableName: kmanager
   compression: maximum
 nsis:
   compression: maximum
