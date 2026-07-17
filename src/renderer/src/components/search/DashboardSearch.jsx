@@ -589,15 +589,9 @@ const DashboardSearch = () => {
                       </div>
                     ))}
 
-                    {/* RAG Synthesized Answer Card BELOW retrieved sources */}
+                    {/* RAG Synthesized Answer */}
                     {msg.ragStatus && msg.ragStatus !== 'disabled' && (
-                      <div className="w-full mt-8 mb-8 pt-6 border-t border-[var(--border-subtle)] animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-accent)]">
-                            DeepSeek Synthesis
-                          </span>
-                        </div>
-
+                      <div className="w-full">
                         {msg.ragStatus === 'generating' && !msg.ragAnswer && (
                           <div className="flex items-center gap-2 py-2 text-xs text-[var(--text-muted)]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)] animate-pulse" />
@@ -606,7 +600,7 @@ const DashboardSearch = () => {
                         )}
 
                         {msg.ragAnswer && (
-                          <div className="flex flex-col gap-3">
+                          <div className="flex flex-col">
                             <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none">
                               <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" />
                               {msg.ragStatus === 'generating' && (
@@ -614,7 +608,7 @@ const DashboardSearch = () => {
                               )}
                             </div>
                             
-                            {/* Save to DB Button & Export Report Button */}
+                            {/* Save button */}
                             {msg.ragStatus === 'done' && (
                               <>
                                 <div className="flex justify-start mt-2 items-center">
