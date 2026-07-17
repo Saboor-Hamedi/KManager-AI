@@ -51,4 +51,4 @@ extraResources:
 publish:
   provider: github
   owner: Saboor-Hamedi
-  repo: biomarkers
+  repo: KManager-AI
