@@ -1,7 +1,25 @@
-import React from 'react'
-import { Minus, Square, X } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Minus, Square, X, Database, WifiOff } from 'lucide-react'
 
 const GlobalTitleBar = () => {
+  const [dbConnected, setDbConnected] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await window.api.db.status()
+        setDbConnected(res?.connected || false)
+      } catch {
+        setDbConnected(false)
+      }
+      setChecking(false)
+    }
+    check()
+    const interval = setInterval(check, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleMinimize = () => {
     if (window.api && window.api.windowControls) {
       window.api.windowControls.minimize()
@@ -28,19 +46,34 @@ const GlobalTitleBar = () => {
         <span className="text-xs font-semibold text-[var(--text-main)] tracking-tight">
           KManager AI
         </span>
-        <span className="text-[10px] text-[var(--text-faint)] font-mono uppercase tracking-widest hidden sm:inline-block">
+        {/* <span className="text-[10px] text-[var(--text-faint)] font-mono uppercase tracking-widest hidden sm:inline-block">
           Knowledge Management Studio
-        </span>
+        </span> */}
       </div>
 
       <div className="flex-1" />
 
       {/* Right: Status & Window Controls */}
       <div className="flex items-center h-full [-webkit-app-region:no-drag]">
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[10px] font-medium text-[var(--text-muted)] mr-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Postgres Connected</span>
+        {!checking && (
+          <div className={`flex items-center gap-1.5 px-1.5 text-[10px] font-medium mr-2 ${
+            dbConnected
+              ? 'text-[var(--text-muted)]'
+              : 'text-amber-400'
+          }`}>
+          {dbConnected ? (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Postgres Connected</span>
+            </>
+          ) : (
+            <>
+              <WifiOff size={10} />
+              <span>DB Disconnected</span>
+            </>
+          )}
         </div>
+        )}
 
         <button
           type="button"
