@@ -379,7 +379,7 @@ const DashboardSearch = () => {
     }
   }, [query])
 
-  const handleInput = (e) => {
+  const handleInput = useCallback((e) => {
     const val = e.target.value
     setQuery(val)
     if (textareaRef.current) {
@@ -409,7 +409,7 @@ const DashboardSearch = () => {
         console.error(err)
       }
     }, 150)
-  }
+  }, [])
 
   const handlePaste = (e) => {
     setTimeout(() => {
@@ -419,6 +419,7 @@ const DashboardSearch = () => {
       }
     }, 0)
   }
+
 
   const handleKeyDown = (e) => {
     const extractSuggestion = (content, queryStr) => {
@@ -472,6 +473,7 @@ const DashboardSearch = () => {
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
+    
     }
   }
 
