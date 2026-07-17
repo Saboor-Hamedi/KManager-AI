@@ -49,7 +49,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
         {/* Title Bar */}
         <div className="h-9 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 pl-3 pr-0 select-none">
           <div className="min-w-0 flex-1 mr-4 flex items-center gap-3">
-            <span className="text-xs font-normal text-[var(--text-main)] truncate">{selectedPdf.title}</span>
+            <span className="text-[10px] font-normal text-[var(--text-main)] truncate">{selectedPdf.title}</span>
             {!fileExists && (
               <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
                 Archived (disk file removed)
@@ -58,7 +58,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
           </div>
           <button
             onClick={onClose}
-            className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center text-sm shrink-0"
+            className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center text-[10px] shrink-0"
             title="Close"
           >
             ✕
@@ -78,7 +78,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
             /* ── PDF but file missing: fallback to stored text ── */
             <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] cursor-default">
               <div className="max-w-3xl mx-auto">
-                <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
+                <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
                 {isReady && selectedPdf.content ? (
@@ -86,9 +86,10 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
                     content={selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
+                    className="text-[10px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible"
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-sm">No archived content available.</div>
+                  <div className="text-[var(--text-faint)] text-[10px]">No archived content available.</div>
                 )}
               </div>
             </div>
@@ -108,9 +109,10 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
                     content={selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
+                    className="text-[10px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible"
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-sm">No content available for this file.</div>
+                  <div className="text-[var(--text-faint)] text-[10px]">No content available for this file.</div>
                 )}
               </div>
             </div>

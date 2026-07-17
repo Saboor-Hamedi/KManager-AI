@@ -78,6 +78,11 @@ const api = {
       const listener = (event, progress) => callback(progress)
       ipcRenderer.on('update-progress', listener)
       return () => ipcRenderer.removeListener('update-progress', listener)
+    },
+    onUpdateError: (callback) => {
+      const listener = (event, errMsg) => callback(errMsg)
+      ipcRenderer.on('update-error', listener)
+      return () => ipcRenderer.removeListener('update-error', listener)
     }
   }
 }

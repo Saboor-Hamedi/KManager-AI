@@ -6,62 +6,65 @@ import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRe
 import { cn } from '../lib/utils'
 import { getSetting } from '../lib/settings'
 import { queryDeepSeek } from '../lib/deepseek'
+import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
 
 const BotMessage = memo(({ text, idx, onSave, savedState }) => (
-  <div className="flex flex-col items-start">
-    <div className="flex items-start gap-2">
+  <div className="flex flex-col items-start w-full group animate-in fade-in duration-200">
+    <div className="flex items-start gap-2.5 max-w-[85%]">
       <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
         <Bot size={12} />
       </div>
-      <div className="px-3 py-2 rounded-lg text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] rounded-tl-none max-w-[85%] min-w-0" style={{ overflowWrap: 'break-word' }}>
+      <div className="px-3 py-2 rounded-lg rounded-tl-sm text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] min-w-0" style={{ overflowWrap: 'break-word' }}>
         <div style={{ overflowWrap: 'break-word' }}>
           <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
-            p: ({node, ...props}) => <p className="mb-1 last:mb-0" {...props} />,
+            p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
             strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
             em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
-            ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-            ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+            ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+            ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
             li: ({node, ...props}) => <li {...props} />,
             code: ({node, inline, ...props}) => inline
-              ? <code className="bg-black/20 px-1 py-0.5 rounded-[5px] font-mono text-[10px]" {...props} />
-              : <code className="block bg-black/20 p-2 rounded-[5px] font-mono text-[10px] mb-1 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+              ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[4px] font-mono text-[10px]" {...props} />
+              : <code className="block bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-muted)] p-2 rounded-md font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
           }}>
             {formatMarkdownText(text)}
           </ReactMarkdown>
         {idx > 0 && (
-          <button
-            onClick={() => onSave(idx, text)}
-            disabled={savedState === 'saving' || savedState === 'saved'}
-            className={`mt-1 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium transition-all ${
-              savedState === 'saved'
-                ? 'text-green-400 cursor-default'
-                : savedState === 'saving'
-                  ? 'text-[var(--text-muted)] opacity-70 cursor-wait'
-                  : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
-            }`}
-          >
-            {savedState === 'saved' ? (
-              <><div className="w-2 h-2 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mr-1"><svg width="4" height="4" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="2.5 6 5 8.5 9.5 3.5"></polyline></svg></div> Saved</>
-            ) : savedState === 'saving' ? (
-              <><span className="w-2 h-2 border border-[var(--text-muted)] border-t-transparent rounded-full animate-spin mr-1" /> Saving...</>
-            ) : (
-              <><Plus size={8} className="mr-0.5" /> Save</>
-            )}
-          </button>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-end mt-2">
+            <button
+              onClick={() => onSave(idx, text)}
+              disabled={savedState === 'saving' || savedState === 'saved'}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all shadow-sm ${
+                savedState === 'saved'
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'
+                  : savedState === 'saving'
+                    ? 'bg-[var(--bg-active)] text-[var(--text-muted)] border border-[var(--border-subtle)] opacity-70 cursor-wait'
+                    : 'bg-[var(--bg-active)] text-[var(--text-faint)] border border-[var(--border-subtle)] hover:text-white hover:border-[var(--text-accent)] hover:shadow-[0_0_10px_rgba(var(--color-accent),0.2)]'
+              }`}
+            >
+              {savedState === 'saved' ? (
+                <><Check size={10} className="text-green-400" /> Saved</>
+              ) : savedState === 'saving' ? (
+                <><span className="w-2.5 h-2.5 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" /> Saving...</>
+              ) : (
+                <><Plus size={10} /> Save</>
+              )}
+            </button>
+          </div>
         )}
-        </div>
         </div>
       </div>
     </div>
+  </div>
 ))
 
 const UserMessage = memo(({ text }) => (
-  <div className="flex items-start justify-end">
-    <div className="flex items-start gap-2 flex-row-reverse">
-      <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-panel)] text-[var(--text-muted)]">
+  <div className="flex items-start justify-end w-full animate-in fade-in duration-200">
+    <div className="flex items-start gap-2 flex-row-reverse max-w-[85%]">
+      <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-panel)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
         <User size={12} />
       </div>
-      <div className="px-3 py-2 rounded-lg text-[11px] leading-relaxed bg-[var(--bg-active)] text-[var(--text-accent)] rounded-tr-none max-w-[85%] break-words">
+      <div className="px-3 py-2 rounded-lg rounded-tr-sm text-[11px] leading-relaxed bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)] break-words">
         {text}
       </div>
     </div>
@@ -79,6 +82,13 @@ const ChatBot = ({ appState = {} }) => {
   const scrollRef = useRef(null)
 
   const enhancedAppState = { ...appState, ...dbStats }
+
+  useKeyboardShortcuts({
+    onEscape: isOpen ? () => {
+      setIsOpen(false)
+      return true
+    } : undefined
+  })
 
   // Fetch DB stats for system awareness
   useEffect(() => {
@@ -180,48 +190,48 @@ const ChatBot = ({ appState = {} }) => {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-24 right-6 flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:bg-[#2a3644] hover:border-[#4e6074] hover:shadow-[0_6px_25px_rgba(0,0,0,0.6)] hover:-translate-y-1 transition-all duration-300 z-40 group",
-          isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100"
+          "fixed bottom-6 right-6 flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-lg hover:border-[var(--text-accent)] hover:-translate-y-0.5 transition-all duration-200 z-40",
+          isOpen ? "scale-75 opacity-0 pointer-events-none" : "scale-100 opacity-100"
         )}
       >
-        <div className="absolute inset-0 rounded-full bg-[var(--text-accent)]/5 blur-md group-hover:bg-[var(--text-accent)]/15 transition-all" />
-        <MessageSquare size={18} className="relative z-10" />
+        <MessageSquare size={18} />
       </button>
 
       <div
         className={cn(
-          "fixed bottom-6 right-6 w-80 sm:w-96 bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-lg shadow-2xl flex flex-col transition-all duration-300 transform origin-bottom-right z-50",
-          isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
+          "fixed bottom-6 right-6 w-80 sm:w-96 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-lg shadow-xl flex flex-col transition-all duration-200 transform origin-bottom-right z-50 overflow-hidden",
+          isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
         )}
-        style={{ height: '500px' }}
+        style={{ height: '520px', maxHeight: '80vh' }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-dim)] bg-[var(--bg-app)] rounded-t-lg shrink-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-dim)] bg-[var(--bg-app)] shrink-0">
           <div className="flex items-center gap-2">
             <Bot size={16} className="text-[var(--text-accent)]" />
-            <h3 className="text-xs font-bold tracking-widest text-[var(--text-main)]">Assistant</h3>
+            <h3 className="text-xs font-semibold text-[var(--text-main)] tracking-wide">Assistant</h3>
           </div>
           <button onClick={() => setIsOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
             <X size={15} />
           </button>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 custom-scrollbar">
-          <div className="flex flex-col gap-3">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 custom-scrollbar">
+          <div className="flex flex-col gap-4">
             {messages.length === 0 && !isTyping && (
-              <div className="flex flex-col items-center justify-center text-center py-6 px-4">
-                <div className="w-8 h-8 rounded-lg bg-[var(--bg-active)] flex items-center justify-center mb-2">
-                  <Bot size={16} className="text-[var(--text-accent)]" />
+              <div className="flex flex-col items-center justify-center text-center py-8 px-4 h-full animate-in fade-in duration-300">
+                <div className="w-10 h-10 rounded-lg bg-[var(--bg-active)] flex items-center justify-center mb-3 shadow-sm border border-[var(--border-subtle)]">
+                  <kbd className="font-mono font-bold text-sm text-[var(--text-accent)]">KM</kbd>
                 </div>
-                <h3 className="text-xs font-semibold text-[var(--text-main)] mb-0.5">KManager AI</h3>
-                <p className="text-[10px] text-[var(--text-muted)] mb-3 max-w-[200px] leading-relaxed">
+                <h3 className="text-sm font-semibold text-[var(--text-main)] mb-1">KManager AI</h3>
+                <p className="text-[11px] text-[var(--text-muted)] mb-6 max-w-[220px] leading-relaxed">
                   {dbStats.totalDocuments
                     ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
-                    : 'Ask me about your knowledge base, features, or how to get started.'}
+                    : 'Ask me about your knowledge base or features.'}
                 </p>
-                <div className="flex flex-col gap-1 w-full max-w-[200px]">
-                  {['How do I search my documents?', 'What can KManager AI do?', 'How do I connect to a database?'].map((s) => (
+                <div className="flex flex-col gap-1.5 w-full">
+                  {['Summarize my recent notes', 'Find concepts in my vault', 'Compare two topics'].map((s) => (
                     <button key={s} onClick={() => sendQuickPrompt(s)}
-                      className="w-full text-left px-2 py-1 text-[10px] text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-panel)] rounded transition-colors">
+                      className="w-full text-left px-3 py-2 text-[11px] text-[var(--text-faint)] hover:text-[var(--text-main)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-md border border-transparent hover:border-[var(--border-subtle)] transition-colors">
                       {s}
                     </button>
                   ))}
@@ -234,14 +244,14 @@ const ChatBot = ({ appState = {} }) => {
                 : <BotMessage key={idx} text={msg.text} idx={idx} onSave={handleSaveResponse} savedState={savedResponses[idx]} />
             ))}
             {isTyping && (
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5 w-full animate-in fade-in duration-200">
                 <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
                   <Bot size={12} />
                 </div>
-                <div className="px-3 py-2 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-tl-none flex items-center gap-1 break-words">
-                  <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" />
-                  <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                  <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+                <div className="px-3 py-2.5 rounded-lg rounded-tl-sm bg-[var(--bg-panel)] border border-[var(--border-dim)] flex items-center gap-1">
+                  <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" />
+                  <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+                  <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
                 </div>
               </div>
             )}
@@ -249,16 +259,20 @@ const ChatBot = ({ appState = {} }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-3 border-t border-[var(--border-dim)] bg-[var(--bg-app)] rounded-b-lg shrink-0">
-          <form onSubmit={handleSend} className="relative">
+        <div className="p-3 border-t border-[var(--border-dim)] bg-[var(--bg-app)] shrink-0">
+          <form onSubmit={handleSend} className="relative flex items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] px-3 py-2.5 pr-10 focus:outline-none transition-colors placeholder:text-[var(--text-faint)]"
+              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-md text-xs text-[var(--text-main)] px-3 py-2.5 pr-10 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)]"
             />
-            <button type="submit" className="absolute right-1.5 top-1.5 p-1 text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors">
+            <button 
+              type="submit" 
+              disabled={!input.trim() || isTyping}
+              className="absolute right-2 p-1 text-[var(--text-accent)] hover:text-[var(--text-main)] disabled:opacity-50 transition-colors"
+            >
               <Send size={14} />
             </button>
           </form>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search, Send, Plus, ChevronDown, Mic, ArrowUp, RotateCcw, Sparkles } from 'lucide-react'
 import SearchResultCard from './SearchResultCard'
 import Preview from './Preview'
-import Autocompletion from './Autocompletion'
+import Autocompletion, { getSuggestion } from './Autocompletion'
 import PDFUploadZone from './PDFUploadZone'
 import EmptySearchState from './EmptySearchState'
 import InlineChat from './InlineChat'
@@ -395,9 +395,19 @@ const DashboardSearch = () => {
     if (autocompleteTimeoutRef.current) clearTimeout(autocompleteTimeoutRef.current)
     autocompleteTimeoutRef.current = setTimeout(async () => {
       try {
-        const results = await window.api.db.lexicalSearch(val, 5)
+        const results = await window.api.db.lexicalSearch(val, 20)
         if (results && results.length > 0) {
-          setAutocompleteResults(results)
+          const uniqueResults = []
+          const seen = new Set()
+          for (const res of results) {
+            const suggestionObj = getSuggestion(res.content, val)
+            const text = suggestionObj.text || ''
+            if (!seen.has(text)) {
+              seen.add(text)
+              uniqueResults.push({ ...res, suggestionText: text, suggestionMatchIdx: suggestionObj.matchIdx })
+            }
+          }
+          setAutocompleteResults(uniqueResults)
           setShowAutocomplete(true)
           setSelectedIndex(-1)
         } else {

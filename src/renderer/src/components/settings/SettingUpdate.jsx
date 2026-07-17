@@ -49,12 +49,19 @@ const SettingUpdate = () => {
       setStatus('downloaded')
     })
 
+    const unsubError = window.api.update.onUpdateError((errMsg) => {
+      clearTimeout(checkTimeoutRef.current)
+      setError(errMsg)
+      setStatus('error')
+    })
+
     return () => {
       clearTimeout(checkTimeoutRef.current)
       unsubAvailable()
       unsubNotAvailable()
       unsubProgress()
       unsubDownloaded()
+      unsubError()
     }
   }, [])
 

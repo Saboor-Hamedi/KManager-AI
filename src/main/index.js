@@ -780,6 +780,11 @@ app.on('ready', () => {
   autoUpdater.checkForUpdatesAndNotify()
 })
 
+autoUpdater.on('error', (err) => {
+  log.error('Update error:', err)
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-error', err?.message || 'Unknown update error')
+})
+
 autoUpdater.on('update-available', (info) => {
   log.info('Update available.')
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-available', info)

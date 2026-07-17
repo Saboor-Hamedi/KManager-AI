@@ -3,6 +3,7 @@ import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus } from 'lu
 import HoverWikilink from './HoverWikilink'
 import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
+import Wrapper from '../code/Wrapper'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
@@ -39,6 +40,8 @@ const HighlightedText = memo(({ text, query, disabled }) => {
     </>
   )
 })
+
+
 
 const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveReply }) => {
   const [copied, setCopied] = useState(false)
@@ -200,47 +203,49 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
 
       {/* Content Chunk Body */}
       <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden text-justify">
-        <Suspense fallback={<div className="text-[var(--text-muted)] text-xs py-2">Rendering chunk...</div>}>
-          {(() => {
-            const ext = item.title ? item.title.split('.').pop().toLowerCase() : ''
-            const isJsonOrCode = ['json', 'py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext) || item.category === 'JSON'
+        <Wrapper maxHeight={300}>
+          <Suspense fallback={<div className="text-[var(--text-muted)] text-xs py-2">Rendering chunk...</div>}>
+            {(() => {
+              const ext = item.title ? item.title.split('.').pop().toLowerCase() : ''
+              const isJsonOrCode = ['json', 'py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext) || item.category === 'JSON'
 
-            if (isJsonOrCode) {
+              if (isJsonOrCode) {
+                return (
+                  <DocumentRenderer
+                    content={item.content}
+                    category={item.category || ext.toUpperCase()}
+                    fileTitle={item.title}
+                  />
+                )
+              }
+
+              // Build highlight-aware markdown component overrides
+              const highlightComponents = {
+                ...cleanMarkdownComponents,
+                p: ({ node, children, ...props }) => (
+                  <p className="mb-1.5 last:mb-0 text-justify" {...props}>
+                    {typeof children === 'string'
+                      ? <HighlightedText text={children} query={query} disabled={selected} />
+                      : children}
+                  </p>
+                ),
+                li: ({ node, children, ...props }) => (
+                  <li {...props}>
+                    {typeof children === 'string'
+                      ? <HighlightedText text={children} query={query} disabled={selected} />
+                      : children}
+                  </li>
+                ),
+              }
+
               return (
-                <DocumentRenderer
-                  content={item.content}
-                  category={item.category || ext.toUpperCase()}
-                  fileTitle={item.title}
-                />
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={highlightComponents}>
+                  {formatMarkdownText(item.content)}
+                </ReactMarkdown>
               )
-            }
-
-            // Build highlight-aware markdown component overrides
-            const highlightComponents = {
-              ...cleanMarkdownComponents,
-              p: ({ node, children, ...props }) => (
-                <p className="mb-1.5 last:mb-0 text-justify" {...props}>
-                  {typeof children === 'string'
-                    ? <HighlightedText text={children} query={query} disabled={selected} />
-                    : children}
-                </p>
-              ),
-              li: ({ node, children, ...props }) => (
-                <li {...props}>
-                  {typeof children === 'string'
-                    ? <HighlightedText text={children} query={query} disabled={selected} />
-                    : children}
-                </li>
-              ),
-            }
-
-            return (
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={highlightComponents}>
-                {formatMarkdownText(item.content)}
-              </ReactMarkdown>
-            )
-          })()}
-        </Suspense>
+            })()}
+          </Suspense>
+        </Wrapper>
       </div>
 
       {/* Reply Button below response */}

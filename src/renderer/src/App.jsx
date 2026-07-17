@@ -12,6 +12,7 @@ import DashboardSearch from './components/search/DashboardSearch'
 import AnalyticsView from './components/analytics/AnalyticsView'
 import UsersView from './components/users/UsersView'
 import Documentation from './components/Documentation'
+import GlobalError from './components/GlobalError'
 
 function App() {
   const [activeTab, setActiveTab] = useState('search')
@@ -81,35 +82,43 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-[#06080a] text-white overflow-hidden font-sans transition-colors duration-300" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
-      <GlobalTitleBar />
+      <GlobalError>
+        <GlobalTitleBar />
+      </GlobalError>
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          onOpenSettings={() => setIsSettingsOpen(true)} 
-          onOpenTheme={() => setIsThemeOpen(true)}
-          onOpenDocs={() => setIsDocsOpen(true)}
-          collapsed={sidebarCollapsed}
-          toggleCollapsed={toggleSidebar}
-        />
+        <GlobalError>
+          <Sidebar 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            onOpenSettings={() => setIsSettingsOpen(true)} 
+            onOpenTheme={() => setIsThemeOpen(true)}
+            onOpenDocs={() => setIsDocsOpen(true)}
+            collapsed={sidebarCollapsed}
+            toggleCollapsed={toggleSidebar}
+          />
+        </GlobalError>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <Header toggleSidebar={toggleSidebar} collapsed={sidebarCollapsed} />
+          <GlobalError>
+            <Header toggleSidebar={toggleSidebar} collapsed={sidebarCollapsed} />
+          </GlobalError>
 
         {/* ── Search view — always mounted so state (history, query) survives tab switches ── */}
         <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'search' ? 'flex' : 'hidden'}`}>
-          <DashboardSearch
-            focusTrigger={searchFocusTrigger}
-            onResultSelect={async (item) => {
-              if (item.id === 'nav-1') setActiveTab('analytics')
-              else if (item.id === 'nav-2') setActiveTab('users')
-              else if (item.id === 'nav-3') setIsSettingsOpen(true)
-              else if (item.id === 'action-2') setIsThemeOpen(true)
-              else if (item.vault_path) {
-                await window.api.system.openFile(item.vault_path)
-              }
-            }}
-          />
+          <GlobalError>
+            <DashboardSearch
+              focusTrigger={searchFocusTrigger}
+              onResultSelect={async (item) => {
+                if (item.id === 'nav-1') setActiveTab('analytics')
+                else if (item.id === 'nav-2') setActiveTab('users')
+                else if (item.id === 'nav-3') setIsSettingsOpen(true)
+                else if (item.id === 'action-2') setIsThemeOpen(true)
+                else if (item.vault_path) {
+                  await window.api.system.openFile(item.vault_path)
+                }
+              }}
+            />
+          </GlobalError>
         </div>
 
         {/* ── Other views — lazy-conditional, padding/scroll handled here ── */}
@@ -125,17 +134,22 @@ function App() {
                 </p>
               </div>
 
-              {activeTab === 'analytics' && <AnalyticsView />}
-              {activeTab === 'users' && <UsersView />}
+              <GlobalError>
+                {activeTab === 'analytics' && <AnalyticsView />}
+              </GlobalError>
+              
+              <GlobalError>
+                {activeTab === 'users' && <UsersView />}
+              </GlobalError>
             </div>
           </main>
         )}
         </div>
       </div>
-      <ChatBot />
-      <Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} />
-      <Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />
+      <GlobalError><ChatBot /></GlobalError>
+      <GlobalError><Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} /></GlobalError>
+      <GlobalError><ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} /></GlobalError>
+      <GlobalError><Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} /></GlobalError>
     </div>
   )
 }
