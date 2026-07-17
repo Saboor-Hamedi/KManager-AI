@@ -92,6 +92,29 @@ const Documentation = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
+  // Compute prev/next navigation within the same category
+  const getNavDocs = () => {
+    if (!activeDoc) return { prev: null, next: null }
+    for (const category of Object.keys(docs)) {
+      const sorted = [...docs[category]].sort((a, b) => {
+        const aIsIntro = a.title.toLowerCase().includes('introduction')
+        const bIsIntro = b.title.toLowerCase().includes('introduction')
+        if (aIsIntro && !bIsIntro) return -1
+        if (!aIsIntro && bIsIntro) return 1
+        return a.title.localeCompare(b.title)
+      })
+      const idx = sorted.findIndex(d => d.path === activeDoc.path)
+      if (idx !== -1) {
+        return {
+          prev: idx > 0 ? sorted[idx - 1] : null,
+          next: idx < sorted.length - 1 ? sorted[idx + 1] : null
+        }
+      }
+    }
+    return { prev: null, next: null }
+  }
+  const { prev, next } = getNavDocs()
+
   const handleContentClick = (e) => {
     const link = e.target.closest('a')
     if (link) {
@@ -139,6 +162,32 @@ const Documentation = ({ isOpen, onClose }) => {
                 ) : activeDoc ? (
                   <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
                     <DocumentRenderer content={docContent} fileTitle={activeDoc.title} onNavigate={handleNavigate} />
+                    {(prev || next) && (
+                      <div className="flex items-center justify-between mt-8 pt-6 border-t border-[var(--border-subtle)]">
+                        <div>
+                          {prev && (
+                            <button
+                              onClick={() => setActiveDoc(prev)}
+                              className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-accent)] transition-colors"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                              <span className="truncate max-w-[200px]">{prev.title}</span>
+                            </button>
+                          )}
+                        </div>
+                        <div>
+                          {next && (
+                            <button
+                              onClick={() => setActiveDoc(next)}
+                              className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-accent)] transition-colors"
+                            >
+                              <span className="truncate max-w-[200px]">{next.title}</span>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-center space-y-4">
