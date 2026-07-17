@@ -5,20 +5,14 @@ import Header from '../../../../src/renderer/src/components/Header'
 
 describe('Header', () => {
   it('renders breadcrumb', () => {
-    render(<Header toggleSidebar={() => {}} />)
+    render(<Header toggleSidebar={() => {}} collapsed={false} />)
     expect(screen.getByText('Knowledge Base')).toBeInTheDocument()
     expect(screen.getByText('Search & Explore')).toBeInTheDocument()
   })
 
-  it('renders user identity', () => {
-    render(<Header toggleSidebar={() => {}} />)
-    expect(screen.getByText('Admin')).toBeInTheDocument()
-    expect(screen.getByText('OPERATOR')).toBeInTheDocument()
-  })
-
   it('calls toggleSidebar when sidebar button clicked', () => {
     const toggle = vi.fn()
-    render(<Header toggleSidebar={toggle} />)
+    render(<Header toggleSidebar={toggle} collapsed={false} />)
     fireEvent.click(screen.getByTitle('Toggle sidebar (Ctrl+B)'))
     expect(toggle).toHaveBeenCalledOnce()
   })

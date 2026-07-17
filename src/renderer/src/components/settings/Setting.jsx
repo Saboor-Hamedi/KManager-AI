@@ -66,7 +66,7 @@ const Setting = ({ isOpen, onClose }) => {
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-44 border-r border-[var(--border-dim)] p-2 space-y-1 shrink-0 overflow-y-auto bg-[#131313]/50">
+          <div className="w-44 border-r border-[var(--border-dim)] p-2 space-y-1 shrink-0 overflow-y-auto bg-[var(--bg-activitybar)]/80">
             {tabs.map((tab) => (
               <button
                 key={tab.id}

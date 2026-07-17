@@ -174,8 +174,8 @@ const SettingDataPanel = () => {
 
       {/* Queue */}
       {statsVisible && pendingOrErrorQueue.length > 0 && (
-        <div className="bg-[#131313] border border-[var(--border-dim)] rounded-md overflow-hidden mt-2 shadow-sm">
-          <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border-dim)] bg-[#1a1a1a]">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md overflow-hidden mt-2 shadow-sm">
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border-dim)] bg-[var(--bg-panel)]">
             <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
               {pendingOrErrorQueue.filter(q => q.status === 'pending' || q.status === 'processing').length} in queue
               {pendingOrErrorQueue.some(q => q.status === 'error') && ` · ${pendingOrErrorQueue.filter(q => q.status === 'error').length} failed`}

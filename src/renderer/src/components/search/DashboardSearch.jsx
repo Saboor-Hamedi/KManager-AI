@@ -488,7 +488,7 @@ const DashboardSearch = () => {
   const memoizedHistoryFeed = useMemo(() => {
     if (history.length === 0) {
       return (
-          <div className="h-full flex flex-col items-center justify-center gap-5 select-none px-6">
+          <div className="h-full flex flex-col items-center justify-center gap-5  px-6">
             <div className="flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-accent)] shadow-sm">
                 <span className="text-sm font-black tracking-tighter">KM</span>

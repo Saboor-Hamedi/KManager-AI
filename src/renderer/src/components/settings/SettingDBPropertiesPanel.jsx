@@ -162,7 +162,7 @@ const SettingDBPropertiesPanel = () => {
             ? 'bg-red-500/10 border-red-500/30 text-red-300'
             : actionState.status === 'success'
             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-            : 'bg-[#a855f7]/10 border-[#a855f7]/30 text-gray-200'
+            : 'bg-[#a855f7]/10 border-[#a855f7]/30 text-[var(--text-main)]'
         }`}>
           <div className="flex items-center justify-between text-[11px] font-bold">
             <span className="flex items-center gap-2">
@@ -173,7 +173,7 @@ const SettingDBPropertiesPanel = () => {
             </span>
             <button
               onClick={() => setActionState(null)}
-              className="text-gray-400 hover:text-gray-200 text-[10px] font-normal"
+              className="text-[var(--text-muted)] hover:text-[var(--text-main)] text-[10px] font-normal"
             >
               Dismiss
             </button>
@@ -191,48 +191,48 @@ const SettingDBPropertiesPanel = () => {
 
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Documents</span>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Documents</span>
             <FileText size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-gray-100 tracking-tight">
+          <div className="text-2xl font-black text-[var(--text-main)] tracking-tight">
             {totalDocs.toLocaleString()}
           </div>
-          <div className="text-[10px] font-medium text-gray-400 mt-1">Archived in PostgreSQL</div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Archived in PostgreSQL</div>
         </div>
 
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vector Chunks</span>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Vector Chunks</span>
             <Layers size={14} className="text-[#a855f7]" />
           </div>
           <div className="text-2xl font-black text-[#a855f7] tracking-tight">
             {totalChunks.toLocaleString()}
           </div>
-          <div className="text-[10px] font-medium text-gray-400 mt-1">Indexed via pgvector</div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Indexed via pgvector</div>
         </div>
 
-        <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Chunks / Doc</span>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Avg Chunks / Doc</span>
             <HardDrive size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-gray-100 tracking-tight">
+          <div className="text-2xl font-black text-[var(--text-main)] tracking-tight">
             {avgChunks}
           </div>
-          <div className="text-[10px] font-medium text-gray-400 mt-1">Semantic density ratio</div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Semantic density ratio</div>
         </div>
       </div>
 
       {/* Format Distribution Table / Cards */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-4 shadow-sm">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Database size={13} className="text-[#a855f7]" />
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-200">Ingested File Formats</h4>
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">Ingested File Formats</h4>
           </div>
-          <span className="text-[11px] font-semibold text-gray-400">
+          <span className="text-[11px] font-semibold text-[var(--text-muted)]">
             {dbStats?.by_type ? Object.keys(dbStats.by_type).length : 0} format(s)
           </span>
         </div>
@@ -248,15 +248,15 @@ const SettingDBPropertiesPanel = () => {
                   return (
                     <div
                       key={format}
-                      className="bg-[#131313] border border-[#242424] hover:border-[#333] rounded-md p-2.5 space-y-2 transition-colors"
+                      className="bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-[var(--border-main)] rounded-md p-2.5 space-y-2 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#202020] text-[#a855f7] border border-[#2d2d2d]">
                           {format}
                         </span>
-                        <span className="font-mono text-xs text-gray-400 font-bold">{percentage}%</span>
+                        <span className="font-mono text-xs text-[var(--text-muted)] font-bold">{percentage}%</span>
                       </div>
-                      <div className="text-xs text-gray-300 font-semibold">
+                      <div className="text-xs text-[var(--text-muted)] font-semibold">
                         {num.toLocaleString()} {num === 1 ? 'file' : 'files'}
                       </div>
                       <div className="w-full h-1.5 bg-[#202020] rounded-full overflow-hidden">
@@ -271,24 +271,24 @@ const SettingDBPropertiesPanel = () => {
             </div>
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-gray-500 font-medium">
+          <div className="py-8 text-center text-xs text-[var(--text-faint)] font-medium">
             No files ingested yet. Go to Data Ingestion to upload files.
           </div>
         )}
       </div>
 
       {/* Database Maintenance & Operations */}
-      <div className="bg-[#181818] border border-[#2a2a2a] rounded-md p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 border-b border-[#2a2a2a] pb-3">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2 border-b border-[var(--border-dim)] pb-3">
           <Cpu size={13} className="text-[#a855f7]" />
-          <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-200">Database Maintenance & Operations</h4>
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">Database Maintenance & Operations</h4>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Re-embed Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-md p-3">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-gray-200 flex items-center gap-2">
+              <span className="text-[11px] font-bold text-[var(--text-main)] flex items-center gap-2">
                 <Cpu size={13} className="text-purple-400" />
                 Re-embed DB
               </span>
@@ -300,13 +300,13 @@ const SettingDBPropertiesPanel = () => {
                 Re-embed
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 leading-relaxed">
+            <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
               Re-chunks all archived document content and regenerates semantic embeddings without needing to re-upload files from disk.
             </p>
           </div>
 
           {/* Truncate All Data Operation */}
-          <div className="bg-[#131313] border border-[#252525] rounded-md p-3">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-red-400 flex items-center gap-2">
                 <Trash2 size={13} />
@@ -320,7 +320,7 @@ const SettingDBPropertiesPanel = () => {
                 Truncate
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 leading-relaxed">
+            <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
               Lightweight instant truncation (<code className="text-red-300">TRUNCATE TABLE</code>) clears all documents, chunks, and feedback in O(1) time.
             </p>
           </div>
@@ -328,12 +328,12 @@ const SettingDBPropertiesPanel = () => {
       </div>
 
       {/* Storage Architecture Overview */}
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-md p-3">
-        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-300 mb-1.5">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-[var(--text-muted)] mb-1.5">
           <CheckCircle2 size={13} className="text-emerald-400" />
           <span>Permanent Archive Protection Enabled</span>
         </div>
-        <p className="text-[10px] text-gray-400 leading-relaxed">
+        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
           Every ingested file is fully archived in the <code className="text-[#a855f7]">documents.content</code> table. Even if local files are deleted or moved on your disk, your search queries and document previews operate directly from PostgreSQL.
         </p>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Minus, Square, X, Database, WifiOff } from 'lucide-react'
+import { Minus, Square, X, Database, WifiOff, Code, CodeXml } from 'lucide-react'
 
 const GlobalTitleBar = () => {
   const [dbConnected, setDbConnected] = useState(false)
@@ -39,10 +39,11 @@ const GlobalTitleBar = () => {
   }
 
   return (
-    <div className="h-8 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0 select-none z-50 [-webkit-app-region:drag]">
+    <div className="h-8 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0  z-50 [-webkit-app-region:drag]">
       {/* Left: App Identity */}
       <div className="flex items-center gap-2 px-3">
-        <span className="w-2 h-2 rounded-full bg-[var(--text-accent)]" />
+        {/* <span className="w-2 h-2 rounded-full bg-[var(--text-accent)]" /> */}
+        <CodeXml className="text-[var(--text-accent)]" size={16} />
         <span className="text-xs font-semibold text-[var(--text-main)] tracking-tight">
           KManager AI
         </span>

@@ -120,11 +120,11 @@ const PDFUploadZone = ({ onIngestComplete }) => {
   const isBusy = processingItem || progress.status === 'extracting' || progress.status === 'chunking' || progress.status === 'embedding'
 
   return (
-    <div className="w-full py-1 px-4 relative z-30 transition-all duration-200">
+    <div className="w-full  relative z-30 transition-all duration-200">
       {/* Subtle Centered Header Bar */}
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="max-w-xl mx-auto flex items-center justify-between px-3.5 py-1 rounded-[5px] bg-[var(--bg-card)]/70 hover:bg-[var(--bg-card)] border-0 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-sm"
+        className="max-w-lg mx-auto flex items-center justify-between px-3.5 py-1 rounded-[5px] bg-[var(--bg-card)]/70 hover:bg-[var(--bg-card)] border-0 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-sm"
       >
         <div className="flex items-center space-x-2 overflow-hidden">
           <Database size={13} className="text-[var(--text-accent)] shrink-0" />
