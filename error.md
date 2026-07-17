@@ -1,31 +1,11 @@
-This is my data on the database: 
-Total Documents
-475
-Archived in PostgreSQL
-Vector Chunks
-5867
-Indexed via pgvector
-Avg Chunks / Doc
-12.4
-Semantic density ratio
-Ingested File Formats
-5 format(s)
-md
-85%
-402 files
-ai_response
-12%
-58 files
-pdf
-2%
-9 files
-json
-1%
-5 files
-py
-0%
-1 file
-______
+me: Give me the pdf names we have in the database
+ai: I don't have direct access to query the database for a full list of PDF filenames. However, I can tell you that your system currently holds 475 documents total, and the ingestion pipeline supports PDF, Markdown, JSON, and code files.
 
+To get the exact list of PDF names, you can:
 
-this is the response of the @chatBot
+Check the Document List view in the main interface — it shows all ingested files with their names and types.
+Use the search bar with a filter like
+type:pdf
+to narrow results.
+Look at the Preview Panel when browsing documents to see filenames directly.
+Would you like me to help you search for a specific PDF or topic instead?

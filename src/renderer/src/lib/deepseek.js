@@ -21,6 +21,8 @@ You have deep knowledge of KManager AI's capabilities:
 - Documents Added This Week: ${appState?.documentsThisWeek || 0}
 - Recent Searches: ${appState?.recentSearches || 0}
 - Last Activity: ${appState?.lastActivity || 'N/A'}
+- File Breakdown: ${appState?.filesByType?.map(f => `${f.file_type}: ${f.count}`).join(', ') || 'N/A'}
+- Recent Files: ${appState?.recentFiles?.map(f => f.file_name).join(', ') || 'N/A'}
 
 ### STRICT FORMATTING INSTRUCTIONS ###
 1. Be concise - limit responses to 2-3 short paragraphs

@@ -85,11 +85,13 @@ const ChatBot = ({ appState = {} }) => {
     if (!isOpen) return
     const fetchStats = async () => {
       try {
-        const [statsRes, analyticsRes, todayRes, weekRes] = await Promise.allSettled([
+        const [statsRes, analyticsRes, todayRes, weekRes, typeRes, recentRes] = await Promise.allSettled([
           window.api.db.stats(),
           window.api.db.getAnalytics(),
           window.api.db.query("SELECT COUNT(*)::int as count FROM documents WHERE created_at >= CURRENT_DATE"),
-          window.api.db.query("SELECT COUNT(*)::int as count FROM documents WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'")
+          window.api.db.query("SELECT COUNT(*)::int as count FROM documents WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'"),
+          window.api.db.query("SELECT file_type, COUNT(*)::int as count FROM documents GROUP BY file_type ORDER BY count DESC"),
+          window.api.db.query("SELECT file_name, file_type, created_at FROM documents ORDER BY created_at DESC LIMIT 15")
         ])
         const stats = statsRes.value?.stats
         const metrics = analyticsRes.value?.metrics
@@ -99,7 +101,9 @@ const ChatBot = ({ appState = {} }) => {
           documentsToday: todayRes.value?.rows?.[0]?.count || 0,
           documentsThisWeek: weekRes.value?.rows?.[0]?.count || 0,
           recentSearches: metrics?.totalSearches || 0,
-          lastActivity: metrics?.activityFeed?.[0]?.created_at || ''
+          lastActivity: metrics?.activityFeed?.[0]?.created_at || '',
+          filesByType: typeRes.value?.rows || [],
+          recentFiles: recentRes.value?.rows || []
         })
       } catch {}
     }
