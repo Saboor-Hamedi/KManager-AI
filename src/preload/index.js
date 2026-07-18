@@ -39,7 +39,8 @@ const api = {
     set: (key, value) => ipcRenderer.invoke('config:set', key, value)
   },
   app: {
-    version: () => ipcRenderer.invoke('app:version')
+    version: () => ipcRenderer.invoke('app:version'),
+    checkLatestVersion: () => ipcRenderer.invoke('update:check-latest')
   },
   system: {
     openFile: (filePath) => ipcRenderer.invoke('system:open-file', filePath),

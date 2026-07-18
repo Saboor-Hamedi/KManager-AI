@@ -924,6 +924,18 @@ ipcMain.handle('app:version', () => {
   return app.getVersion()
 })
 
+ipcMain.handle('update:check-latest', async () => {
+  try {
+    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
+    if (!res.ok) return null
+    const text = await res.text()
+    const match = text.match(/^version:\s*(\S+)/m)
+    return match ? match[1] : null
+  } catch {
+    return null
+  }
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
