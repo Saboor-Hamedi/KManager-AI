@@ -963,9 +963,13 @@ ipcMain.handle('update:download', async (event) => {
 
 ipcMain.handle('update:install', () => {
   if (downloadedUpdatePath) {
-    shell.openPath(downloadedUpdatePath)
+    const child = require('child_process').spawn(downloadedUpdatePath, [], {
+      detached: true,
+      stdio: 'ignore'
+    })
+    child.unref()
     downloadedUpdatePath = null
-    setTimeout(() => app.quit(), 1000)
+    app.quit()
   } else {
     autoUpdater.quitAndInstall()
   }
