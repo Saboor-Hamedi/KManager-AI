@@ -908,16 +908,67 @@ autoUpdater.on('download-progress', (progressObj) => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-progress', progressObj)
 })
 
+let downloadedUpdatePath = null
+
 ipcMain.handle('update:check', () => {
   autoUpdater.checkForUpdates()
 })
 
-ipcMain.handle('update:download', () => {
-  autoUpdater.downloadUpdate()
+ipcMain.handle('update:download', async (event) => {
+  try {
+    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
+    if (!res.ok) throw new Error('Failed to fetch update info')
+    const text = await res.text()
+    const versionMatch = text.match(/^version:\s*(\S+)/m)
+    const fileMatch = text.match(/^\s+url:\s*(\S+)/m)
+    if (!versionMatch || !fileMatch) throw new Error('Invalid update metadata')
+    const version = versionMatch[1]
+    const fileName = fileMatch[1]
+    const url = `https://github.com/Saboor-Hamedi/KManager-AI/releases/download/v${version}/${fileName}`
+    const tempDir = app.getPath('temp')
+    const dest = path.join(tempDir, fileName)
+
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Failed to download update')
+    const total = parseInt(response.headers.get('content-length') || '0', 10)
+    let downloaded = 0
+    const reader = response.body.getReader()
+    const writeStream = fs.createWriteStream(dest)
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      downloaded += value.length
+      writeStream.write(Buffer.from(value))
+      if (mainWindow && !mainWindow.isDestroyed() && total > 0) {
+        mainWindow.webContents.send('update-progress', { percent: (downloaded / total) * 100 })
+      }
+    }
+
+    writeStream.end()
+    await new Promise(resolve => writeStream.on('finish', resolve))
+
+    downloadedUpdatePath = dest
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-downloaded', { version, file: dest })
+    }
+  } catch (err) {
+    log.error('Download error:', err)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-error', err.message)
+    }
+  }
 })
 
 ipcMain.handle('update:install', () => {
-  autoUpdater.quitAndInstall()
+  if (downloadedUpdatePath) {
+    shell.openPath(downloadedUpdatePath)
+    downloadedUpdatePath = null
+    setTimeout(() => app.quit(), 1000)
+  } else {
+    autoUpdater.quitAndInstall()
+  }
 })
 
 ipcMain.handle('app:version', () => {

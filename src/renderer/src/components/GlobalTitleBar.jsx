@@ -149,10 +149,10 @@ const GlobalTitleBar = () => {
             {updateState === 'available' && (
               <button
                 onClick={handleUpdateClick}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] bg-[var(--text-accent)]/10 hover:bg-[var(--text-accent)]/20 text-[11px] font-semibold text-[var(--text-accent)] transition-colors border border-[var(--text-accent)]/20"
+                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] bg-[var(--text-accent)]/10 hover:bg-[var(--text-accent)]/20 text-[11px] font-semibold text-[var(--text-accent)] transition-colors"
               >
                 <Download size={11} />
-                <span>Update{updateVersion ? ` v${updateVersion}` : ''}</span>
+                <span>Update</span>
               </button>
             )}
             {updateState === 'downloading' && (
@@ -180,11 +180,14 @@ const GlobalTitleBar = () => {
                 {updateState === 'available' && (
                   <div className="p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <Package size={14} className="text-[var(--text-accent)]" />
-                      <p className="text-xs font-semibold text-[var(--text-main)]">Update v{updateVersion}</p>
+                      <Package size={14} className="text-[var(--text-accent)] shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-[var(--text-main)]">Update Available</p>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">v{currentVersion} → <span className="text-[var(--text-accent)] font-medium">v{updateVersion}</span></p>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-[var(--text-muted)] mb-2.5 leading-relaxed">
-                      Current: v{currentVersion} → v{updateVersion}
+                    <p className="text-[10px] text-[var(--text-muted)] leading-relaxed mb-3">
+                      A new version of KManager AI is ready. Please download the latest installer to get new features, improvements, and bug fixes.
                     </p>
                     <button
                       onClick={handleDownload}
