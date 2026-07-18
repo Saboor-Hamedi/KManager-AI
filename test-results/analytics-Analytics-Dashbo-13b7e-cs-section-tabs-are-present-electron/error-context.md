@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: search.spec.js >> RAG Toggle >> RAG toggle button is visible and toggles on click
-- Location: test\e2e\search.spec.js:26:3
+- Name: analytics.spec.js >> Analytics Dashboard >> analytics section tabs are present
+- Location: test\e2e\analytics.spec.js:13:3
 
 # Error details
 

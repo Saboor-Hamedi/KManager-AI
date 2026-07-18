@@ -34,30 +34,25 @@ const GlobalTitleBar = () => {
   useEffect(() => {
     let cancelled = false
 
-    const check = async () => {
-      try {
-        const [current, latest] = await Promise.all([
-          window.api.app.version().catch(() => '1.0.3'),
-          window.api.app.checkLatestVersion().catch(() => null)
-        ])
-        if (!latest) return
+    const check = () => {
+      Promise.all([
+        window.api.app.version().catch(() => '1.0.3'),
+        window.api.app.checkLatestVersion().catch(() => null)
+      ]).then(([current, latest]) => {
+        if (!latest || cancelled) return
         const curParts = current.split('.').map(Number)
         const latParts = latest.split('.').map(Number)
         for (let i = 0; i < 3; i++) {
           const cp = curParts[i] || 0
           const lp = latParts[i] || 0
           if (lp > cp) {
-            if (!cancelled) {
-              setUpdateVersion(latest)
-              setUpdateState('available')
-            }
+            setUpdateVersion(latest)
+            setUpdateState('available')
             return
           }
           if (lp < cp) return
         }
-      } catch {
-        // silent
-      }
+      }).catch(() => {})
     }
 
     // Also listen to electron-updater events (works in production)

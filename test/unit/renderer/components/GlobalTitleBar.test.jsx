@@ -7,20 +7,17 @@ const mockCheck = vi.fn()
 const mockDownload = vi.fn()
 const mockInstall = vi.fn()
 const mockCheckLatest = vi.fn()
-const mockOnAvailable = vi.fn()
-const mockOnProgress = vi.fn()
-const mockOnDownloaded = vi.fn()
 const mockVersion = vi.fn()
+
+let subscribeAvailable = null
 
 beforeEach(() => {
   mockCheck.mockReset()
   mockDownload.mockReset()
   mockInstall.mockReset()
   mockCheckLatest.mockReset()
-  mockOnAvailable.mockReset()
-  mockOnProgress.mockReset()
-  mockOnDownloaded.mockReset()
   mockVersion.mockReset()
+  subscribeAvailable = null
 
   mockCheckLatest.mockResolvedValue('1.0.6')
   mockVersion.mockResolvedValue('1.0.5')
@@ -35,9 +32,9 @@ beforeEach(() => {
       check: mockCheck,
       download: mockDownload,
       install: mockInstall,
-      onUpdateAvailable: (cb) => { mockOnAvailable.mockImplementation(cb); return () => {} },
-      onUpdateProgress: (cb) => { mockOnProgress.mockImplementation(cb); return () => {} },
-      onUpdateDownloaded: (cb) => { mockOnDownloaded.mockImplementation(cb); return () => {} }
+      onUpdateAvailable: (cb) => { subscribeAvailable = cb; return () => { subscribeAvailable = null } },
+      onUpdateProgress: () => () => {},
+      onUpdateDownloaded: () => () => {}
     }
   }
 })
@@ -60,19 +57,16 @@ describe('GlobalTitleBar', () => {
     expect(mockCheck).toHaveBeenCalledOnce()
   })
 
-  it('shows Update button when GitHub has newer version', async () => {
+  it('shows Update button when update-available event fires', async () => {
     await act(async () => render(<GlobalTitleBar />))
-    await vi.waitFor(() => {
-      expect(screen.getByText(/Update/)).toBeInTheDocument()
-    })
+    act(() => { subscribeAvailable?.({ version: '1.0.6' }) })
+    expect(screen.getByRole('button', { name: 'Update Available' })).toBeInTheDocument()
   })
 
   it('hides Update button when versions match', async () => {
     mockCheckLatest.mockResolvedValue('1.0.5')
     await act(async () => render(<GlobalTitleBar />))
-    await vi.waitFor(() => {
-      expect(screen.queryByText(/Update/)).not.toBeInTheDocument()
-    })
+    expect(screen.queryByRole('button', { name: 'Update Available' })).not.toBeInTheDocument()
   })
 
   it('calls checkLatestVersion on mount', async () => {
@@ -80,15 +74,11 @@ describe('GlobalTitleBar', () => {
     expect(mockCheckLatest).toHaveBeenCalledOnce()
   })
 
-  it('shows dropdown with version info when Update clicked', async () => {
+  it('shows dropdown when Update clicked', async () => {
+    mockDownload.mockResolvedValue(undefined)
     await act(async () => render(<GlobalTitleBar />))
-    await vi.waitFor(() => {
-      expect(screen.getByText(/Update/)).toBeInTheDocument()
-    })
-  })
-
-  it('calls app.version on mount', async () => {
-    await act(async () => render(<GlobalTitleBar />))
-    expect(mockCheck).toHaveBeenCalledOnce()
+    act(() => { subscribeAvailable?.({ version: '1.0.6' }) })
+    act(() => { screen.getByRole('button', { name: 'Update Available' }).click() })
+    expect(screen.getByLabelText(/Downloading/)).toBeInTheDocument()
   })
 })

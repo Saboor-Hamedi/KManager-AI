@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: app-shell.spec.js >> Application Shell >> shows window control buttons
-- Location: test\e2e\app-shell.spec.js:20:3
+- Name: analytics.spec.js >> Analytics Dashboard >> analytics section tabs are present
+- Location: test\e2e\analytics.spec.js:13:3
 
 # Error details
 
