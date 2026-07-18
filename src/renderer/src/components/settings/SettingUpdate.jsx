@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Download, RefreshCcw, RotateCw, Package, Sparkles } from 'lucide-react'
 
-const CHECK_TIMEOUT = 10000
+const CHECK_TIMEOUT = 30000
 
 const SettingUpdate = () => {
   const [status, setStatus] = useState('idle')
