@@ -916,11 +916,11 @@ ipcMain.handle('update:check', () => {
 
 ipcMain.handle('update:download', async (event) => {
   try {
-    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
+    const res = await net.fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
     if (!res.ok) throw new Error('Failed to fetch update info')
     const text = await res.text()
     const versionMatch = text.match(/^version:\s*(\S+)/m)
-    const fileMatch = text.match(/^\s+url:\s*(\S+)/m)
+    const fileMatch = text.match(/^(?:\s*-\s*url:|path:)\s*(\S+)/m)
     if (!versionMatch || !fileMatch) throw new Error('Invalid update metadata')
     const version = versionMatch[1]
     const fileName = fileMatch[1]
@@ -928,7 +928,7 @@ ipcMain.handle('update:download', async (event) => {
     const tempDir = app.getPath('temp')
     const dest = path.join(tempDir, fileName)
 
-    const response = await fetch(url)
+    const response = await net.fetch(url)
     if (!response.ok) throw new Error('Failed to download update')
     const total = parseInt(response.headers.get('content-length') || '0', 10)
     let downloaded = 0
@@ -977,7 +977,7 @@ ipcMain.handle('app:version', () => {
 
 ipcMain.handle('update:check-latest', async () => {
   try {
-    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
+    const res = await net.fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
     if (!res.ok) return null
     const text = await res.text()
     const match = text.match(/^version:\s*(\S+)/m)

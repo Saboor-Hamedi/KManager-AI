@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
-import { MessageSquare, X, Send, Bot, User, Plus } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, User, Plus, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'

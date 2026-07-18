@@ -78,6 +78,12 @@ const GlobalTitleBar = () => {
       setUpdateState('downloaded')
     })
 
+    const unsubError = window.api.update?.onUpdateError?.((errMsg) => {
+      console.error('Update error:', errMsg)
+      setUpdateState('available')
+      setDownloadProgress(0)
+    })
+
     window.api.update?.check()
     check()
 
@@ -86,6 +92,7 @@ const GlobalTitleBar = () => {
       unsubAvailable?.()
       unsubProgress?.()
       unsubDownloaded?.()
+      unsubError?.()
     }
   }, [])
 
@@ -100,12 +107,15 @@ const GlobalTitleBar = () => {
     return () => window.removeEventListener('mousedown', handleClick)
   }, [showDropdown])
 
-  const handleUpdateClick = useCallback(() => {
-    setShowDropdown(prev => !prev)
-  }, [])
+  // Removed handleUpdateClick since we'll use hover for dropdown and click for download
 
   const handleDownload = useCallback(() => {
-    window.api.update.download()
+    setUpdateState('downloading')
+    setDownloadProgress(0)
+    window.api.update.download().catch((err) => {
+      console.error('Failed to start download:', err)
+      setUpdateState('available')
+    })
   }, [])
 
   const handleInstall = useCallback(() => {
@@ -134,50 +144,59 @@ const GlobalTitleBar = () => {
 
   return (
     <div className="h-8 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0 z-50 [-webkit-app-region:drag]">
-      {/* Left: App Identity */}
-      <div className="flex items-center gap-2 px-3 min-w-0">
-        <CodeXml className="text-[var(--text-accent)] shrink-0" size={16} />
-        <span className="text-xs font-semibold text-[var(--text-main)] tracking-tight truncate">
-          KManager AI
-        </span>
-      </div>
+      {/* Left: App Identity & Update Button */}
+      <div className="flex items-center gap-3 px-3 min-w-0">
+        <div className="flex items-center gap-2">
+          <CodeXml className="text-[var(--text-accent)] shrink-0" size={16} />
+          <span className="text-xs font-semibold text-[var(--text-main)] tracking-tight truncate">
+            KManager AI
+          </span>
+        </div>
 
-      {/* Center: Update Button */}
-      <div className="flex-1 flex items-center justify-center min-w-0">
         {showUpdate && (
-          <div className="relative [-webkit-app-region:no-drag]" ref={dropdownRef}>
+          <div 
+            className="relative [-webkit-app-region:no-drag]" 
+            ref={dropdownRef}
+            onMouseEnter={() => setShowDropdown(true)}
+            onMouseLeave={() => setShowDropdown(false)}
+          >
             {updateState === 'available' && (
               <button
-                onClick={handleUpdateClick}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] bg-[var(--text-accent)]/10 hover:bg-[var(--text-accent)]/20 text-[11px] font-semibold text-[var(--text-accent)] transition-colors"
+                onClick={handleDownload}
+                className="group flex items-center justify-center w-7 h-7 text-[var(--text-accent)] hover:bg-[var(--bg-active)] rounded-md transition-all active:scale-[0.95]"
+                aria-label="Update Available"
               >
-                <Download size={11} />
-                <span>Update</span>
+                <Download size={14} strokeWidth={2.5} className="group-hover:-translate-y-0.5 transition-transform" />
               </button>
             )}
             {updateState === 'downloading' && (
-              <button
-                onClick={() => setShowDropdown(prev => !prev)}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] bg-[var(--bg-active)] text-[11px] font-medium text-[var(--text-muted)] transition-colors"
+              <div
+                className="flex items-center justify-center w-7 h-7 cursor-default"
+                aria-label={`Downloading ${Math.round(downloadProgress)}%`}
               >
-                <span className="w-2.5 h-2.5 rounded-full border-2 border-[var(--text-accent)] border-t-transparent animate-spin" />
-                <span>{Math.round(downloadProgress)}%</span>
-              </button>
+                <div className="relative flex items-center justify-center">
+                  <svg width="18" height="18" className="transform -rotate-90">
+                    <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-[var(--text-muted)] opacity-20" />
+                    <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="2" fill="transparent" strokeDasharray={50.3} strokeDashoffset={50.3 - (downloadProgress / 100) * 50.3} className="text-[var(--text-accent)] transition-all duration-200" strokeLinecap="round" />
+                  </svg>
+                  <Download size={9} strokeWidth={2.5} className="absolute text-[var(--text-accent)]" />
+                </div>
+              </div>
             )}
             {updateState === 'downloaded' && (
               <button
                 onClick={handleInstall}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/20 text-[11px] font-semibold text-emerald-400 transition-colors border border-emerald-500/20 animate-pulse"
+                className="group flex items-center justify-center w-7 h-7 text-emerald-500 hover:bg-[var(--bg-active)] rounded-md transition-all active:scale-[0.95] animate-pulse"
+                aria-label="Restart to Install"
               >
-                <RefreshCcw size={11} />
-                <span>Restart</span>
+                <RefreshCcw size={14} strokeWidth={2.5} className="group-hover:rotate-180 transition-transform duration-500" />
               </button>
             )}
 
             {/* Dropdown */}
             {showDropdown && (
-              <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg shadow-lg min-w-[200px] z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                {updateState === 'available' && (
+              <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg shadow-xl w-[230px]">
                   <div className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Package size={14} className="text-[var(--text-accent)] shrink-0" />
@@ -186,37 +205,19 @@ const GlobalTitleBar = () => {
                         <p className="text-[10px] text-[var(--text-muted)] mt-0.5">v{currentVersion} → <span className="text-[var(--text-accent)] font-medium">v{updateVersion}</span></p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-[var(--text-muted)] leading-relaxed mb-3">
-                      A new version of KManager AI is ready. Please download the latest installer to get new features, improvements, and bug fixes.
+                    <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                      A new version of KManager AI is ready. Click the update button to get new features, improvements, and bug fixes.
                     </p>
-                    <button
-                      onClick={handleDownload}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--text-accent)] hover:bg-[var(--text-accent)]/80 text-white text-xs font-semibold transition-all"
-                    >
-                      <Download size={12} />
-                      <span>Download Update</span>
-                    </button>
                   </div>
-                )}
-                {updateState === 'downloading' && (
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-[var(--text-muted)]">Downloading...</p>
-                      <span className="text-xs font-mono text-[var(--text-accent)] font-semibold">{Math.round(downloadProgress)}%</span>
-                    </div>
-                    <div className="h-1 bg-[var(--bg-panel)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--text-accent)] rounded-full transition-all duration-200"
-                        style={{ width: `${Math.max(downloadProgress, 4)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Center Spacer */}
+      <div className="flex-1 min-w-0"></div>
 
       {/* Right: Status & Window Controls */}
       <div className="flex items-center h-full [-webkit-app-region:no-drag] shrink-0">
