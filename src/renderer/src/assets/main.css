@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .custom-input {
+    @apply w-full bg-[var(--bg-active)] border border-transparent focus:border-[var(--text-accent)] rounded-md text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none transition-all duration-200 placeholder-[var(--text-faint)] shadow-sm;
+  }
+  .custom-dropdown-btn {
+    @apply w-full flex items-center justify-between bg-[var(--bg-active)] border border-transparent focus:border-[var(--text-accent)] rounded-md text-xs text-[var(--text-main)] px-3 py-2.5 focus:outline-none transition-all duration-200 font-medium text-left hover:bg-[var(--bg-panel)] shadow-sm;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;

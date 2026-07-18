@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { getLocalSuggestedPrompts, fetchDynamicPrompts } from '../../lib/suggestedPrompts'
+import { getLocalSuggestedPrompts } from '../../lib/suggestedPrompts'
+import { fetchDynamicPrompts } from '../../lib/LLMProvider'
 import { getSetting } from '../../lib/settings'
 
 const SuggestedPrompts = memo(({ msg, onSelectPrompt }) => {
@@ -18,10 +19,12 @@ const SuggestedPrompts = memo(({ msg, onSelectPrompt }) => {
 
     // 2. Fetch dynamic tailored suggestions in the background if API key is present
     let isMounted = true
-    getSetting('DEEPSEEK_API_KEY', '').then(apiKey => {
-      if (!apiKey || apiKey === 'your_deepseek_api_key_here') return
+    getSetting('ACTIVE_LLM_PROVIDER', 'deepseek').then(async (provider) => {
+      const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
+      if (!apiKey || apiKey === 'your_deepseek_api_key_here' || apiKey === 'your_api_key_here') return
+      if (!isMounted) return
       setIsLoadingDynamic(true)
-      fetchDynamicPrompts(msg.query, msg.ragAnswer, apiKey).then(dynamic => {
+      fetchDynamicPrompts(msg.query, msg.ragAnswer, provider, apiKey).then(dynamic => {
         if (isMounted && dynamic && dynamic.length > 0) {
           setPrompts(dynamic)
         }

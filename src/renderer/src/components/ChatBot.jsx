@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm'
 import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'
 import { cn } from '../lib/utils'
 import { getSetting } from '../lib/settings'
-import { queryDeepSeek } from '../lib/deepseek'
+import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
 
 const BotMessage = memo(({ text, idx, onSave, savedState }) => (
@@ -126,13 +126,14 @@ const ChatBot = ({ appState = {} }) => {
     setMessages(prev => [...prev, { role: 'user', text }])
     setIsTyping(true)
     try {
-      const apiKey = await getSetting('DEEPSEEK_API_KEY', import.meta.env.VITE_DEEPSEEK_API_KEY || '')
+      const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
+      const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
       if (!apiKey || apiKey === 'your_deepseek_api_key_here') {
-        setMessages(prev => [...prev, { role: 'bot', text: 'Error: DeepSeek API key not configured.' }])
+        setMessages(prev => [...prev, { role: 'bot', text: 'Error: API key not configured in Settings.' }])
         setIsTyping(false)
         return
       }
-      const botReply = await queryDeepSeek([...messages, userMsg], enhancedAppState, apiKey)
+      const botReply = await queryLLM([...messages, userMsg], enhancedAppState, provider, apiKey)
       setMessages(prev => [...prev, { role: 'bot', text: botReply }])
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: `Error: ${error.message}` }])
@@ -169,17 +170,18 @@ const ChatBot = ({ appState = {} }) => {
     setIsTyping(true)
 
     try {
-      const apiKey = await getSetting('DEEPSEEK_API_KEY', import.meta.env.VITE_DEEPSEEK_API_KEY || '')
+      const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
+      const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
       if (!apiKey || apiKey === 'your_deepseek_api_key_here') {
-        setMessages(prev => [...prev, { role: 'bot', text: 'Error: DeepSeek API key not configured.' }])
+        setMessages(prev => [...prev, { role: 'bot', text: 'Error: API key not configured in Settings.' }])
         setIsTyping(false)
         return
       }
-      const botReply = await queryDeepSeek([...messages, userMsg], enhancedAppState, apiKey)
+      const botReply = await queryLLM([...messages, userMsg], enhancedAppState, provider, apiKey)
       setMessages(prev => [...prev, { role: 'bot', text: botReply }])
     } catch (error) {
       console.error(error)
-      setMessages(prev => [...prev, { role: 'bot', text: `Connection to DeepSeek Core failed: ${error.message}` }])
+      setMessages(prev => [...prev, { role: 'bot', text: `Connection to AI Provider failed: ${error.message}` }])
     } finally {
       setIsTyping(false)
     }

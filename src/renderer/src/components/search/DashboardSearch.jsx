@@ -8,7 +8,7 @@ import EmptySearchState from './EmptySearchState'
 import InlineChat from './InlineChat'
 import RagAnswer from './RagAnswer'
 import { getSetting, saveSetting } from '../../lib/settings'
-import { streamRagAnswer, checkIsConversational } from '../../lib/deepseek'
+import { streamRagAnswer, checkIsConversational } from '../../lib/LLMProvider'
 
 const SearchLoadingSkeleton = () => (
   <div className="flex flex-col gap-6 py-3 animate-in fade-in duration-200">
@@ -224,8 +224,9 @@ const DashboardSearch = () => {
     })
 
     try {
-      const apiKey = await getSetting('DEEPSEEK_API_KEY', '')
-      const isConv = await checkIsConversational(searchQuery, apiKey)
+      const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
+      const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
+      const isConv = await checkIsConversational(searchQuery, provider, apiKey)
       
       if (isConv) {
         setHistory(prev => prev.map(msg => 
@@ -268,20 +269,26 @@ const DashboardSearch = () => {
         ))
 
         if (enableRag && mapped.length > 0) {
-          getSetting('DEEPSEEK_API_KEY', '').then(apiKey => {
-            streamRagAnswer(searchQuery, mapped.slice(0, 5), apiKey, (accumulated) => {
-              setHistory(prev => prev.map(msg => 
-                msg.id === messageId ? { ...msg, ragAnswer: accumulated } : msg
-              ))
-            }).then(() => {
-              setHistory(prev => prev.map(msg => 
-                msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
-              ))
-            }).catch(ragErr => {
-              setHistory(prev => prev.map(msg => 
-                msg.id === messageId ? { ...msg, ragStatus: 'error', ragError: ragErr.message } : msg
-              ))
-            })
+          const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
+          const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
+          
+          if (!apiKey || apiKey === 'your_deepseek_api_key_here' || apiKey === 'your_api_key_here') {
+            setHistory(prev => prev.map(m => m.id === messageId ? { ...m, ragStatus: 'error', ragAnswer: 'API key not configured in Settings.' } : m))
+            return
+          }
+          
+          streamRagAnswer(searchQuery, mapped.slice(0, 5), provider, apiKey, (accumulated) => {
+            setHistory(prev => prev.map(msg => 
+              msg.id === messageId ? { ...msg, ragAnswer: accumulated } : msg
+            ))
+          }).then(() => {
+            setHistory(prev => prev.map(msg => 
+              msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
+            ))
+          }).catch(ragErr => {
+            setHistory(prev => prev.map(msg => 
+              msg.id === messageId ? { ...msg, ragStatus: 'error', ragError: ragErr.message } : msg
+            ))
           })
         }
       } else {
@@ -327,12 +334,13 @@ const DashboardSearch = () => {
 
     if (enableRag) {
       try {
-        const apiKey = await getSetting('DEEPSEEK_API_KEY', '')
+        const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
+        const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
         const relevantChunks = targetItem
           ? [targetItem]
           : (parentMsg.results || []).slice(0, 5)
 
-        await streamRagAnswer(replyText, relevantChunks, apiKey, (accumulated) => {
+        await streamRagAnswer(replyText, relevantChunks, provider, apiKey, (accumulated) => {
           setHistory(prev => prev.map(msg =>
             msg.id === parentMsg.id
               ? { ...msg, replies: msg.replies.map(r => r.id === messageId ? { ...r, ragAnswer: accumulated } : r) }

@@ -1,12 +1,12 @@
 export const query = async (messages, apiKey) => {
-  const response = await fetch('https://api.deepseek.com/chat/completions', {
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'grok-beta',
       messages,
       temperature: 0.3,
       max_tokens: 800
@@ -15,7 +15,7 @@ export const query = async (messages, apiKey) => {
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error?.message || `DeepSeek API returned status ${response.status}`);
+    throw new Error(errData.error?.message || `Grok API returned status ${response.status}`);
   }
 
   const data = await response.json();
@@ -23,14 +23,14 @@ export const query = async (messages, apiKey) => {
 };
 
 export const stream = async (messages, apiKey, onChunk) => {
-  const response = await fetch('https://api.deepseek.com/chat/completions', {
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'grok-beta',
       messages,
       temperature: 0.3,
       max_tokens: 1500,
@@ -53,9 +53,9 @@ export const stream = async (messages, apiKey, onChunk) => {
     const chunkStr = decoder.decode(value, { stream: true });
     const lines = chunkStr.split('\n').filter(line => line.trim() !== '');
     for (const line of lines) {
-      if (line === 'data: [DONE]') return fullAnswer;
       if (line.startsWith('data: ')) {
         const dataStr = line.slice(6).trim();
+        if (dataStr === '[DONE]') continue;
         try {
           const parsed = JSON.parse(dataStr);
           const content = parsed.choices?.[0]?.delta?.content || '';

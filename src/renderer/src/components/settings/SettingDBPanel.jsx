@@ -161,7 +161,7 @@ const SettingDBPanel = memo(() => {
                 value={config[key]}
                 onChange={(e) => update(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded text-xs text-[var(--text-main)] pl-8 pr-3 py-2 focus:outline-none transition-colors placeholder:text-[var(--text-faint)] font-mono"
+                className="custom-input pl-8 py-2 font-mono"
               />
             </div>
           </div>
