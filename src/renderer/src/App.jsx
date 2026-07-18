@@ -9,7 +9,6 @@ import { useTheme } from './components/theme/useTheme'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts'
 
 import DashboardSearch from './components/search/DashboardSearch'
-import UsersView from './components/users/UsersView'
 import Documentation from './components/Documentation'
 import GlobalError from './components/GlobalError'
 import AnalyticsModal from './components/analytics/AnalyticsModal'
@@ -112,7 +111,6 @@ function App() {
               focusTrigger={searchFocusTrigger}
               onResultSelect={async (item) => {
                 if (item.id === 'nav-1') setIsAnalyticsOpen(true)
-                else if (item.id === 'nav-2') setActiveTab('users')
                 else if (item.id === 'nav-3') setIsSettingsOpen(true)
                 else if (item.id === 'action-2') setIsThemeOpen(true)
                 else if (item.vault_path) {
@@ -127,18 +125,16 @@ function App() {
         {activeTab !== 'search' && (
           <main className="flex-1 min-h-0 overflow-y-auto p-8 custom-scrollbar">
             <div className="max-w-6xl mx-auto space-y-6 flex flex-col h-full">
-              <div className="animate-in fade-in duration-300 shrink-0">
-                <h1 className="text-lg font-black tracking-tight" style={{ color: 'var(--text-main)' }}>
-                  {activeTab === 'analytics' ? 'Analytics' : 'Users Management'}
-                </h1>
-                <p className="text-[10px] font-bold tracking-widest mt-2 uppercase" style={{ color: 'var(--text-muted)' }}>
-                  Manage your users & permissions
-                </p>
-              </div>
-
-              <GlobalError>
-                {activeTab === 'users' && <UsersView />}
-              </GlobalError>
+              {activeTab === 'analytics' && (
+                <div className="animate-in fade-in duration-300 shrink-0">
+                  <h1 className="text-lg font-black tracking-tight" style={{ color: 'var(--text-main)' }}>
+                    Analytics
+                  </h1>
+                  <p className="text-[10px] font-bold tracking-widest mt-2 uppercase" style={{ color: 'var(--text-muted)' }}>
+                    Performance Overview
+                  </p>
+                </div>
+              )}
             </div>
           </main>
         )}

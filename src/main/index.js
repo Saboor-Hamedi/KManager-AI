@@ -347,6 +347,11 @@ app.whenReady().then(() => {
           } catch (e) {
             // ignore if column exists
           }
+          try {
+            await db.query('ALTER TABLE embedding_documents ADD COLUMN IF NOT EXISTS section TEXT')
+          } catch (e) {
+            // ignore
+          }
 
           await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
           await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
@@ -592,6 +597,18 @@ app.whenReady().then(() => {
         GROUP BY 1
       `)
 
+      // 6. Success Rate (Zero-Hit vs Successful)
+      const successBuckets = await db.query(`
+        SELECT 
+          CASE 
+            WHEN result_count > 0 THEN 'Successful (Hits > 0)'
+            ELSE 'Zero-Hit (No Results)'
+          END as category,
+          COUNT(*) as count
+        FROM search_logs
+        GROUP BY 1
+      `)
+
       // Combine and sort by timestamp descending
       const combinedActivity = [
         ...recentSearches.rows.map(r => ({ ...r, eventType: 'search' })),
@@ -616,7 +633,8 @@ app.whenReady().then(() => {
           docTypes: docTypes.rows,
           similarityBuckets: simBuckets.rows,
           routingBuckets: routingBuckets.rows,
-          feedbackBuckets: feedbackBuckets.rows
+          feedbackBuckets: feedbackBuckets.rows,
+          successBuckets: successBuckets.rows
         }
       }
     } catch (err) {

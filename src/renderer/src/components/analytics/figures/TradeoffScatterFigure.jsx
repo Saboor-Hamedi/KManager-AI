@@ -13,32 +13,26 @@ const TradeoffScatterFigure = memo(({ data }) => {
     return all.slice(-n)
   }, [data?.chartData, timeWindow])
 
-  const baseLlmData = []
   const standardRagData = []
   const hybridRagData = []
 
   rawQueries.forEach((q) => {
-    const std = Number(q.standard) || 750
-    const hyb = Number(q.hybrid) || Math.round(std * 0.4)
-    const baseLat = Math.max(50, Math.round(std * 0.72))
+    const lat = q.latency || 0
+    const qual = (q.similarity || 0) * 100
     
-    baseLlmData.push({
-      latency: baseLat,
-      quality: q.metrics?.baseFaithfulness || 40,
-      name: q.queryText || q.label
-    })
-
-    standardRagData.push({
-      latency: std,
-      quality: q.metrics?.hybridFaithfulness || 95,
-      name: q.queryText || q.label
-    })
-
-    hybridRagData.push({
-      latency: hyb,
-      quality: q.metrics?.hybridFaithfulness || 95,
-      name: q.queryText || q.label
-    })
+    if (q.isFallback) {
+      standardRagData.push({
+        latency: lat,
+        quality: qual,
+        name: q.queryText || q.label
+      })
+    } else {
+      hybridRagData.push({
+        latency: lat,
+        quality: qual,
+        name: q.queryText || q.label
+      })
+    }
   })
 
   const CustomTooltip = ({ active, payload }) => {
@@ -53,7 +47,7 @@ const TradeoffScatterFigure = memo(({ data }) => {
               <span className="text-[var(--text-main)] font-semibold">{point.latency}ms</span>
             </p>
             <p className="flex justify-between gap-4">
-              <span className="text-[var(--text-muted)]">Faithfulness:</span>
+              <span className="text-[var(--text-muted)]">Similarity:</span>
               <span className="text-[var(--text-main)] font-semibold">{point.quality?.toFixed(1) || 0}%</span>
             </p>
           </div>
@@ -128,9 +122,8 @@ const TradeoffScatterFigure = memo(({ data }) => {
             <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: 'var(--border-subtle)', strokeWidth: 1 }} />
             <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'medium', paddingTop: '10px' }} iconType="circle" />
             
-            <Scatter name="Base" data={baseLlmData} fill="#f59e0b" fillOpacity={0.7} />
-            <Scatter name="Standard" data={standardRagData} fill="var(--icon-danger)" fillOpacity={0.7} />
-            <Scatter name="Hybrid" data={hybridRagData} fill="#10b981" fillOpacity={0.85} />
+            <Scatter name="Standard (DB Only)" data={standardRagData} fill="#ef4444" fillOpacity={0.7} />
+            <Scatter name="Hybrid (LLM + DB)" data={hybridRagData} fill="#10b981" fillOpacity={0.85} />
           </ScatterChart>
         </ResponsiveContainer>
       </div>

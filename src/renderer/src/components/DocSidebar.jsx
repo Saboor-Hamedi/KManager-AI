@@ -41,25 +41,25 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
 
   return (
     <div className={`
-      flex flex-col h-full bg-[var(--bg-activitybar)] border-r border-[var(--border-dim)] shrink-0 transition-all duration-300 ease-in-out z-20 overflow-hidden
-      ${isSidebarOpen ? 'w-60 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 border-r-0'}
+      flex flex-col h-full bg-[var(--bg-panel)]/30 border-r border-[var(--border-dim)] shrink-0 transition-all duration-300 ease-in-out z-20 overflow-hidden
+      ${isSidebarOpen ? 'w-56' : 'w-0 border-r-0'}
     `}>
       {/* Search Input in Sidebar */}
-      <div className="p-2.5 border-b border-[var(--border-dim)] shrink-0">
+      <div className="p-3 border-b border-[var(--border-dim)] shrink-0 w-56">
         <div className="relative group w-full">
-          <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-accent)] transition-colors" />
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-accent)] transition-colors" />
           <input 
             type="text" 
             placeholder="Search docs..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-[var(--border-subtle)] focus:border-[var(--text-accent)]/50 focus:bg-[var(--bg-active)] rounded-md pl-7 pr-2 py-1.5 text-xs text-[var(--text-main)] placeholder-[var(--text-faint)] outline-none transition-all"
+            className="w-full bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-[var(--border-subtle)] focus:border-[var(--text-accent)]/50 focus:bg-[var(--bg-active)] rounded-md pl-8 pr-2 py-1.5 text-xs text-[var(--text-main)] placeholder-[var(--text-faint)] outline-none transition-all"
           />
         </div>
       </div>
 
       {/* Navigation Tree */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar py-3 space-y-1 w-60">
+      <div className="flex-1 overflow-y-auto custom-scrollbar py-3 space-y-1 w-56">
         {Object.keys(filteredDocs).length === 0 ? (
           <div className="text-center text-xs text-[var(--text-muted)] mt-10 px-4">
             No documents found. Please ensure the app has been restarted so the backend IPC endpoints are registered!

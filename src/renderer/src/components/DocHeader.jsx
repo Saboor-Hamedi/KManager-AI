@@ -3,22 +3,28 @@ import { PanelLeftClose, PanelLeft, X } from 'lucide-react'
 
 const DocHeader = ({ isSidebarOpen, onToggleSidebar, onClose }) => {
   return (
-    <div className="h-8 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0">
-      <button 
-        onClick={onToggleSidebar}
-        className="h-full px-3 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center"
-        title="Toggle Sidebar"
-      >
-        {isSidebarOpen ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
-      </button>
-      <div className="flex-1" />
-      <button
-        onClick={onClose}
-        className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center"
-        title="Close Documentation (Esc)"
-      >
-        <X size={16} />
-      </button>
+    <div className="h-8 bg-[var(--bg-panel)]/80 border-b border-[var(--border-dim)] flex items-center justify-between shrink-0">
+      <div className="flex items-center h-full">
+        <button 
+          onClick={onToggleSidebar}
+          className="h-full px-4 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center"
+          title="Toggle Sidebar"
+        >
+          {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+        </button>
+        <div className="flex items-center gap-2 ml-1">
+          <h2 className="text-[13px] font-bold text-[var(--text-main)] tracking-wide">Documentation</h2>
+        </div>
+      </div>
+      <div className="flex items-center h-full">
+        <button
+          onClick={onClose}
+          className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center"
+          title="Close Documentation (Esc)"
+        >
+          <X size={16} />
+        </button>
+      </div>
     </div>
   )
 }

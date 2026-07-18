@@ -5,35 +5,54 @@ import CopyFigureButton from '../CopyFigureButton'
 const LatencyBottleneckFigure = memo(({ data }) => {
   const chartRef = useRef(null)
 
-  const avgLat = Number(data?.avgStandard) || 750
-  const routerTime = Math.max(3, Math.round(avgLat * 0.015))
-  const dbTime = Math.max(8, Math.round(avgLat * 0.045))
-  const llmTime = Math.max(100, avgLat - routerTime - dbTime)
+  const rawQueries = data?.chartData || []
+  let stdSum = 0, stdCount = 0
+  let hybSum = 0, hybCount = 0
+
+  rawQueries.forEach(q => {
+    if (q.isFallback) {
+      stdSum += (q.latency || 0)
+      stdCount++
+    } else {
+      hybSum += (q.latency || 0)
+      hybCount++
+    }
+  })
+
+  const avgDbTime = stdCount > 0 ? Math.round(stdSum / stdCount) : 12
+  const avgHybTime = hybCount > 0 ? Math.round(hybSum / hybCount) : 650
+  
+  // Real DB operations are fast, routing is a subset of DB time or pre-DB time (model loading)
+  const routerTime = Math.max(2, Math.round(avgDbTime * 0.15))
+  const dbTime = Math.max(5, avgDbTime - routerTime)
+  const llmTime = Math.max(10, avgHybTime - avgDbTime)
+  
+  const totalAvg = routerTime + dbTime + llmTime
 
   const steps = [
     {
-      name: 'Routing',
+      name: 'Local Routing',
       desc: 'Intent classification',
       time: `${routerTime}ms`,
-      pct: '1.5%',
+      pct: `${((routerTime / totalAvg) * 100).toFixed(1)}%`,
       barColor: 'var(--text-muted)',
       details: 'Short-circuits conversational queries without network hop.'
     },
     {
-      name: 'Retrieval',
+      name: 'Vector Retrieval',
       desc: 'pgvector + BM25 search',
       time: `${dbTime}ms`,
-      pct: '4.5%',
+      pct: `${((dbTime / totalAvg) * 100).toFixed(1)}%`,
       barColor: 'var(--text-main)',
       details: 'Dense and sparse hybrid scoring over document chunks.'
     },
     {
-      name: 'Synthesis',
+      name: 'LLM Synthesis',
       desc: 'Grounded generation',
       time: `${llmTime}ms`,
-      pct: '94.0%',
+      pct: `${((llmTime / totalAvg) * 100).toFixed(1)}%`,
       barColor: 'var(--text-accent)',
-      details: 'Primary bottleneck avoided on fast routes.'
+      details: 'Primary bottleneck avoided on fast local routes.'
     }
   ]
 
@@ -44,7 +63,7 @@ const LatencyBottleneckFigure = memo(({ data }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 pr-8">
         <div>
           <h2 className="text-xs font-semibold text-[var(--text-main)]">
-            Execution Bottlenecks ({avgLat}ms Avg)
+            Execution Bottlenecks ({totalAvg}ms Avg Hybrid)
           </h2>
           <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
             Where time is spent during RAG execution

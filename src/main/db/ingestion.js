@@ -211,15 +211,19 @@ class IngestionService {
         const content    = batchChunks[j]
         const vectorStr  = '[' + batchVectors[j].join(',') + ']'
         const tokenCount = content.split(/\s+/).length
+        // Extract section heading from chunk content if prefixed with ##
+        const sectionMatch = content.match(/^##\s+(.+?)\n\n/)
+        const section = sectionMatch ? sectionMatch[1].trim() : null
+        const cleanContent = sectionMatch ? content.slice(sectionMatch[0].length) : content
 
         values.push(
-          `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}::vector, $${paramIndex++})`
+          `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}::vector, $${paramIndex++}, $${paramIndex++})`
         )
-        flatParams.push(documentId, i + j, content, vectorStr, tokenCount)
+        flatParams.push(documentId, i + j, cleanContent, vectorStr, tokenCount, section)
       }
 
       await client.query(
-        `INSERT INTO embedding_documents (document_id, chunk_index, content, embedding, token_count)
+        `INSERT INTO embedding_documents (document_id, chunk_index, content, embedding, token_count, section)
          VALUES ${values.join(', ')}`,
         flatParams
       )

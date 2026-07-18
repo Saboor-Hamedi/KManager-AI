@@ -17,6 +17,7 @@ export function processAnalyticsData(metrics = {}) {
       queryText: q.query_text,
       latency: lat,
       similarity: sim,
+      isFallback: q.is_fallback || false,
       createdAt: q.created_at || new Date().toISOString(),
     }
   })
@@ -39,11 +40,29 @@ export function processAnalyticsData(metrics = {}) {
   const hybridCount = metrics.routingBuckets?.find(r => r.category === 'Smart Hybrid')?.count || 0
   const hybridRate = total > 0 ? ((hybridCount / total) * 100).toFixed(1) : '0.0'
 
+  // Calculate Token Economics over time (last 7 days)
+  const tokenEconomicsMap = {}
+  rawQueries.forEach(q => {
+    const d = new Date(q.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (!tokenEconomicsMap[d]) tokenEconomicsMap[d] = { date: d, used: 0, saved: 0 }
+    // Estimate tokens roughly as chars / 4
+    const tokens = Math.round((q.query_text?.length || 0) / 4)
+    if (q.is_fallback) {
+      // Standard fallback (no LLM) -> tokens saved!
+      tokenEconomicsMap[d].saved += tokens
+    } else {
+      // Hybrid (uses LLM) -> tokens used!
+      tokenEconomicsMap[d].used += tokens
+    }
+  })
+  // Convert to array and sort by date
+  const tokenEconomics = Object.values(tokenEconomicsMap).sort((a, b) => new Date(a.date + ' ' + new Date().getFullYear()) - new Date(b.date + ' ' + new Date().getFullYear()))
+
   return {
     totalQueries: total,
     avgStandard: total > 0 ? Math.round(sumStandardLat / total) : 0,
     dbSearchesAvoided: metrics.totalFeedback || 0,
-    totalTokensSaved: 0,
+    totalTokensSaved: Object.values(tokenEconomicsMap).reduce((acc, d) => acc + d.saved, 0),
     hybridRate,
     avgTokens,
     positiveFeedback: metrics.positiveFeedback || 0,
@@ -59,7 +78,9 @@ export function processAnalyticsData(metrics = {}) {
       docTypes: docTypes,
       similarityBuckets: metrics.similarityBuckets?.map(row => ({ category: row.category, count: Number(row.count) })) || [],
       routingBuckets: metrics.routingBuckets?.map(row => ({ category: row.category, count: Number(row.count) })) || [],
-      feedbackBuckets: metrics.feedbackBuckets?.map(row => ({ category: row.category, count: Number(row.count) })) || []
+      feedbackBuckets: metrics.feedbackBuckets?.map(row => ({ category: row.category, count: Number(row.count) })) || [],
+      successBuckets: metrics.successBuckets?.map(row => ({ category: row.category, count: Number(row.count) })) || [],
+      tokenEconomics: tokenEconomics
     },
     chartData,
     activityFeed: metrics.activityFeed || []

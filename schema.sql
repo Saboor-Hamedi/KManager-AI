@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS embedding_documents (
   embedding     VECTOR(384),                             -- paraphrase-multilingual-MiniLM-L12-v2 embedding vector
   fts_vector    TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', content)) STORED,
   token_count   INT,                                     -- actual token count for this chunk
+  section       TEXT,                                    -- parent section heading for semantic grouping
   UNIQUE(document_id, chunk_index)
 );
 

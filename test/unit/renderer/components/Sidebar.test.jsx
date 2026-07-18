@@ -13,11 +13,10 @@ describe('Sidebar', () => {
     toggleCollapsed: vi.fn()
   }
 
-  it('renders navigation items', () => {
+  it('renders all main navigation items', () => {
     render(<Sidebar {...defaultProps} />)
     expect(screen.getByText('Search')).toBeInTheDocument()
     expect(screen.getByText('Analytics')).toBeInTheDocument()
-    expect(screen.getByText('Users')).toBeInTheDocument()
   })
 
   it('renders footer buttons', () => {

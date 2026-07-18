@@ -13,8 +13,7 @@ test.describe('Application Shell', () => {
   test('displays custom title bar with app name', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    await expect(window.locator('.text-\\[var\\(--text-main\\)\\] >> text=KManager AI')).toBeVisible()
-    await expect(window.locator('text=Knowledge Management Studio')).toBeVisible()
+    await expect(window.getByText('KManager AI', { exact: true }).first()).toBeVisible()
     await electronApp.close()
   })
 

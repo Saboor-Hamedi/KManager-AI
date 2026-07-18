@@ -110,16 +110,148 @@ export class PDFIngestionService {
 
   /**
    * Split text into semantic chunks with overlapping boundaries.
-   * Ensures every chunk overlaps by `overlap` characters with the previous chunk
-   * so context at paragraph boundaries is preserved.
+   * Detects markdown headings and keeps sections together.
+   * Falls back to paragraph splitting for non-markdown content.
    */
   splitIntoSemanticChunks(text, maxChars = 1500, overlap = 250) {
     if (!text) return []
     const cleanText = this.sanitizeText(text)
     if (!cleanText) return []
 
-    // Split into paragraphs or logical blocks
-    const paragraphs = cleanText.split(/\n\s*\n/)
+    // Try heading-aware splitting first
+    const headingChunks = this.splitByHeadings(cleanText, maxChars, overlap)
+    if (headingChunks.length > 1 || (headingChunks.length === 1 && cleanText.match(/^#{1,4}\s/m))) {
+      return headingChunks
+    }
+
+    // Fallback to paragraph-based splitting
+    return this.splitByParagraphs(cleanText, maxChars, overlap)
+  }
+
+  /**
+   * Split by markdown headings, keeping each section together.
+   */
+  splitByHeadings(text, maxChars, overlap) {
+    const lines = text.split('\n')
+    const sections = []
+    let currentHeading = ''
+    let currentLines = []
+
+    for (const line of lines) {
+      const match = line.match(/^(#{1,4})\s+(.+)$/)
+      if (match) {
+        if (currentLines.length > 0 || currentHeading) {
+          sections.push({ heading: currentHeading, content: currentLines.join('\n') })
+          currentLines = []
+        }
+        currentHeading = match[2].trim()
+      }
+      currentLines.push(line)
+    }
+    if (currentLines.length > 0 || currentHeading) {
+      sections.push({ heading: currentHeading, content: currentLines.join('\n') })
+    }
+
+    if (sections.length <= 1 && !sections[0]?.heading) {
+      return [] // No headings found, signal fallback
+    }
+
+    const getOverlapTail = (str) => {
+      if (str.length <= overlap) return str
+      const slice = str.slice(-overlap)
+      const firstSpace = slice.indexOf(' ')
+      return firstSpace > 0 && firstSpace < overlap / 2 ? slice.slice(firstSpace + 1) : slice
+    }
+
+    const chunks = []
+    let buffer = ''
+
+    for (const section of sections) {
+      const headingTag = section.heading ? `## ${section.heading}\n\n` : ''
+      const sectionText = headingTag + section.content.trim()
+
+      if (buffer.length + sectionText.length + 2 <= maxChars) {
+        buffer += (buffer ? '\n\n' : '') + sectionText
+      } else {
+        if (buffer.trim().length > 0) {
+          chunks.push({ text: buffer.trim(), section: sections[sections.indexOf(section) - 1]?.heading || '' })
+        }
+        if (sectionText.length <= maxChars) {
+          buffer = sectionText
+        } else {
+          // Large section: split by sentences with overlap
+          this.splitLargeSection(section, maxChars, overlap).forEach(c => chunks.push(c))
+          buffer = ''
+        }
+      }
+    }
+    if (buffer.trim().length > 0) {
+      chunks.push({ text: buffer.trim(), section: sections[sections.length - 1]?.heading || '' })
+    }
+
+    // Handle overlap between chunks
+    for (let i = 1; i < chunks.length; i++) {
+      const prevText = chunks[i - 1].text
+      const tail = getOverlapTail(prevText)
+      if (tail) {
+        chunks[i] = { ...chunks[i], text: `${tail}\n\n${chunks[i].text}` }
+      }
+    }
+
+    return chunks.map(c => c.text)
+  }
+
+  /**
+   * Split a large section that exceeds maxChars into sentence-bounded chunks.
+   */
+  splitLargeSection(section, maxChars, overlap) {
+    const text = (section.heading ? `## ${section.heading}\n\n` : '') + section.content.trim()
+    const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text]
+    const chunks = []
+    let subChunk = ''
+    const headingTag = section.heading ? `## ${section.heading}\n\n` : ''
+
+    const getOverlapTail = (str) => {
+      if (str.length <= overlap) return str
+      const slice = str.slice(-overlap)
+      const firstSpace = slice.indexOf(' ')
+      return firstSpace > 0 && firstSpace < overlap / 2 ? slice.slice(firstSpace + 1) : slice
+    }
+
+    for (const s of sentences) {
+      const trimmed = s.trim()
+      if (!trimmed) continue
+      if (subChunk.length + trimmed.length + 1 <= maxChars) {
+        subChunk += (subChunk ? ' ' : headingTag) + trimmed
+      } else {
+        if (subChunk.trim().length > 0) {
+          chunks.push({ text: subChunk.trim(), section: section.heading })
+        }
+        subChunk = headingTag + trimmed
+      }
+    }
+    if (subChunk.trim().length > 0) {
+      chunks.push({ text: subChunk.trim(), section: section.heading })
+    }
+
+    if (chunks.length > 1) {
+      for (let i = 1; i < chunks.length; i++) {
+        const prevText = chunks[i - 1].text
+        const tail = getOverlapTail(prevText)
+        if (tail) {
+          chunks[i] = { ...chunks[i], text: `${tail}\n${chunks[i].text}` }
+        }
+      }
+    }
+
+    return chunks
+  }
+
+  /**
+   * Original paragraph-based splitting (fallback for non-markdown content).
+   */
+  splitByParagraphs(text, maxChars, overlap) {
+    const paragraphs = text.split(/\n\s*\n/)
     const chunks = []
     let currentChunk = ''
 
@@ -145,11 +277,9 @@ export class PDFIngestionService {
           currentChunk = para
         }
 
-        // If a single paragraph/block is larger than maxChars, split by sentences with overlap
         if (currentChunk.length > maxChars) {
           const sentences = currentChunk.match(/[^.!?]+[.!?]+(\s+|$)/g) || [currentChunk]
           let subChunk = ''
-
           for (const s of sentences) {
             const trimmedS = s.trim()
             if (!trimmedS) continue
@@ -161,7 +291,6 @@ export class PDFIngestionService {
                 const subTail = getOverlapTail(subChunk.trim())
                 subChunk = subTail ? `${subTail} ${trimmedS}` : trimmedS
               } else {
-                // Massive sentence/token: slice directly with overlap
                 let start = 0
                 while (start < trimmedS.length) {
                   const sliceChunk = trimmedS.slice(start, start + maxChars)
@@ -176,11 +305,9 @@ export class PDFIngestionService {
         }
       }
     }
-
     if (currentChunk.trim().length > 0) {
       chunks.push(currentChunk.trim())
     }
-
     return chunks
   }
 }

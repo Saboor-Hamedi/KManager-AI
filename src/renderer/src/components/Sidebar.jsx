@@ -38,7 +38,6 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
   const items = [
     { id: 'search',    label: 'Search',    shortcut: 'Ctrl+P', icon: Search },
     { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
-    { id: 'users',     label: 'Users',     icon: Users },
   ]
 
   return (
