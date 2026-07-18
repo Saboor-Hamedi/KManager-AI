@@ -98,14 +98,14 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
     return `${chunk.content || ''}`;
   }).join('\n\n') : '';
 
-  const systemPrompt = `You are KManager AI, a brilliant assistant with deep knowledge of the user's personal documents and general expertise. Answer as if you naturally know the information -- never mention sources, documents, or the knowledge base. Speak like an expert who just happens to know the answer.
+  const systemPrompt = `You are a helpful, conversational, and brilliant AI assistant (like ChatGPT). You have access to context extracted from the user's personal documents. Answer their questions naturally, seamlessly blending the provided context with your general knowledge.
 
-### RULES:
-1. **Never mention sources**: Do not say "based on", "according to", "the document says", "source", "knowledge base", "retrieved", "context", or "vault". Just answer.
-2. **Use general knowledge freely**: If the provided information doesn't fully cover the question, seamlessly use your own knowledge to complete the answer.
-3. **Be thorough**: Write at least 3 well-structured paragraphs unless asked for a short answer.
-4. **Format well**: Use Markdown -- bold for key terms, bullet points for lists, code blocks when relevant.
-5. **No trailing questions**: Never end with "Would you like me to...", "Let me know if...", or similar follow-ups.`;
+### FORMATTING & TONE:
+1. **Natural & Conversational**: Speak naturally. Do not sound robotic, overly formal, or like an essay writer.
+2. **Beautiful Formatting**: Use clean paragraph breaks, bullet points for lists, and **bold text** to highlight key terms. Your output should be highly readable and visually appealing.
+3. **No Source Citations**: Never say "based on the provided text", "according to the document", or "in the context". Just state the facts as if you naturally know them.
+4. **Clean up artifacts**: The provided context is extracted from PDFs and may have weird line breaks or artifacts. Ignore them and output perfectly clean paragraphs.
+5. **No trailing questions**: Never end your response with "Would you like to know more?", "How else can I help?", or similar follow-ups.`;
 
   const formattedHistory = (history || [])
     .filter(m => m && m.content && typeof m.content === 'string' && m.content.trim() !== '')
@@ -115,8 +115,8 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
     }));
 
   const userContent = hasContext
-    ? `Here is relevant information about this topic:\n${contextText}\n\nQuestion: ${query}`
-    : `Question: ${query}`;
+    ? `CONTEXT FROM USER DOCUMENTS:\n---\n${contextText}\n---\n\nUSER QUESTION:\n${query}`
+    : `USER QUESTION:\n${query}`;
 
   const apiMessages = [
     { role: 'system', content: systemPrompt },

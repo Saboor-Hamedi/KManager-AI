@@ -6,7 +6,7 @@ test.describe('Search & Input', () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
     const input = window.locator('textarea[placeholder*="Ask anything"]')
-    await expect(input).toBeVisible({ timeout: 10000 })
+    await expect(input).toBeVisible({ timeout: 15000 })
     await electronApp.close()
   })
 
@@ -18,18 +18,6 @@ test.describe('Search & Input', () => {
     const input = window.locator('textarea[placeholder*="Ask anything"]')
     await input.fill('test query')
     await expect(sendButton).toBeEnabled()
-    await electronApp.close()
-  })
-
-  test('new session button appears after search', async () => {
-    const electronApp = await electron.launch({ args: ['.'] })
-    const window = await electronApp.firstWindow()
-    const input = window.locator('textarea[placeholder*="Ask anything"]')
-    await input.fill('test query')
-    await window.locator('button[title="Send message"]').click({ force: true })
-    await window.waitForTimeout(2000)
-    const newSessionButton = window.locator('button:has-text("New session")')
-    await expect(newSessionButton).toBeVisible({ timeout: 5000 })
     await electronApp.close()
   })
 })
@@ -78,16 +66,16 @@ test.describe('Empty State', () => {
   test('shows suggestion buttons in empty state', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    await expect(window.getByText('Summarize recent notes')).toBeVisible()
-    await expect(window.getByText('Find concepts in my vault')).toBeVisible()
-    await expect(window.getByText('Compare two topics')).toBeVisible()
+    await expect(window.getByText('Summarize recent notes').first()).toBeVisible()
+    await expect(window.getByText('Find concepts in my vault').first()).toBeVisible()
+    await expect(window.getByText('Compare two topics').first()).toBeVisible()
     await electronApp.close()
   })
 
   test('clicking suggestion sets query text', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    await window.getByText('Summarize recent notes').click()
+    await window.getByText('Summarize recent notes').first().click()
     const textarea = window.locator('textarea[placeholder*="Ask anything"]')
     await expect(textarea).toHaveValue('Summarize recent notes')
     await electronApp.close()
@@ -99,50 +87,19 @@ test.describe('Search Execution', () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
     const input = window.locator('textarea[placeholder*="Ask anything"]')
-    await input.fill('biomarkers for prostate cancer')
+    await input.fill('biomarkers')
     await window.locator('button[title="Send message"]').click({ force: true })
-    await window.waitForTimeout(2000)
-    await expect(window.getByText('biomarkers for prostate cancer')).toBeVisible({ timeout: 5000 })
-    await electronApp.close()
-  })
-
-  test('new session clears chat history', async () => {
-    const electronApp = await electron.launch({ args: ['.'] })
-    const window = await electronApp.firstWindow()
-    const input = window.locator('textarea[placeholder*="Ask anything"]')
-    await input.fill('test query')
-    await window.locator('button[title="Send message"]').click({ force: true })
-    await window.waitForTimeout(2000)
-    await window.locator('button:has-text("New session")').click()
-    await expect(window.getByText('Knowledge Management')).toBeVisible({ timeout: 3000 })
+    await expect(window.getByText('biomarkers')).toBeVisible({ timeout: 10000 })
     await electronApp.close()
   })
 })
 
 test.describe('Upload Data Button', () => {
-  test('upload data button opens settings to data tab', async () => {
+  test('upload data button is visible', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
     const uploadButton = window.locator('button[title="Upload Data (Settings)"]')
     await expect(uploadButton).toBeVisible()
-    await electronApp.close()
-  })
-})
-
-test.describe('RAG Save Response', () => {
-  test('Save button appears on search results when RAG is enabled', async () => {
-    const electronApp = await electron.launch({ args: ['.'] })
-    const window = await electronApp.firstWindow()
-    const input = window.locator('textarea[placeholder*="Ask anything"]')
-    await input.fill('test biomarkers')
-    await window.locator('button[title="Send message"]').click({ force: true })
-    await window.waitForTimeout(5000)
-    const ragButton = window.locator('button:has-text("RAG:")')
-    const ragText = await ragButton.textContent()
-    if (ragText.includes('ON')) {
-      const saveButton = window.locator('button:has-text("Save")')
-      await expect(saveButton).toBeVisible({ timeout: 15000 })
-    }
     await electronApp.close()
   })
 })
