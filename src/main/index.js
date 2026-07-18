@@ -533,6 +533,65 @@ app.whenReady().then(() => {
         LIMIT 15
       `)
 
+      // ---- NEW: Real Telemetry Aggregations ----
+      
+      // 1. Searches over time (Last 14 active days)
+      const searchesOverTime = await db.query(`
+        WITH recent_days AS (
+          SELECT DATE(created_at) as d, COUNT(*) as count 
+          FROM search_logs 
+          GROUP BY DATE(created_at) 
+          ORDER BY DATE(created_at) DESC 
+          LIMIT 14
+        )
+        SELECT to_char(d, 'Mon DD') as date, count 
+        FROM recent_days 
+        ORDER BY d ASC
+      `)
+
+      // 2. Document types distribution
+      const docTypes = await db.query(`
+        SELECT COALESCE(file_type, 'unknown') as type, COUNT(*) as count 
+        FROM documents 
+        GROUP BY file_type
+      `)
+
+      // 3. Similarity Buckets (Routing + Relevance combined for the Pie Chart)
+      const simBuckets = await db.query(`
+        SELECT 
+          CASE WHEN is_fallback THEN 'Standard' ELSE 'Hybrid' END || ' (' ||
+          CASE 
+            WHEN top_similarity >= 0.8 THEN 'High'
+            WHEN top_similarity >= 0.5 THEN 'Med'
+            ELSE 'Low'
+          END || ')' as category,
+          COUNT(*) as count
+        FROM search_logs
+        GROUP BY 1
+      `)
+
+      // 4. Routing Buckets (Pipeline Usage)
+      const routingBuckets = await db.query(`
+        SELECT 
+          CASE WHEN is_fallback THEN 'Standard Fallback' ELSE 'Smart Hybrid' END as category,
+          COUNT(*) as count
+        FROM search_logs
+        GROUP BY 1
+      `)
+
+      // 5. Feedback Sentiment
+      const feedbackBuckets = await db.query(`
+        SELECT 
+          CASE 
+            WHEN score > 0 THEN 'Positive'
+            WHEN score < 0 THEN 'Negative'
+            ELSE 'Neutral'
+          END as category,
+          COUNT(*) as count
+        FROM search_feedback
+        GROUP BY 1
+      `)
+
       // Combine and sort by timestamp descending
       const combinedActivity = [
         ...recentSearches.rows.map(r => ({ ...r, eventType: 'search' })),
@@ -551,7 +610,13 @@ app.whenReady().then(() => {
           totalDocs: statsRes.rows[0]?.total_docs || 0,
           totalChunks: statsRes.rows[0]?.total_chunks || 0,
           recentQueries: searchLogs.rows,
-          activityFeed: combinedActivity
+          activityFeed: combinedActivity,
+          // Real Charts Data
+          searchesOverTime: searchesOverTime.rows,
+          docTypes: docTypes.rows,
+          similarityBuckets: simBuckets.rows,
+          routingBuckets: routingBuckets.rows,
+          feedbackBuckets: feedbackBuckets.rows
         }
       }
     } catch (err) {

@@ -9,16 +9,17 @@ import { useTheme } from './components/theme/useTheme'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts'
 
 import DashboardSearch from './components/search/DashboardSearch'
-import AnalyticsView from './components/analytics/AnalyticsView'
 import UsersView from './components/users/UsersView'
 import Documentation from './components/Documentation'
 import GlobalError from './components/GlobalError'
+import AnalyticsModal from './components/analytics/AnalyticsModal'
 
 function App() {
   const [activeTab, setActiveTab] = useState('search')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isThemeOpen, setIsThemeOpen] = useState(false)
   const [isDocsOpen, setIsDocsOpen] = useState(false)
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed')
@@ -94,6 +95,7 @@ function App() {
             onOpenSettings={() => setIsSettingsOpen(true)} 
             onOpenTheme={() => setIsThemeOpen(true)}
             onOpenDocs={() => setIsDocsOpen(true)}
+            onOpenAnalytics={() => setIsAnalyticsOpen(true)}
             collapsed={sidebarCollapsed}
             toggleCollapsed={toggleSidebar}
           />
@@ -109,7 +111,7 @@ function App() {
             <DashboardSearch
               focusTrigger={searchFocusTrigger}
               onResultSelect={async (item) => {
-                if (item.id === 'nav-1') setActiveTab('analytics')
+                if (item.id === 'nav-1') setIsAnalyticsOpen(true)
                 else if (item.id === 'nav-2') setActiveTab('users')
                 else if (item.id === 'nav-3') setIsSettingsOpen(true)
                 else if (item.id === 'action-2') setIsThemeOpen(true)
@@ -130,14 +132,10 @@ function App() {
                   {activeTab === 'analytics' ? 'Analytics' : 'Users Management'}
                 </h1>
                 <p className="text-[10px] font-bold tracking-widest mt-2 uppercase" style={{ color: 'var(--text-muted)' }}>
-                  {activeTab === 'analytics' ? 'System Overview & Metrics' : 'Manage your users & permissions'}
+                  Manage your users & permissions
                 </p>
               </div>
 
-              <GlobalError>
-                {activeTab === 'analytics' && <AnalyticsView />}
-              </GlobalError>
-              
               <GlobalError>
                 {activeTab === 'users' && <UsersView />}
               </GlobalError>
@@ -150,6 +148,7 @@ function App() {
       <GlobalError><Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} /></GlobalError>
       <GlobalError><ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} /></GlobalError>
       <GlobalError><Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} /></GlobalError>
+      <GlobalError><AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} /></GlobalError>
     </div>
   )
 }

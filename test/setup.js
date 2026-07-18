@@ -46,7 +46,8 @@ globalThis.window.api = {
     onUpdateAvailable: () => () => {},
     onUpdateNotAvailable: () => () => {},
     onUpdateDownloaded: () => () => {},
-    onUpdateProgress: () => () => {}
+    onUpdateProgress: () => () => {},
+    onUpdateError: () => () => {}
   },
   getPathForFile: () => ''
 }

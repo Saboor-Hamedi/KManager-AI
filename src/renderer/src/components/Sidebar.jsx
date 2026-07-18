@@ -34,7 +34,7 @@ const SidebarItem = memo(({ icon: Icon, label, shortcut, active, collapsed, onCl
 ))
 
 // State is now owned by App.jsx so Ctrl+B and the header button can control it
-const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, onOpenDocs, collapsed, toggleCollapsed }) => {
+const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, onOpenDocs, onOpenAnalytics, collapsed, toggleCollapsed }) => {
   const items = [
     { id: 'search',    label: 'Search',    shortcut: 'Ctrl+P', icon: Search },
     { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
@@ -57,7 +57,13 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
             {...item}
             active={activeTab === item.id}
             collapsed={collapsed}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => {
+              if (item.id === 'analytics') {
+                onOpenAnalytics()
+              } else {
+                setActiveTab(item.id)
+              }
+            }}
           />
         ))}
       </div>
