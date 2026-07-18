@@ -141,8 +141,9 @@ describe('RagAnswer', () => {
     render(
       <RagAnswer {...baseProps} msg={{ ...baseProps.msg, ragStatus: 'error', ragError: 'API key missing' }} />
     )
-    expect(screen.getByText(/RAG Synthesis failed/)).toBeInTheDocument()
+    expect(screen.getByText(/AI synthesis failed/)).toBeInTheDocument()
     expect(screen.getByText(/API key missing/)).toBeInTheDocument()
+    expect(screen.getByText(/AI Settings/)).toBeInTheDocument()
   })
 
   it('shows SuggestedPrompts and InlineChat in done state', () => {

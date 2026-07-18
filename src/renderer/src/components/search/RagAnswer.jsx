@@ -87,8 +87,17 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
       )}
 
       {msg.ragStatus === 'error' && (
-        <div className="py-2 text-xs text-red-400">
-          RAG Synthesis failed: {msg.ragError} (Check API key in AI Settings)
+        <div className="py-2 px-3 rounded-[6px] bg-red-500/10 border border-red-500/20 flex items-start gap-2 mt-1">
+          <span className="text-red-400 mt-0.5 shrink-0">⚠</span>
+          <div className="text-xs text-red-400 leading-relaxed">
+            <span className="font-semibold">AI synthesis failed: </span>
+            {msg.ragError || 'Unknown error'}.
+            {(msg.ragError || '').toLowerCase().includes('timeout') || (msg.ragError || '').toLowerCase().includes('network') || (msg.ragError || '').toLowerCase().includes('unreachable') ? (
+              <span className="text-red-300"> Try using a VPN or switch providers in <strong>AI Settings</strong>.</span>
+            ) : (
+              <span className="text-red-300"> Check your API key in <strong>AI Settings</strong>.</span>
+            )}
+          </div>
         </div>
       )}
     </div>

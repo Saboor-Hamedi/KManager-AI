@@ -21,6 +21,7 @@ const api = {
     clearQueue: () => ipcRenderer.invoke('db:clear-queue'),
     reembedAll: () => ipcRenderer.invoke('db:reembed-all'),
     truncateAll: () => ipcRenderer.invoke('db:truncate-all'),
+    updateChunk: (chunkId, newContent) => ipcRenderer.invoke('db:update-chunk', { chunkId, newContent }),
     onIngestProgress: (callback) => {
       const listener = (event, progress) => callback(progress)
       ipcRenderer.on('db:ingest-progress', listener)

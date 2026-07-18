@@ -145,7 +145,7 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
                 <span>Complete Document Context</span>
                 <span className="font-mono text-[10px] text-[var(--text-muted)]">{fullContextText.length.toLocaleString()} chars</span>
               </div>
-              <div className="text-[14px] leading-relaxed text-justify">
+              <div className="text-[14px] leading-relaxed">
                 <DocumentRenderer
                   content={fullContextText}
                   category={previewItem.category || 'TEXT'}
@@ -163,7 +163,7 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
                   </span>
                 )}
               </div>
-              <div className="text-[14px] leading-relaxed text-justify">
+              <div className="text-[14px] leading-relaxed">
                 <DocumentRenderer
                   content={previewItem.content || 'No content preview available.'}
                   category={previewItem.category || 'TEXT'}

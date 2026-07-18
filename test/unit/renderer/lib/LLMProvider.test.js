@@ -215,22 +215,22 @@ describe('streamRagAnswer', () => {
     expect(apiMessages).toHaveLength(2)
     expect(apiMessages[0].role).toBe('system')
     expect(apiMessages[1].content).toContain('PSA is a biomarker')
-    expect(apiMessages[1].content).toContain('what is PSA')
+    expect(apiMessages[1].content).toContain('USER QUESTION:\nwhat is PSA')
   })
 
   it('does not include context text when chunks are empty', async () => {
     mockStream.mockResolvedValue('answer')
     await streamRagAnswer('question', [], 'deepseek', 'sk-key', vi.fn())
     const userContent = mockStream.mock.calls[0][0][1].content
-    expect(userContent).not.toContain('Here is relevant information')
-    expect(userContent).toContain('Question: question')
+    expect(userContent).not.toContain('CONTEXT FROM USER DOCUMENTS')
+    expect(userContent).toContain('USER QUESTION:\nquestion')
   })
 
   it('does not include context text when chunks is null', async () => {
     mockStream.mockResolvedValue('answer')
     await streamRagAnswer('question', null, 'deepseek', 'sk-key', vi.fn())
     const userContent = mockStream.mock.calls[0][0][1].content
-    expect(userContent).not.toContain('Here is relevant information')
+    expect(userContent).not.toContain('CONTEXT FROM USER DOCUMENTS')
   })
 
   it('includes conversation history', async () => {
@@ -278,12 +278,12 @@ describe('streamRagAnswer', () => {
     expect(onChunk).toHaveBeenNthCalledWith(3, 'Hello world!')
   })
 
-  it('system prompt instructs to never mention sources', async () => {
+  it('system prompt instructs no source citations', async () => {
     mockStream.mockResolvedValue('answer')
     await streamRagAnswer('q', [{ content: 'data' }], 'deepseek', 'sk-key', vi.fn())
     const systemMsg = mockStream.mock.calls[0][0][0].content
-    expect(systemMsg).toContain('Never mention sources')
-    expect(systemMsg).toContain('Do not say "based on"')
+    expect(systemMsg).toContain('No Source Citations')
+    expect(systemMsg).toContain('Never say "based on the provided text"')
   })
 
   it('fallback to deepseek for unknown provider', async () => {

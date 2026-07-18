@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
-import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus } from 'lucide-react'
+import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus, Edit } from 'lucide-react'
 import HoverWikilink from './HoverWikilink'
 import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
@@ -12,8 +12,8 @@ const ReactMarkdown = lazy(() => import('react-markdown'))
  * Returns an array of React elements with matching words in the accent color.
  * When disabled (e.g. result has been clicked/opened), renders plain text.
  */
-const HighlightedText = memo(({ text, query, disabled }) => {
-  if (disabled || !query || !text) return <>{text}</>
+const HighlightedText = memo(({ text, query }) => {
+  if (!query || !text) return <>{text}</>
 
   const words = query
     .trim()
@@ -43,7 +43,7 @@ const HighlightedText = memo(({ text, query, disabled }) => {
 
 
 
-const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveReply }) => {
+const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveReply, onEdit }) => {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState(null)
 
@@ -68,33 +68,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
 
   return (
     <div className="flex items-center bg-[var(--bg-panel)]/80 border-0 rounded-[5px] overflow-hidden h-6 shrink-0 select-none">
-      {/* Slide-over Preview Drawer Button */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation()
-          if (window.__openCitationPreviewModal) {
-            window.__openCitationPreviewModal(item)
-          } else {
-            handleSelect(item)
-          }
-        }}
-        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0 gap-1"
-        title="Open citation preview drawer"
-      >
-        <Eye size={12} />
-        <span className="text-[10px] font-semibold hidden sm:inline">Preview</span>
-      </button>
-
-      {/* Copy Button */}
-      <button 
-        onClick={handleCopy}
-        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
-        title="Copy section text"
-      >
-        {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-      </button>
-
-      {/* Like / Helpful Button */}
+      {/* Like */}
       <button 
         onClick={() => handleFeedback('helpful')}
         className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
@@ -105,7 +79,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
         <ThumbsUp size={12} />
       </button>
 
-      {/* Dislike / Unhelpful Button */}
+      {/* Dislike */}
       <button 
         onClick={() => handleFeedback('unhelpful')}
         className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
@@ -115,6 +89,61 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
       >
         <ThumbsDown size={12} />
       </button>
+
+      {/* Copy */}
+      <button 
+        onClick={handleCopy}
+        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+        title="Copy section text"
+      >
+        {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+      </button>
+
+      {/* Preview */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation()
+          if (window.__openCitationPreviewModal) {
+            window.__openCitationPreviewModal(item)
+          } else {
+            handleSelect(item)
+          }
+        }}
+        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+        title="Open citation preview drawer"
+      >
+        <Eye size={12} />
+      </button>
+
+      {/* Edit */}
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+          title="Edit chunk content"
+        >
+          <Edit size={12} />
+        </button>
+      )}
+
+      {/* Reply */}
+      {onReply && (
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault()
+            onReply()
+          }}
+          className={`h-full px-2 flex items-center justify-center border-0 transition-colors ${
+            isActiveReply
+              ? 'bg-[var(--bg-active)] text-[var(--text-main)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+          }`}
+          title={isActiveReply ? 'Close chat' : 'Reply'}
+        >
+          {isActiveReply ? <X size={12} strokeWidth={2.5} /> : <MessageSquarePlus size={12} />}
+        </button>
+      )}
     </div>
   )
 })
@@ -126,10 +155,56 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const [selected, setSelected] = useState(false)
   const [showWikiHover, setShowWikiHover] = useState(false)
   const hoverTimeoutRef = useRef(null)
-
   const onSelect = (item) => {
     setSelected(true)
     handleSelect(item)
+  }
+
+  const [localContent, setLocalContent] = useState(item.content)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(item.content)
+  const [isSaving, setIsSaving] = useState(false)
+  const textareaRef = useRef(null)
+
+  useEffect(() => {
+    setLocalContent(item.content)
+    setEditValue(item.content)
+  }, [item.content])
+
+  // Auto-resize textarea to prevent height jumping
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
+    }
+  }, [isEditing, editValue])
+
+  const handleSaveEdit = async () => {
+    // Add two trailing spaces to every line to force Markdown line breaks (<br>)
+    // This perfectly preserves formatting and prevents paragraphs from squishing together
+    const formattedValue = editValue.split('\n').map(line => line.trimEnd() + '  ').join('\n')
+
+    if (!formattedValue.trim() || formattedValue === localContent) {
+      setIsEditing(false)
+      return
+    }
+    setIsSaving(true)
+    try {
+      if (window.api && window.api.db && window.api.db.updateChunk) {
+        const res = await window.api.db.updateChunk(item.id, formattedValue)
+        if (res.success) {
+          setLocalContent(formattedValue)
+          item.content = formattedValue // prevent reversion on re-render
+          setIsEditing(false)
+        } else {
+          console.error('Failed to update chunk:', res.error)
+        }
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleMouseEnter = () => {
@@ -177,7 +252,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           onMouseLeave={handleMouseLeave}
           className="relative flex items-center gap-2 cursor-pointer min-w-0 flex-1 group/title"
         >
-          <h4 className="text-[13px] font-semibold text-[var(--text-main)] truncate group-hover/title:text-[var(--text-accent)] transition-colors">
+          <h4 className="text-[13px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
             {item.title}
           </h4>
           <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] border-0 shrink-0">
@@ -190,8 +265,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           )}
         </div>
 
-        {/* Action Bar */}
-        <UnifiedActionBar item={item} query={query} handleSelect={onSelect} onReply={onReply} isActiveReply={isActiveReply} />
+
       </div>
 
       {/* Created At timestamp */}
@@ -202,9 +276,40 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
       )}
 
       {/* Content Chunk Body */}
-      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden text-justify">
-        <Wrapper maxHeight={300}>
-          <Suspense fallback={<div className="text-[var(--text-muted)] text-xs py-2">Rendering chunk...</div>}>
+      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden">
+        {isEditing ? (
+          <div className="flex flex-col gap-2 mt-2">
+            <textarea
+              ref={textareaRef}
+              className="w-full p-3 text-[13px] font-mono bg-[var(--bg-active)] border border-[var(--border-subtle)] rounded-[5px] text-[var(--text-main)] focus:outline-none focus:border-[var(--text-accent)] overflow-hidden resize-none leading-relaxed"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              disabled={isSaving}
+              style={{ minHeight: '80px' }}
+            />
+            <div className="flex justify-end gap-1.5 mt-2">
+              <button
+                onClick={() => {
+                  setEditValue(localContent)
+                  setIsEditing(false)
+                }}
+                disabled={isSaving}
+                className="px-3 py-1 text-[11px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveEdit}
+                disabled={isSaving}
+                className="px-3 py-1 text-[11px] font-medium bg-[var(--text-accent)] text-white rounded-[4px] hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Update'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <Wrapper maxHeight={300}>
+            <Suspense fallback={<div className="text-[var(--text-muted)] text-xs py-2">Rendering chunk...</div>}>
             {(() => {
               const ext = item.title ? item.title.split('.').pop().toLowerCase() : ''
               const isJsonOrCode = ['json', 'py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext) || item.category === 'JSON'
@@ -212,7 +317,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               if (isJsonOrCode) {
                 return (
                   <DocumentRenderer
-                    content={item.content}
+                    content={localContent}
                     category={item.category || ext.toUpperCase()}
                     fileTitle={item.title}
                   />
@@ -223,16 +328,16 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               const highlightComponents = {
                 ...cleanMarkdownComponents,
                 p: ({ node, children, ...props }) => (
-                  <p className="mb-1.5 last:mb-0 text-justify" {...props}>
+                  <p className="mb-1.5 last:mb-0" {...props}>
                     {typeof children === 'string'
-                      ? <HighlightedText text={children} query={query} disabled={selected} />
+                      ? <HighlightedText text={children} query={query} />
                       : children}
                   </p>
                 ),
                 li: ({ node, children, ...props }) => (
                   <li {...props}>
                     {typeof children === 'string'
-                      ? <HighlightedText text={children} query={query} disabled={selected} />
+                      ? <HighlightedText text={children} query={query} />
                       : children}
                   </li>
                 ),
@@ -240,31 +345,25 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
 
               return (
                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={highlightComponents}>
-                  {formatMarkdownText(item.content)}
+                  {formatMarkdownText(localContent)}
                 </ReactMarkdown>
               )
             })()}
           </Suspense>
         </Wrapper>
+        )}
       </div>
 
-      {/* Reply Button below response */}
-      <div className="mt-2 flex justify-start">
-        <button 
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault() // prevent focus loss just in case
-            if (onReply) onReply()
-          }}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 ${
-            isActiveReply 
-              ? 'bg-[var(--bg-active)] text-[var(--text-main)]' 
-              : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
-          }`}
-        >
-          {isActiveReply ? <X size={12} strokeWidth={2.5} /> : <MessageSquarePlus size={12} />}
-          {isActiveReply ? 'Close Chat' : 'Reply'}
-        </button>
+      {/* Footer Action Bar */}
+      <div className="mt-3 flex items-center justify-start">
+        <UnifiedActionBar
+          item={{...item, content: localContent}}
+          query={query}
+          handleSelect={onSelect}
+          onReply={onReply}
+          isActiveReply={isActiveReply}
+          onEdit={() => setIsEditing(prev => !prev)}
+        />
       </div>
     </div>
   )
