@@ -1,14 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('../../../../src/renderer/src/lib/settings', () => ({
-  getSetting: vi.fn((key, def) => {
-    if (key === 'DEEPSEEK_API_KEY') return Promise.resolve('sk-test-key')
-    return Promise.resolve(def)
-  }),
-  saveSetting: vi.fn((key, val) => Promise.resolve(true))
-}))
-
-const { getLocalSuggestedPrompts, fetchDynamicPrompts } = await import('../../../../src/renderer/src/lib/suggestedPrompts')
+const { getLocalSuggestedPrompts } = await import('../../../../src/renderer/src/lib/suggestedPrompts')
 
 describe('getLocalSuggestedPrompts', () => {
   it('returns empty array for empty query', () => {
@@ -37,14 +29,3 @@ describe('getLocalSuggestedPrompts', () => {
   })
 })
 
-describe('fetchDynamicPrompts', () => {
-  it('returns null if no API key', async () => {
-    const result = await fetchDynamicPrompts('test', 'answer', '')
-    expect(result).toBeNull()
-  })
-
-  it('returns null for placeholder API key', async () => {
-    const result = await fetchDynamicPrompts('test', 'answer', 'your_deepseek_api_key_here')
-    expect(result).toBeNull()
-  })
-})

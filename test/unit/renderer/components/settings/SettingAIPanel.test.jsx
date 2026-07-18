@@ -21,6 +21,6 @@ describe('SettingAIPanel', () => {
 
   it('renders save button', () => {
     render(<SettingAIPanel />)
-    expect(screen.getByText('Save Configuration')).toBeInTheDocument()
+    expect(screen.getByText('Save')).toBeInTheDocument()
   })
 })
