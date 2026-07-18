@@ -21,7 +21,7 @@ const pdfServer = http.createServer((req, res) => {
       fs.createReadStream(filePath).pipe(res)
     } else {
       res.statusCode = 404
-      res.end('Not Found')
+    res.end('Not Found')
     }
   } catch (err) {
     res.statusCode = 500
@@ -347,11 +347,6 @@ app.whenReady().then(() => {
           } catch (e) {
             // ignore if column exists
           }
-          try {
-            await db.query('ALTER TABLE embedding_documents ADD COLUMN IF NOT EXISTS section TEXT')
-          } catch (e) {
-            // ignore
-          }
 
           await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
           await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
@@ -538,77 +533,6 @@ app.whenReady().then(() => {
         LIMIT 15
       `)
 
-      // ---- NEW: Real Telemetry Aggregations ----
-      
-      // 1. Searches over time (Last 14 active days)
-      const searchesOverTime = await db.query(`
-        WITH recent_days AS (
-          SELECT DATE(created_at) as d, COUNT(*) as count 
-          FROM search_logs 
-          GROUP BY DATE(created_at) 
-          ORDER BY DATE(created_at) DESC 
-          LIMIT 14
-        )
-        SELECT to_char(d, 'Mon DD') as date, count 
-        FROM recent_days 
-        ORDER BY d ASC
-      `)
-
-      // 2. Document types distribution
-      const docTypes = await db.query(`
-        SELECT COALESCE(file_type, 'unknown') as type, COUNT(*) as count 
-        FROM documents 
-        GROUP BY file_type
-      `)
-
-      // 3. Similarity Buckets (Routing + Relevance combined for the Pie Chart)
-      const simBuckets = await db.query(`
-        SELECT 
-          CASE WHEN is_fallback THEN 'Standard' ELSE 'Hybrid' END || ' (' ||
-          CASE 
-            WHEN top_similarity >= 0.8 THEN 'High'
-            WHEN top_similarity >= 0.5 THEN 'Med'
-            ELSE 'Low'
-          END || ')' as category,
-          COUNT(*) as count
-        FROM search_logs
-        GROUP BY 1
-      `)
-
-      // 4. Routing Buckets (Pipeline Usage)
-      const routingBuckets = await db.query(`
-        SELECT 
-          CASE WHEN is_fallback THEN 'Standard Fallback' ELSE 'Smart Hybrid' END as category,
-          COUNT(*) as count
-        FROM search_logs
-        GROUP BY 1
-      `)
-
-      // 5. Feedback Sentiment
-      const feedbackBuckets = await db.query(`
-        SELECT 
-          CASE 
-            WHEN score > 0 THEN 'Positive'
-            WHEN score < 0 THEN 'Negative'
-            ELSE 'Neutral'
-          END as category,
-          COUNT(*) as count
-        FROM search_feedback
-        GROUP BY 1
-      `)
-
-      // 6. Success Rate (Zero-Hit vs Successful)
-      const successBuckets = await db.query(`
-        SELECT 
-          CASE 
-            WHEN result_count > 0 THEN 'Successful (Hits > 0)'
-            ELSE 'Zero-Hit (No Results)'
-          END as category,
-          COUNT(*) as count
-        FROM search_logs
-        GROUP BY 1
-      `)
-
       // Combine and sort by timestamp descending
       const combinedActivity = [
         ...recentSearches.rows.map(r => ({ ...r, eventType: 'search' })),
@@ -627,14 +551,7 @@ app.whenReady().then(() => {
           totalDocs: statsRes.rows[0]?.total_docs || 0,
           totalChunks: statsRes.rows[0]?.total_chunks || 0,
           recentQueries: searchLogs.rows,
-          activityFeed: combinedActivity,
-          // Real Charts Data
-          searchesOverTime: searchesOverTime.rows,
-          docTypes: docTypes.rows,
-          similarityBuckets: simBuckets.rows,
-          routingBuckets: routingBuckets.rows,
-          feedbackBuckets: feedbackBuckets.rows,
-          successBuckets: successBuckets.rows
+          activityFeed: combinedActivity
         }
       }
     } catch (err) {
@@ -695,27 +612,6 @@ app.whenReady().then(() => {
     } catch (err) {
       console.error('db:submit-feedback error:', err)
       return { success: false, message: err.message }
-    }
-  })
-
-  ipcMain.handle('db:update-chunk', async (_event, { chunkId, newContent }) => {
-    if (!db || !db.isConnected()) return { success: false, message: 'Database not connected' }
-    try {
-      // 1. Generate new embedding for the updated content
-      const vector = await embeddingService.embedQuery(newContent)
-      const vectorStr = `[${vector.join(',')}]`
-      
-      // 2. Update DB with new content and new vector
-      await db.query(`
-        UPDATE embedding_documents 
-        SET content = $1, embedding = $2 
-        WHERE id = $3
-      `, [newContent, vectorStr, chunkId])
-      
-      return { success: true }
-    } catch (err) {
-      console.error('db:update-chunk error:', err)
-      return { success: false, error: err.message }
     }
   })
 
@@ -884,11 +780,6 @@ app.on('ready', () => {
   autoUpdater.checkForUpdatesAndNotify()
 })
 
-autoUpdater.on('error', (err) => {
-  log.error('Update error:', err)
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-error', err?.message || 'Unknown update error')
-})
-
 autoUpdater.on('update-available', (info) => {
   log.info('Update available.')
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-available', info)
@@ -908,19 +799,19 @@ autoUpdater.on('download-progress', (progressObj) => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-progress', progressObj)
 })
 
-let downloadedUpdatePath = null
-
 ipcMain.handle('update:check', () => {
   autoUpdater.checkForUpdates()
 })
 
+let downloadedUpdatePath = null
+
 ipcMain.handle('update:download', async (event) => {
   try {
-    const res = await net.fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
+    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
     if (!res.ok) throw new Error('Failed to fetch update info')
     const text = await res.text()
     const versionMatch = text.match(/^version:\s*(\S+)/m)
-    const fileMatch = text.match(/^(?:\s*-\s*url:|path:)\s*(\S+)/m)
+    const fileMatch = text.match(/^\s+url:\s*(\S+)/m)
     if (!versionMatch || !fileMatch) throw new Error('Invalid update metadata')
     const version = versionMatch[1]
     const fileName = fileMatch[1]
@@ -928,7 +819,7 @@ ipcMain.handle('update:download', async (event) => {
     const tempDir = app.getPath('temp')
     const dest = path.join(tempDir, fileName)
 
-    const response = await net.fetch(url)
+    const response = await fetch(url)
     if (!response.ok) throw new Error('Failed to download update')
     const total = parseInt(response.headers.get('content-length') || '0', 10)
     let downloaded = 0
@@ -963,25 +854,17 @@ ipcMain.handle('update:download', async (event) => {
 
 ipcMain.handle('update:install', () => {
   if (downloadedUpdatePath) {
-    const child = require('child_process').spawn(downloadedUpdatePath, [], {
-      detached: true,
-      stdio: 'ignore'
-    })
-    child.unref()
+    require('child_process').exec(`start "" "${downloadedUpdatePath}"`)
     downloadedUpdatePath = null
-    app.quit()
+    app.exit(0)
   } else {
     autoUpdater.quitAndInstall()
   }
 })
 
-ipcMain.handle('app:version', () => {
-  return app.getVersion()
-})
-
 ipcMain.handle('update:check-latest', async () => {
   try {
-    const res = await net.fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
+    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
     if (!res.ok) return null
     const text = await res.text()
     const match = text.match(/^version:\s*(\S+)/m)
@@ -989,6 +872,10 @@ ipcMain.handle('update:check-latest', async () => {
   } catch {
     return null
   }
+})
+
+ipcMain.handle('app:version', () => {
+  return app.getVersion()
 })
 
 app.on('window-all-closed', () => {
