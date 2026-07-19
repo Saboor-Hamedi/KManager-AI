@@ -323,6 +323,10 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('db:connect', async (_event, config) => {
+    // Gracefully close the old pool before creating a new one
+    if (db) {
+      try { await db.disconnect() } catch {}
+    }
     db = new Database(config)
     const result = await db.connect()
     if (result.success) {
