@@ -243,7 +243,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const createdLabel = formatDate(item.created_at)
 
   return (
-    <div className="group relative transition-all duration-200 overflow-visible">
+    <div className="group relative transition-all duration-200 overflow-visible rounded-[var(--radius-md,8px)] bg-[var(--bg-card)] border border-[var(--border-card)] p-4 shadow-[var(--shadow-sm,0_1px_3px_rgba(0,0,0,0.4))] hover:shadow-[var(--shadow-md,0_4px_12px_rgba(0,0,0,0.5))] hover:border-[var(--border-main)]">
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
@@ -255,7 +255,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           <h4 className="text-[13px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
             {item.title}
           </h4>
-          <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] border-0 shrink-0">
+          <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-panel)] border border-[var(--border-subtle)]/50 shrink-0">
             {simPercent}%
           </span>
 
@@ -281,7 +281,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           <div className="flex flex-col gap-2 mt-2">
             <textarea
               ref={textareaRef}
-              className="w-full p-3 text-[13px] font-mono bg-[var(--bg-active)] border border-[var(--border-subtle)] rounded-[5px] text-[var(--text-main)] focus:outline-none focus:border-[var(--text-accent)] overflow-hidden resize-none leading-relaxed"
+              className="w-full p-3 text-[13px] font-mono bg-[var(--bg-input,var(--bg-active))] border border-[var(--border-subtle)] rounded-[5px] text-[var(--text-main)] focus:outline-none focus:border-[var(--text-accent)] focus:shadow-[0_0_0_2px_rgba(var(--text-accent-rgb,64,186,250),0.15)] overflow-hidden resize-none leading-relaxed"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               disabled={isSaving}

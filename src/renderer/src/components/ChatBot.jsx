@@ -9,50 +9,52 @@ import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
 
 const BotMessage = memo(({ text, idx, onSave, savedState }) => (
-  <div className="flex flex-col items-start w-full group animate-in fade-in duration-200">
+  <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
     <div className="flex items-start gap-2.5 max-w-[85%]">
       <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
         <Bot size={12} />
       </div>
-      <div className="px-3 py-2 rounded-lg rounded-tl-sm text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] min-w-0" style={{ overflowWrap: 'break-word' }}>
-        <div style={{ overflowWrap: 'break-word' }}>
-          <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
-            p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-            strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
-            em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
-            ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-            ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-            li: ({node, ...props}) => <li {...props} />,
-            code: ({node, inline, ...props}) => inline
-              ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[4px] font-mono text-[10px]" {...props} />
-              : <code className="block bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-muted)] p-2 rounded-md font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
-          }}>
-            {formatMarkdownText(text)}
-          </ReactMarkdown>
+      <div className="flex flex-col">
+        <div className="px-3 py-2 rounded-lg rounded-tl-sm text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] min-w-0" style={{ overflowWrap: 'break-word' }}>
+          <div style={{ overflowWrap: 'break-word' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
+              p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+              strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
+              em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
+              ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+              ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+              li: ({node, ...props}) => <li {...props} />,
+              code: ({node, inline, ...props}) => inline
+                ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[4px] font-mono text-[10px]" {...props} />
+                : <code className="block bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-muted)] p-2 rounded-md font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+            }}>
+              {formatMarkdownText(text)}
+            </ReactMarkdown>
+          </div>
+        </div>
         {idx > 0 && (
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-end mt-2">
+          <div className="flex justify-start mt-1.5">
             <button
               onClick={() => onSave(idx, text)}
               disabled={savedState === 'saving' || savedState === 'saved'}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all shadow-sm ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-[5px] text-[9px] font-medium transition-all ${
                 savedState === 'saved'
-                  ? 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'
+                  ? 'bg-green-500/10 text-green-400 cursor-default'
                   : savedState === 'saving'
-                    ? 'bg-[var(--bg-active)] text-[var(--text-muted)] border border-[var(--border-subtle)] opacity-70 cursor-wait'
-                    : 'bg-[var(--bg-active)] text-[var(--text-faint)] border border-[var(--border-subtle)] hover:text-white hover:border-[var(--text-accent)] hover:shadow-[0_0_10px_rgba(var(--color-accent),0.2)]'
+                    ? 'bg-[var(--bg-active)] text-[var(--text-muted)] opacity-70 cursor-wait'
+                    : 'bg-[var(--bg-active)] text-[var(--text-faint)] hover:text-white hover:bg-[var(--text-accent)]/20'
               }`}
             >
               {savedState === 'saved' ? (
-                <><Check size={10} className="text-green-400" /> Saved</>
+                <><Check size={8} className="text-green-400" /> Saved</>
               ) : savedState === 'saving' ? (
-                <><span className="w-2.5 h-2.5 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" /> Saving...</>
+                <><span className="w-2 h-2 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" /> Saving...</>
               ) : (
-                <><Plus size={10} /> Save</>
+                <><Plus size={8} /> Save</>
               )}
             </button>
           </div>
         )}
-        </div>
       </div>
     </div>
   </div>
