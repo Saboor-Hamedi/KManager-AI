@@ -544,8 +544,8 @@ const DashboardSearch = () => {
       <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
               
               {/* User Message Bubble matching ChatGPT / reference style */}
-              <div className="flex justify-end w-full py-1.5">
-                <div className="bg-[#2f2f2f] px-5 py-3.5 rounded-[22px] max-w-[80%] border border-white/[0.06] shadow-sm text-left">
+              <div className="flex justify-end w-full py-1.5 pr-4 sm:pr-8">
+                <div className="bg-[#2f2f2f] px-5 py-3.5 rounded-[22px] max-w-[75%] border border-white/[0.06] shadow-sm text-left">
                   <p className="text-[14.5px] leading-relaxed font-normal text-[#ececec] whitespace-pre-wrap break-words">{msg.query}</p>
                 </div>
               </div>

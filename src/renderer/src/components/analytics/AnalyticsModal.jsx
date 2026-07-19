@@ -62,11 +62,11 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={onClose}>
       <div 
-        className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[90vw] h-[85vh] max-w-[1200px] animate-in zoom-in-95 duration-200" 
+        className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[90vw] h-[85vh] max-w-[1200px] animate-in zoom-in-95 duration-200" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="h-8 bg-[var(--bg-panel)]/80 border-b border-[var(--border-dim)] flex items-center justify-between shrink-0">
+        <div className="h-8 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0">
           <div className="flex items-center h-full">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}

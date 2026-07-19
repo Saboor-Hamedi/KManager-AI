@@ -3,7 +3,7 @@ import { PanelLeftClose, PanelLeft, X } from 'lucide-react'
 
 const DocHeader = ({ isSidebarOpen, onToggleSidebar, onClose }) => {
   return (
-    <div className="h-8 bg-[var(--bg-panel)]/80 border-b border-[var(--border-dim)] flex items-center justify-between shrink-0">
+    <div className="h-8 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0">
       <div className="flex items-center h-full">
         <button 
           onClick={onToggleSidebar}

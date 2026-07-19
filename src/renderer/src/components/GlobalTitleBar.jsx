@@ -128,7 +128,7 @@ const GlobalTitleBar = () => {
   const showUpdate = updateState === 'available' || updateState === 'downloading' || updateState === 'downloaded'
 
   return (
-    <div className="h-8 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0 z-50 [-webkit-app-region:drag]">
+    <div className="h-8 w-full bg-[var(--bg-panel)] flex items-center shrink-0 z-50 [-webkit-app-region:drag]">
       {/* Left: App Identity & Update Button */}
       <div className="flex items-center gap-3 px-3 min-w-0">
         <div className="flex items-center gap-2">

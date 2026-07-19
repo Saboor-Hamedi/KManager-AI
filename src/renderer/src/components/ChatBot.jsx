@@ -1,74 +1,120 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
-import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'
+import SuggestedPrompts from './search/SuggestedPrompts'
 import { cn } from '../lib/utils'
 import { getSetting } from '../lib/settings'
 import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
 
-const BotMessage = memo(({ text, idx, onSave, savedState }) => (
-  <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
-    <div className="flex items-start gap-2.5 max-w-[85%]">
-      <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
-        <Bot size={12} />
-      </div>
-      <div className="flex flex-col">
-        <div className="px-3 py-2 rounded-lg rounded-tl-sm text-[11px] leading-relaxed bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-dim)] min-w-0" style={{ overflowWrap: 'break-word' }}>
+const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPrompt }) => {
+  const [copied, setCopied] = useState(false)
+  const [feedback, setFeedback] = useState(null)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleFeedback = (type) => {
+    setFeedback(feedback === type ? null : type)
+  }
+
+  return (
+    <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
+      <div className="flex flex-col max-w-[85%] w-full">
+        <div className="px-4 py-3 rounded-[5px] text-xs leading-relaxed text-justify bg-[var(--bg-panel)]/90 text-[var(--text-main)] shadow-sm" style={{ overflowWrap: 'break-word' }}>
           <div style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
-              p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+              p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-justify" {...props} />,
               strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
               em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
               ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
               ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
               li: ({node, ...props}) => <li {...props} />,
               code: ({node, inline, ...props}) => inline
-                ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[4px] font-mono text-[10px]" {...props} />
-                : <code className="block bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-muted)] p-2 rounded-md font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+                ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[3px] font-mono text-[10px]" {...props} />
+                : <code className="block bg-[var(--bg-app)] text-[var(--text-muted)] p-2 rounded-[5px] font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
             }}>
               {formatMarkdownText(text)}
             </ReactMarkdown>
           </div>
         </div>
         {idx > 0 && (
-          <div className="flex justify-start mt-1.5">
-            <button
-              onClick={() => onSave(idx, text)}
-              disabled={savedState === 'saving' || savedState === 'saved'}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-[5px] text-[9px] font-medium transition-all ${
-                savedState === 'saved'
-                  ? 'bg-green-500/10 text-green-400 cursor-default'
-                  : savedState === 'saving'
-                    ? 'bg-[var(--bg-active)] text-[var(--text-muted)] opacity-70 cursor-wait'
-                    : 'bg-[var(--bg-active)] text-[var(--text-faint)] hover:text-white hover:bg-[var(--text-accent)]/20'
-              }`}
-            >
-              {savedState === 'saved' ? (
-                <><Check size={8} className="text-green-400" /> Saved</>
-              ) : savedState === 'saving' ? (
-                <><span className="w-2 h-2 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" /> Saving...</>
-              ) : (
-                <><Plus size={8} /> Save</>
-              )}
-            </button>
+          <div className="flex flex-col gap-2 mt-1.5 w-full">
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center bg-[var(--bg-panel)]/80 rounded-[5px] overflow-hidden h-6 shrink-0 select-none">
+                <button
+                  onClick={() => handleFeedback('helpful')}
+                  className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
+                    feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                  }`}
+                  title="Helpful response"
+                >
+                  <ThumbsUp size={12} />
+                </button>
+                <button
+                  onClick={() => handleFeedback('unhelpful')}
+                  className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
+                    feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                  }`}
+                  title="Not helpful"
+                >
+                  <ThumbsDown size={12} />
+                </button>
+                <button
+                  onClick={handleCopy}
+                  className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+                  title="Copy response text"
+                >
+                  {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                </button>
+              </div>
+
+              <button
+                onClick={() => onSave(idx, text)}
+                disabled={savedState === 'saving' || savedState === 'saved'}
+                className={`flex items-center justify-center h-6 px-2.5 rounded-[5px] transition-all border-0 ${
+                  savedState === 'saved'
+                    ? 'bg-green-500/10 text-green-400 cursor-default'
+                    : savedState === 'saving'
+                      ? 'bg-[var(--bg-active)] text-[var(--text-muted)] opacity-70 cursor-wait'
+                      : 'bg-[var(--bg-panel)]/80 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                }`}
+                title={savedState === 'saved' ? 'Saved' : 'Save to Knowledge Base'}
+              >
+                {savedState === 'saved' ? (
+                  <Check size={12} className="text-green-400" />
+                ) : savedState === 'saving' ? (
+                  <span className="w-2.5 h-2.5 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Check size={12} />
+                )}
+              </button>
+            </div>
+
+            {queryText && (
+              <div className="w-full pt-1">
+                <SuggestedPrompts
+                  msg={{ id: idx, query: queryText, ragStatus: 'done', ragAnswer: text, results: [] }}
+                  onSelectPrompt={onSelectPrompt}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
-  </div>
-))
+  )
+})
 
 const UserMessage = memo(({ text }) => (
-  <div className="flex items-start justify-end w-full animate-in fade-in duration-200">
-    <div className="flex items-start gap-2 flex-row-reverse max-w-[85%]">
-      <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-panel)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-        <User size={12} />
-      </div>
-      <div className="px-3 py-2 rounded-lg rounded-tr-sm text-[11px] leading-relaxed bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)] break-words">
-        {text}
-      </div>
+  <div className="flex justify-end w-full py-1 animate-in fade-in duration-200">
+    <div className="bg-[var(--bg-active)] px-4 py-3 rounded-[5px] max-w-[75%] shadow-sm text-left">
+      <p className="text-xs leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words">{text}</p>
     </div>
   </div>
 ))
@@ -234,11 +280,11 @@ const ChatBot = ({ appState = {} }) => {
       {isOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
           <div
-            className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200"
+            className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header matching main window titlebar style & proportions */}
-            <div className="h-7 bg-[var(--bg-panel)]/80 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0 select-none">
+            <div className="h-7 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0 select-none">
               <div className="flex items-center gap-2 px-3 h-full">
                 <Bot size={15} className="text-[var(--text-accent)]" />
                 <h3 className="text-xs font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
@@ -249,7 +295,7 @@ const ChatBot = ({ appState = {} }) => {
             </div>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
-              <div className="max-w-3xl mx-auto flex flex-col gap-4 h-full">
+              <div className="max-w-3xl mx-auto flex flex-col gap-6 h-full pb-16">
                 {messages.length === 0 && !isTyping && (
                   <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
                     <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">
@@ -274,27 +320,32 @@ const ChatBot = ({ appState = {} }) => {
                 {messages.map((msg, idx) => (
                   msg.role === 'user'
                     ? <UserMessage key={idx} text={msg.text} />
-                    : <BotMessage key={idx} text={msg.text} idx={idx} onSave={handleSaveResponse} savedState={savedResponses[idx]} />
+                    : <BotMessage
+                        key={idx}
+                        text={msg.text}
+                        idx={idx}
+                        onSave={handleSaveResponse}
+                        savedState={savedResponses[idx]}
+                        queryText={idx > 0 ? messages[idx - 1]?.text || '' : ''}
+                        onSelectPrompt={sendQuickPrompt}
+                      />
                 ))}
                 {isTyping && (
-                  <div className="flex items-start gap-2.5 w-full animate-in fade-in duration-200">
-                    <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
-                      <Bot size={12} />
-                    </div>
-                    <div className="px-3 py-2.5 rounded-lg rounded-tl-sm bg-[var(--bg-panel)] border border-[var(--border-dim)] flex items-center gap-1">
-                      <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" />
-                      <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                      <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+                  <div className="flex items-start w-full animate-in fade-in duration-200">
+                    <div className="px-4 py-3 rounded-[5px] bg-[var(--bg-panel)]/90 shadow-sm flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+                      <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
                     </div>
                   </div>
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="h-16 shrink-0" />
               </div>
             </div>
 
-            <div className="px-6 pb-6 pt-2 bg-[var(--bg-app)] shrink-0">
+            <div className="px-6 pb-6 pt-2 bg-transparent shrink-0">
               <div className="max-w-3xl mx-auto w-full">
-                <div className="flex flex-col bg-[var(--bg-card)] rounded-xl border border-[var(--border-dim)] transition-all duration-200 overflow-hidden shadow-sm">
+                <div className="flex flex-col bg-[var(--bg-card)] rounded-xl transition-all duration-200 overflow-hidden shadow-sm">
                   {/* Top Row: Auto-growing Textarea */}
                   <textarea 
                     ref={textareaRef}

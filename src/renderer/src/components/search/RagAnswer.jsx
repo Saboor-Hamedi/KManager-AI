@@ -19,7 +19,7 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
 
       {msg.ragAnswer && (
         <div className="flex flex-col">
-          <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none">
+          <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none text-justify">
             <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" />
             {msg.ragStatus === 'generating' && (
               <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />

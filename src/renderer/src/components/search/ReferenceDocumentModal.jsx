@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { FileText, X } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 
 const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
@@ -44,25 +45,33 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[5px] w-full max-w-5xl h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] w-full max-w-5xl h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
 
-        {/* Title Bar */}
-        <div className="h-9 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 pl-3 pr-0 select-none">
-          <div className="min-w-0 flex-1 mr-4 flex items-center gap-3">
-            <span className="text-[10px] font-normal text-[var(--text-main)] truncate">{selectedPdf.title}</span>
+        {/* Compact GlobalTitleBar-Styled Header identical to HoverWikilink */}
+        <div className="h-[26px] bg-[#0e1117] border-b border-white/[0.08] flex items-center justify-between shrink-0 select-none">
+          <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
+            <FileText size={13} className="text-[var(--text-accent)] shrink-0" />
+            <span className="text-[11px] font-semibold text-[var(--text-main)] truncate tracking-tight">{selectedPdf.title}</span>
+            {selectedPdf.category && (
+              <span className="px-1 py-0.5 rounded-[3px] text-[9.5px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
+                {selectedPdf.category}
+              </span>
+            )}
             {!fileExists && (
-              <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
+              <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9.5px] font-bold shrink-0 leading-none">
                 Archived (disk file removed)
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center text-[10px] shrink-0"
-            title="Close"
-          >
-            ✕
-          </button>
+          <div className="flex items-center h-full shrink-0">
+            <button
+              onClick={onClose}
+              className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0"
+              title="Close (Esc)"
+            >
+              <X size={13} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -76,7 +85,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
             />
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] cursor-default">
+            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify cursor-default">
               <div className="max-w-3xl mx-auto">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-medium">
                   Original file no longer on disk — showing archived text from database.
@@ -86,16 +95,16 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
                     content={selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
-                    className="text-[10px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible"
+                    className="text-[13.5px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible text-justify"
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-[10px]">No archived content available.</div>
+                  <div className="text-[var(--text-faint)] text-[11px]">No archived content available.</div>
                 )}
               </div>
             </div>
           ) : (
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] cursor-default">
+            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify cursor-default">
               <div className="max-w-3xl mx-auto">
                 {!isReady ? (
                   <div className="flex flex-col gap-4 animate-pulse py-6">
@@ -109,10 +118,10 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
                     content={selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
-                    className="text-[10px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible"
+                    className="text-[13.5px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible text-justify"
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-[10px]">No content available for this file.</div>
+                  <div className="text-[var(--text-faint)] text-[11px]">No content available for this file.</div>
                 )}
               </div>
             </div>

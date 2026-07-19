@@ -295,7 +295,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
       )}
 
       {/* Content Chunk Body */}
-      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden">
+      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden text-justify">
         {isEditing ? (
           <div className="flex flex-col gap-2 mt-2">
             <textarea
@@ -347,14 +347,14 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               const highlightComponents = {
                 ...cleanMarkdownComponents,
                 p: ({ node, children, ...props }) => (
-                  <p className="mb-1.5 last:mb-0" {...props}>
+                  <p className="mb-1.5 last:mb-0 text-justify" {...props}>
                     {typeof children === 'string'
                       ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
                       : children}
                   </p>
                 ),
                 li: ({ node, children, ...props }) => (
-                  <li {...props}>
+                  <li className="text-justify pl-1 font-normal break-words" {...props}>
                     {typeof children === 'string'
                       ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
                       : children}

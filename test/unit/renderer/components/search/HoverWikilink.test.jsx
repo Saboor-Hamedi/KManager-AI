@@ -10,14 +10,13 @@ describe('HoverWikilink', () => {
     vault_path: '/path/to/test_document.pdf'
   }
 
-  it('renders action buttons', () => {
-    render(<HoverWikilink item={item} setShowWikiHover={vi.fn()} onSelect={vi.fn()} />)
-    expect(screen.getByText('Copy')).toBeInTheDocument()
-    expect(screen.getByText('Open Full')).toBeInTheDocument()
-  })
-
   it('renders close button', () => {
     render(<HoverWikilink item={item} setShowWikiHover={vi.fn()} onSelect={vi.fn()} />)
     expect(screen.getByTitle('Close popover')).toBeInTheDocument()
+  })
+
+  it('renders document title', () => {
+    render(<HoverWikilink item={item} setShowWikiHover={vi.fn()} onSelect={vi.fn()} />)
+    expect(screen.getByText('test_document.pdf')).toBeInTheDocument()
   })
 })

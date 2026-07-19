@@ -499,15 +499,27 @@ app.whenReady().then(() => {
   ipcMain.handle('db:get-analytics', async () => {
     if (!db || !db.isConnected()) return { success: false }
     try {
-      // Get real database averages
-      const latencyRes = await db.query('SELECT AVG(latency_ms) as avg_lat, AVG(top_similarity) as avg_sim, COUNT(*) as total FROM search_logs')
+      // Get real database averages safely
+      const latencyRes = await db.query('SELECT AVG(latency_ms) as avg_lat, AVG(top_similarity) as avg_sim, COUNT(*) as total FROM search_logs').catch(() => ({ rows: [] }))
       const feedbackRes = await db.query(`
         SELECT 
           COUNT(*) as total,
           SUM(CASE WHEN score = 1 THEN 1 ELSE 0 END) as positive
         FROM search_feedback
-      `)
-      const statsRes = await db.query('SELECT * FROM get_document_stats()')
+      `).catch(() => ({ rows: [] }))
+
+      let totalDocs = 0
+      let totalChunks = 0
+      try {
+        const statsRes = await db.query('SELECT * FROM get_document_stats()')
+        totalDocs = statsRes.rows[0]?.total_docs || 0
+        totalChunks = statsRes.rows[0]?.total_chunks || 0
+      } catch {
+        const docRes = await db.query('SELECT COUNT(*)::bigint AS cnt FROM documents').catch(() => ({ rows: [{ cnt: 0 }] }))
+        const chunkRes = await db.query('SELECT COUNT(*)::bigint AS cnt FROM embedding_documents').catch(() => ({ rows: [{ cnt: 0 }] }))
+        totalDocs = Number(docRes.rows[0].cnt)
+        totalChunks = Number(chunkRes.rows[0].cnt)
+      }
       
       // Fetch up to 1,000 complete query logs ordered by timestamp ascending for real time-series
       const searchLogs = await db.query(`
@@ -515,7 +527,60 @@ app.whenReady().then(() => {
         FROM search_logs 
         ORDER BY created_at ASC 
         LIMIT 1000
-      `)
+      `).catch(() => ({ rows: [] }))
+
+      // Aggregated chart data
+      const searchesOverTimeRes = await db.query(`
+        SELECT TO_CHAR(created_at, 'Mon DD') as date, COUNT(*)::int as count
+        FROM search_logs
+        WHERE created_at >= CURRENT_DATE - INTERVAL '6 days'
+        GROUP BY TO_CHAR(created_at, 'Mon DD'), DATE(created_at)
+        ORDER BY DATE(created_at) ASC
+      `).catch(() => ({ rows: [] }))
+
+      const docTypesRes = await db.query(`
+        SELECT COALESCE(file_type, 'other') as type, COUNT(*)::int as count
+        FROM documents
+        GROUP BY file_type
+        ORDER BY count DESC
+      `).catch(() => ({ rows: [] }))
+
+      const similarityBucketsRes = await db.query(`
+        SELECT 
+          CASE 
+            WHEN top_similarity >= 85 THEN 'Very High (>85%)'
+            WHEN top_similarity >= 70 THEN 'High (70-85%)'
+            WHEN top_similarity >= 50 THEN 'Moderate (50-70%)'
+            ELSE 'Low (<50%)'
+          END as category,
+          COUNT(*)::int as count
+        FROM search_logs
+        GROUP BY category
+      `).catch(() => ({ rows: [] }))
+
+      const routingBucketsRes = await db.query(`
+        SELECT 
+          CASE WHEN is_fallback THEN 'Keyword Fallback' ELSE 'Smart Hybrid' END as category,
+          COUNT(*)::int as count
+        FROM search_logs
+        GROUP BY category
+      `).catch(() => ({ rows: [] }))
+
+      const feedbackBucketsRes = await db.query(`
+        SELECT 
+          CASE WHEN score = 1 THEN 'Positive' WHEN score = -1 THEN 'Negative' ELSE 'Neutral' END as category,
+          COUNT(*)::int as count
+        FROM search_feedback
+        GROUP BY category
+      `).catch(() => ({ rows: [] }))
+
+      const successBucketsRes = await db.query(`
+        SELECT 
+          CASE WHEN result_count > 0 THEN 'Results Found' ELSE 'Zero Results' END as category,
+          COUNT(*)::int as count
+        FROM search_logs
+        GROUP BY category
+      `).catch(() => ({ rows: [] }))
 
       // Fetch recent activity items (searches, feedback, doc ingestions) for real activity feed
       const recentSearches = await db.query(`
@@ -523,19 +588,19 @@ app.whenReady().then(() => {
         FROM search_logs 
         ORDER BY created_at DESC 
         LIMIT 25
-      `)
+      `).catch(() => ({ rows: [] }))
       const recentFeedback = await db.query(`
         SELECT id, query_text as title, score, created_at, 'feedback' as type 
         FROM search_feedback 
         ORDER BY created_at DESC 
         LIMIT 25
-      `)
+      `).catch(() => ({ rows: [] }))
       const recentDocs = await db.query(`
         SELECT id, file_name as title, file_type, created_at, 'ingest' as type 
         FROM documents 
         ORDER BY created_at DESC 
         LIMIT 15
-      `)
+      `).catch(() => ({ rows: [] }))
 
       // Combine and sort by timestamp descending
       const combinedActivity = [
@@ -552,9 +617,15 @@ app.whenReady().then(() => {
           totalSearches: latencyRes.rows[0]?.total ? Number(latencyRes.rows[0].total) : 0,
           totalFeedback: feedbackRes.rows[0]?.total ? Number(feedbackRes.rows[0].total) : 0,
           positiveFeedback: feedbackRes.rows[0]?.positive ? Number(feedbackRes.rows[0].positive) : 0,
-          totalDocs: statsRes.rows[0]?.total_docs || 0,
-          totalChunks: statsRes.rows[0]?.total_chunks || 0,
+          totalDocs: totalDocs,
+          totalChunks: totalChunks,
           recentQueries: searchLogs.rows,
+          searchesOverTime: searchesOverTimeRes.rows,
+          docTypes: docTypesRes.rows,
+          similarityBuckets: similarityBucketsRes.rows,
+          routingBuckets: routingBucketsRes.rows,
+          feedbackBuckets: feedbackBucketsRes.rows,
+          successBuckets: successBucketsRes.rows,
           activityFeed: combinedActivity
         }
       }
