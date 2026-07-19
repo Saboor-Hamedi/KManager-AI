@@ -30,32 +30,8 @@ const GlobalTitleBar = () => {
     window.api.app.version().then(v => setCurrentVersion(v)).catch(() => {})
   }, [])
 
-  // Check for updates directly from GitHub releases (works in dev mode)
+  // Listen to electron-updater events forwarded from the main process
   useEffect(() => {
-    let cancelled = false
-
-    const check = () => {
-      Promise.all([
-        window.api.app.version().catch(() => '1.0.3'),
-        window.api.app.checkLatestVersion().catch(() => null)
-      ]).then(([current, latest]) => {
-        if (!latest || cancelled) return
-        const curParts = current.split('.').map(Number)
-        const latParts = latest.split('.').map(Number)
-        for (let i = 0; i < 3; i++) {
-          const cp = curParts[i] || 0
-          const lp = latParts[i] || 0
-          if (lp > cp) {
-            setUpdateVersion(latest)
-            setUpdateState('available')
-            return
-          }
-          if (lp < cp) return
-        }
-      }).catch(() => {})
-    }
-
-    // Also listen to electron-updater events (works in production)
     const unsubAvailable = window.api.update?.onUpdateAvailable?.((info) => {
       setUpdateVersion(info.version)
       setUpdateState('available')
@@ -75,21 +51,35 @@ const GlobalTitleBar = () => {
 
     const unsubError = window.api.update?.onUpdateError?.((errMsg) => {
       console.error('Update error:', errMsg)
-      setUpdateState('available')
+      // Reset to idle so the button re-appears if user tries again manually
+      setUpdateState('idle')
       setDownloadProgress(0)
     })
 
-    window.api.update?.check()
-    check()
+    // Trigger an immediate check on mount
+    window.api.update?.check?.()
+
+    // Re-check when the machine comes back online (e.g. user was offline at launch)
+    const handleOnline = () => {
+      window.api.update?.check?.()
+    }
+    window.addEventListener('online', handleOnline)
+
+    // Periodic re-check every 10 minutes as a safety net
+    const periodicCheck = setInterval(() => {
+      window.api.update?.check?.()
+    }, 10 * 60 * 1000)
 
     return () => {
-      cancelled = true
       unsubAvailable?.()
       unsubProgress?.()
       unsubDownloaded?.()
       unsubError?.()
+      window.removeEventListener('online', handleOnline)
+      clearInterval(periodicCheck)
     }
   }, [])
+
 
   useEffect(() => {
     if (!showDropdown) return

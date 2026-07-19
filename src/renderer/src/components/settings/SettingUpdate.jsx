@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Download, RefreshCcw, RotateCw, Package, Sparkles } from 'lucide-react'
+import { Download, RefreshCcw, RotateCw, Package } from 'lucide-react'
 
-const CHECK_TIMEOUT = 30000
+const CHECK_TIMEOUT = 15000
 
 const SettingUpdate = () => {
   const [status, setStatus] = useState('idle')
@@ -11,18 +11,12 @@ const SettingUpdate = () => {
   const [error, setError] = useState('')
   const checkTimeoutRef = useRef(null)
 
+  // Load current app version once
   useEffect(() => {
-    const loadVersion = async () => {
-      try {
-        const v = await window.api.app.version()
-        setCurrentVersion(v)
-      } catch {
-        setCurrentVersion('1.0.3')
-      }
-    }
-    loadVersion()
+    window.api.app.version().then(setCurrentVersion).catch(() => setCurrentVersion('—'))
   }, [])
 
+  // Wire up electron-updater IPC listeners (same pattern as GlobalTitleBar)
   useEffect(() => {
     if (!window.api?.update) return
 
@@ -30,6 +24,7 @@ const SettingUpdate = () => {
       clearTimeout(checkTimeoutRef.current)
       setVersion(info.version)
       setStatus('available')
+      setError('')
     })
 
     const unsubNotAvailable = window.api.update.onUpdateNotAvailable(() => {
@@ -46,6 +41,7 @@ const SettingUpdate = () => {
     })
 
     const unsubDownloaded = window.api.update.onUpdateDownloaded(() => {
+      clearTimeout(checkTimeoutRef.current)
       setStatus('downloaded')
     })
 
@@ -55,8 +51,21 @@ const SettingUpdate = () => {
       setStatus('error')
     })
 
+    // Periodic re-check every 10 minutes
+    const periodicCheck = setInterval(() => {
+      window.api.update.check().catch(() => {})
+    }, 10 * 60 * 1000)
+
+    // Re-check when the machine comes back online
+    const handleOnline = () => {
+      window.api.update.check().catch(() => {})
+    }
+    window.addEventListener('online', handleOnline)
+
     return () => {
       clearTimeout(checkTimeoutRef.current)
+      clearInterval(periodicCheck)
+      window.removeEventListener('online', handleOnline)
       unsubAvailable()
       unsubNotAvailable()
       unsubProgress()
@@ -68,16 +77,20 @@ const SettingUpdate = () => {
   const handleCheck = () => {
     setStatus('checking')
     setError('')
-    window.api.update.check()
+    window.api.update.check().catch(() => {})
+    // Fallback: if no response in 15 s, assume up-to-date
     checkTimeoutRef.current = setTimeout(() => {
-      setStatus('uptodate')
+      setStatus((prev) => (prev === 'checking' ? 'uptodate' : prev))
     }, CHECK_TIMEOUT)
   }
 
   const handleDownload = () => {
     setStatus('downloading')
     setProgress(0)
-    window.api.update.download()
+    window.api.update.download().catch((err) => {
+      setError(err?.message || 'Download failed')
+      setStatus('error')
+    })
   }
 
   const handleInstall = () => {
@@ -100,7 +113,7 @@ const SettingUpdate = () => {
       <div className="bg-[var(--bg-panel)] rounded-lg px-4 py-3 flex items-center justify-between border border-[var(--border-subtle)]">
         <div>
           <p className="text-[11px] font-medium text-[var(--text-muted)]">Current Version</p>
-          <p className="text-sm font-bold text-[var(--text-main)] mt-0.5">{currentVersion || '1.0.3'}</p>
+          <p className="text-sm font-bold text-[var(--text-main)] mt-0.5">v{currentVersion || '—'}</p>
         </div>
         <button
           onClick={handleCheck}
@@ -126,7 +139,6 @@ const SettingUpdate = () => {
       {status === 'uptodate' && (
         <div className="bg-emerald-500/5 rounded-lg px-4 py-3 border border-emerald-500/20">
           <div className="flex items-center gap-2">
-            {/* <Sparkles size={14} className="text-emerald-400" /> */}
             <p className="text-xs font-medium text-emerald-300">KManager AI is up to date</p>
           </div>
         </div>
@@ -138,14 +150,16 @@ const SettingUpdate = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-[var(--text-accent)]">Update v{version} available</p>
-              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Click Download to get the latest version.</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                {currentVersion && version ? `v${currentVersion} → v${version}` : 'A new version is ready to download.'}
+              </p>
             </div>
             <button
               onClick={handleDownload}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--text-accent)] hover:bg-[var(--text-accent)]/80 text-white text-xs font-semibold transition-all animate-pulse"
             >
               <Download size={13} />
-              <span>Download Update</span>
+              <span>Download</span>
             </button>
           </div>
         </div>
@@ -190,7 +204,16 @@ const SettingUpdate = () => {
       {status === 'error' && (
         <div className="bg-red-500/10 rounded-lg px-4 py-3 border border-red-500/20">
           <p className="text-xs font-semibold text-red-400">Update check failed</p>
-          <p className="text-[10px] text-red-400/80 mt-0.5">{error || 'Could not reach update server. Make sure you have an internet connection.'}</p>
+          <p className="text-[10px] text-red-400/80 mt-0.5">
+            {error || 'Could not reach update server. Check your internet connection.'}
+          </p>
+          <button
+            onClick={handleCheck}
+            className="mt-2 flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 transition-colors"
+          >
+            <RotateCw size={10} />
+            <span>Try again</span>
+          </button>
         </div>
       )}
     </div>

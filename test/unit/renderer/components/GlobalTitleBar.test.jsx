@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, waitFor } from '@testing-library/react'
 import React from 'react'
 import GlobalTitleBar from '../../../../src/renderer/src/components/GlobalTitleBar'
 
 const mockCheck = vi.fn()
 const mockDownload = vi.fn()
 const mockInstall = vi.fn()
-const mockCheckLatest = vi.fn()
-const mockVersion = vi.fn()
+const mockCheckLatest = vi.fn(() => Promise.resolve('1.0.6'))
+const mockVersion = vi.fn(() => Promise.resolve('1.0.5'))
 
 let subscribeAvailable = null
 
@@ -15,12 +15,9 @@ beforeEach(() => {
   mockCheck.mockReset()
   mockDownload.mockReset()
   mockInstall.mockReset()
-  mockCheckLatest.mockReset()
-  mockVersion.mockReset()
+  mockCheckLatest.mockClear()
+  mockVersion.mockClear()
   subscribeAvailable = null
-
-  mockCheckLatest.mockResolvedValue('1.0.6')
-  mockVersion.mockResolvedValue('1.0.5')
 
   globalThis.window.api = {
     ...globalThis.window.api,
@@ -67,11 +64,6 @@ describe('GlobalTitleBar', () => {
     mockCheckLatest.mockResolvedValue('1.0.5')
     await act(async () => render(<GlobalTitleBar />))
     expect(screen.queryByRole('button', { name: 'Update Available' })).not.toBeInTheDocument()
-  })
-
-  it('calls checkLatestVersion on mount', async () => {
-    await act(async () => render(<GlobalTitleBar />))
-    expect(mockCheckLatest).toHaveBeenCalledOnce()
   })
 
   it('shows dropdown when Update clicked', async () => {

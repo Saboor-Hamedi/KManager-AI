@@ -762,6 +762,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  setupAutoUpdater()
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -774,94 +775,80 @@ import log from 'electron-log'
 
 log.transports.file.level = 'info'
 autoUpdater.logger = log
-autoUpdater.autoDownload = false // We want the user to click download manually in the UI
+autoUpdater.autoDownload = false        // User clicks Download in the UI
+autoUpdater.autoInstallOnAppQuit = false // User clicks Restart in the UI
 
-app.on('ready', () => {
-  autoUpdater.checkForUpdatesAndNotify()
-})
-
-autoUpdater.on('update-available', (info) => {
-  log.info('Update available.')
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-available', info)
-})
-
-autoUpdater.on('update-not-available', (info) => {
-  log.info('No update available.')
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-not-available', info)
-})
-
-autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded')
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-downloaded', info)
-})
-
-autoUpdater.on('download-progress', (progressObj) => {
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-progress', progressObj)
-})
-
-ipcMain.handle('update:check', () => {
-  autoUpdater.checkForUpdates()
-})
-
-let downloadedUpdatePath = null
-
-ipcMain.handle('update:download', async (event) => {
-  try {
-    const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
-    if (!res.ok) throw new Error('Failed to fetch update info')
-    const text = await res.text()
-    const versionMatch = text.match(/^version:\s*(\S+)/m)
-    const fileMatch = text.match(/^\s+url:\s*(\S+)/m)
-    if (!versionMatch || !fileMatch) throw new Error('Invalid update metadata')
-    const version = versionMatch[1]
-    const fileName = fileMatch[1]
-    const url = `https://github.com/Saboor-Hamedi/KManager-AI/releases/download/v${version}/${fileName}`
-    const tempDir = app.getPath('temp')
-    const dest = path.join(tempDir, fileName)
-
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Failed to download update')
-    const total = parseInt(response.headers.get('content-length') || '0', 10)
-    let downloaded = 0
-    const reader = response.body.getReader()
-    const writeStream = fs.createWriteStream(dest)
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      downloaded += value.length
-      writeStream.write(Buffer.from(value))
-      if (mainWindow && !mainWindow.isDestroyed() && total > 0) {
-        mainWindow.webContents.send('update-progress', { percent: (downloaded / total) * 100 })
-      }
-    }
-
-    writeStream.end()
-    await new Promise(resolve => writeStream.on('finish', resolve))
-
-    downloadedUpdatePath = dest
-
+function setupAutoUpdater() {
+  autoUpdater.on('update-available', (info) => {
+    log.info('Update available:', info.version)
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-downloaded', { version, file: dest })
+      mainWindow.webContents.send('update-available', info)
     }
-  } catch (err) {
-    log.error('Download error:', err)
+  })
+
+  autoUpdater.on('update-not-available', (info) => {
+    log.info('No update available.')
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-not-available', info)
+    }
+  })
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    log.info(`Download progress: ${Math.round(progressObj.percent)}%`)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-progress', progressObj)
+    }
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    log.info('Update downloaded:', info.version)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-downloaded', info)
+    }
+  })
+
+  autoUpdater.on('error', (err) => {
+    log.error('AutoUpdater error:', err.message)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('update-error', err.message)
     }
-  }
+  })
+
+  // Initial check on startup (small delay so the window is ready)
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err) => log.warn('Update check failed:', err.message))
+  }, 3000)
+
+  // Periodic re-check every 30 minutes — catches the case where the user
+  // starts offline and later connects to the internet
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch((err) => log.warn('Periodic update check failed:', err.message))
+  }, 30 * 60 * 1000)
+}
+
+ipcMain.handle('update:check', () => {
+  return autoUpdater.checkForUpdates().catch((err) => {
+    log.warn('Manual update check failed:', err.message)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-error', err.message)
+    }
+  })
+})
+
+ipcMain.handle('update:download', () => {
+  return autoUpdater.downloadUpdate().catch((err) => {
+    log.error('Download failed:', err.message)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-error', err.message)
+    }
+  })
 })
 
 ipcMain.handle('update:install', () => {
-  if (downloadedUpdatePath) {
-    require('child_process').exec(`start "" "${downloadedUpdatePath}"`)
-    downloadedUpdatePath = null
-    app.exit(0)
-  } else {
-    autoUpdater.quitAndInstall()
-  }
+  autoUpdater.quitAndInstall(false, true)
 })
 
+// Renderer version-comparison fallback — reads latest.yml from GitHub
 ipcMain.handle('update:check-latest', async () => {
   try {
     const res = await fetch('https://github.com/Saboor-Hamedi/KManager-AI/releases/latest/download/latest.yml')
@@ -883,3 +870,4 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+

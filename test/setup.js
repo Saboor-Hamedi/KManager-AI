@@ -26,6 +26,10 @@ globalThis.window.api = {
     get: (key, def) => Promise.resolve(def),
     set: () => Promise.resolve(true)
   },
+  app: {
+    version: () => Promise.resolve('1.0.0'),
+    checkLatestVersion: () => Promise.resolve(null)
+  },
   system: {
     fileExists: () => Promise.resolve(true),
     openFile: () => Promise.resolve({ success: true }),
