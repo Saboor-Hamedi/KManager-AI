@@ -22,7 +22,7 @@ const AnalyticsActivityFeed = memo(({ data }) => {
         </div>
 
         {!feed.length ? (
-          <div className="text-center py-24 border border-dashed border-[var(--border-dim)] rounded-xl bg-[var(--bg-app)]/30 min-h-[380px] flex flex-col items-center justify-center">
+          <div className="text-center py-24 border border-dashed border-white/[0.04] rounded-[12px] bg-white/[0.01] min-h-[380px] flex flex-col items-center justify-center">
             <Activity size={24} className="mx-auto text-[var(--text-muted)] mb-3 opacity-50" />
             <p className="text-sm font-bold text-[var(--text-main)]">No recent activity logged yet.</p>
             <p className="text-xs text-[var(--text-muted)] mt-1">Run queries in the Chat tab or ingest documents to see real-time telemetry here.</p>

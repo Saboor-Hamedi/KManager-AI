@@ -66,35 +66,35 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="h-8 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0">
+        <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04]">
           <div className="flex items-center h-full">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="h-full px-4 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center"
+              className="h-full px-3 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
               title="Toggle Sidebar"
             >
-              {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+              {isSidebarOpen ? <PanelLeftClose size={13} /> : <PanelLeft size={13} />}
             </button>
-            <div className="flex items-center gap-2 ml-1">
-              <h2 className="text-[13px] font-bold text-[var(--text-main)] tracking-wide">Hybrid RAG Analytics</h2>
+            <div className="flex items-center gap-1.5 ml-1">
+              <h2 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">Hybrid RAG Analytics</h2>
             </div>
           </div>
           <div className="flex items-center h-full">
             <button
               onClick={fetchMetrics}
               disabled={isLoading}
-              className="h-full px-4 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="h-full px-3 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 border-0"
               title="Sync Metrics"
             >
-              {isLoading ? <Loader2 size={13} className="animate-spin text-[var(--text-accent)]" /> : <RefreshCw size={13} />}
-              <span className="text-[11px] font-semibold">{isLoading ? 'Syncing...' : 'Sync Data'}</span>
+              {isLoading ? <Loader2 size={12} className="animate-spin text-[var(--text-accent)]" /> : <RefreshCw size={12} />}
+              <span className="text-[10px] font-semibold">{isLoading ? 'Syncing...' : 'Sync Data'}</span>
             </button>
             <button
               onClick={onClose}
-              className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center"
+              className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0"
               title="Close Analytics (Esc)"
             >
-              <X size={16} />
+              <X size={13} />
             </button>
           </div>
         </div>

@@ -20,7 +20,13 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
   }
 
   const handleFeedback = (type) => {
-    setFeedback(feedback === type ? null : type)
+    const newFeedback = feedback === type ? null : type
+    setFeedback(newFeedback)
+    if (newFeedback && window.api?.db?.submitFeedback) {
+      const score = newFeedback === 'helpful' ? 1 : -1
+      window.api.db.submitFeedback(queryText || text.slice(0, 80) || 'Chat query', score)
+        .catch(err => console.error('Chat feedback error:', err))
+    }
   }
 
   return (
@@ -269,12 +275,12 @@ const ChatBot = ({ appState = {} }) => {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-lg hover:border-[var(--text-accent)] hover:-translate-y-0.5 transition-all duration-200 z-40",
+          "fixed bottom-5 right-5 flex items-center justify-center w-8 h-8 rounded-[6px] bg-[var(--bg-panel)] border border-white/[0.05] text-[var(--text-accent)] shadow-none hover:bg-white/[0.04] hover:text-[var(--text-main)] transition-all duration-150 z-40",
           isOpen ? "scale-75 opacity-0 pointer-events-none" : "scale-100 opacity-100"
         )}
         title="Open Assistant"
       >
-        <MessageSquare size={18} />
+        <MessageSquare size={15} />
       </button>
 
       {isOpen && (
@@ -284,13 +290,13 @@ const ChatBot = ({ appState = {} }) => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header matching main window titlebar style & proportions */}
-            <div className="h-7 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0 select-none">
-              <div className="flex items-center gap-2 px-3 h-full">
-                <Bot size={15} className="text-[var(--text-accent)]" />
-                <h3 className="text-xs font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
+            <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04]">
+              <div className="flex items-center gap-1.5 px-2.5 h-full">
+                <Bot size={13} className="text-[var(--text-accent)] shrink-0" />
+                <h3 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
               </div>
-              <button onClick={() => setIsOpen(false)} className="h-full px-3.5 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center" title="Close (Esc)">
-                <X size={14} />
+              <button onClick={() => setIsOpen(false)} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
+                <X size={13} />
               </button>
             </div>
 
@@ -307,10 +313,10 @@ const ChatBot = ({ appState = {} }) => {
                         ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
                         : 'Ask me about your knowledge base or features.'}
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-md">
-                      {['Summarize my recent notes', 'Find concepts in my vault', 'Compare two topics'].map((s) => (
+                    <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
+                      {['Summarize key insights across documents', 'Find core concepts and definitions', 'Compare two related topics'].map((s) => (
                         <button key={s} onClick={() => sendQuickPrompt(s)}
-                          className="flex-1 text-left px-3.5 py-2.5 text-xs text-[var(--text-faint)] hover:text-[var(--text-main)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-lg border border-transparent hover:border-[var(--border-subtle)] transition-colors">
+                          className="flex-1 text-left px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] bg-white/[0.03] hover:bg-white/[0.06] rounded-[5px] border-0 transition-colors">
                           {s}
                         </button>
                       ))}
@@ -345,7 +351,7 @@ const ChatBot = ({ appState = {} }) => {
 
             <div className="px-6 pb-6 pt-2 bg-transparent shrink-0">
               <div className="max-w-3xl mx-auto w-full">
-                <div className="flex flex-col bg-[var(--bg-card)] rounded-xl transition-all duration-200 overflow-hidden shadow-sm">
+                <div className="flex flex-col bg-white/[0.02] border border-white/[0.05] rounded-[12px] transition-all duration-200 overflow-hidden">
                   {/* Top Row: Auto-growing Textarea */}
                   <textarea 
                     ref={textareaRef}
@@ -367,7 +373,7 @@ const ChatBot = ({ appState = {} }) => {
                     <button 
                       onClick={handleSend}
                       disabled={!input.trim() || isTyping}
-                      className="w-7 h-7 rounded-full bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center shadow-sm shrink-0"
+                      className="w-7 h-7 rounded-[8px] bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center border-0 shrink-0"
                       title="Send message"
                     >
                       <ArrowUp size={16} strokeWidth={2.5} />

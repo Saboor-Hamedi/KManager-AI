@@ -97,7 +97,7 @@ const SettingAIPanel = memo(() => {
   const currentProviderObj = PROVIDERS.find(p => p.id === activeProvider) || PROVIDERS[0]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
       {/* Provider Selection */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -184,10 +184,10 @@ const SettingAIPanel = memo(() => {
       </div>
 
       {/* RAG Toggle */}
-      <div className="flex items-center justify-between p-3.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-panel)]/50">
+      <div className="flex items-center justify-between p-3.5 rounded-[6px] border border-[var(--border-subtle)] bg-white/[0.02]">
         <div>
-          <h4 className="text-xs font-bold text-[var(--text-main)]">Enable RAG Answer Synthesis</h4>
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+          <h4 className="text-[11px] font-bold text-[var(--text-main)] tracking-tight">Enable RAG Answer Synthesis</h4>
+          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
             When enabled, KManager AI synthesizes a direct answer below retrieved search sources using the active LLM.
           </p>
         </div>
@@ -198,9 +198,10 @@ const SettingAIPanel = memo(() => {
             onChange={(e) => handleRagToggle(e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-9 h-5 bg-[var(--border-dim)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--text-accent)]" />
+          <div className="w-8 h-4 bg-[var(--border-dim)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[var(--text-accent)]" />
         </label>
       </div>
+
     </div>
   )
 })

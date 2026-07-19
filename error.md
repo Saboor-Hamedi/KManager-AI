@@ -1,13 +1,52 @@
- me: how to lean in 2026
-@chatbot:
-It sounds like you're asking about how to learn in 2026 — a great question for the modern knowledge worker.
-
-Based on what's in your vault and the capabilities of KManager AI, here's the distilled approach:
-
-1. Build a Personal Knowledge Management (PKM) system. You already have 505 documents here — that's your foundation. The key is to capture, connect, and retrieve knowledge. Use hybrid search to find related concepts across your vault, and use threaded conversations to dive deep into specific chunks.
-
-2. Use AI as a thinking partner, not a crutch. With RAG synthesis, you can ask questions grounded in your own documents. This helps you verify, challenge, and extend your understanding rather than passively consuming information. The best learners in 2026 will be those who use AI to accelerate their own reasoning.
-
-3. Focus on spaced retrieval and synthesis. Your analytics dashboard shows you what you've searched and added. Review your recent queries, identify gaps, and actively synthesize across documents. The act of rephrasing and connecting ideas is what builds lasting understanding.
-
-Would you like me to help you find the most relevant documents in your vault for a specific learning goal?
+[AnalyticsModal.jsx](file;file:///b:/biomarkers/src/renderer/src/components/analytics/AnalyticsModal.jsx) 
+there a few results not showing:
+Total Queries
+Lifetime
+235
+All semantic searches
+Avg Latency
+Real-time
+9924ms
+End-to-end response
+User Feedback
+Ratings
+0
+Total ratings collected
+Tokens Ingested
+Vault Size
+5
+Estimated token count
+Retrieval Engine Precision
+Avg Cosine Sim.
+pgvector
+0.56
+Vector distance match
+Context Density
+Signal
+56.0%
+Approx. signal/noise
+Mean Reciprocal
+Top-K
+0.56
+Rank accuracy estimate
+Index Speed
+Lookup
+397ms
+Approx. vector scan
+Pipeline Analytics & Economics
+Hybrid Routing Rate
+Smart RAG
+99.6%
+Queries sent to LLM
+Avg Query Length
+Tokens
+17
+Est. tokens per prompt
+Positive Feedback
+Satisfaction
+0%
+Helpful response rate
+Avg Latency (Base)
+pgvector
+3970ms
+Raw index traversal

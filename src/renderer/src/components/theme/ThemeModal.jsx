@@ -41,14 +41,14 @@ const ThemeModal = ({ isOpen, onClose }) => {
         className="bg-[var(--bg-app)] rounded-[5px] shadow-2xl flex flex-col overflow-hidden w-[90vw] h-[85vh] max-w-[1200px] animate-in zoom-in-95 duration-200" 
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="h-8 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0 select-none">
-          <div className="flex items-center gap-2 px-4 h-full">
-            <Palette size={16} className="text-[var(--text-accent)]" />
-            <h2 className="text-[13px] font-bold text-[var(--text-main)] tracking-wide">Appearance</h2>
+        <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04]">
+          <div className="flex items-center gap-1.5 px-2.5 h-full">
+            <Palette size={13} className="text-[var(--text-accent)] shrink-0" />
+            <h2 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">Appearance</h2>
           </div>
           <div className="flex-1" />
-          <button onClick={onClose} className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center" title="Close (Esc)">
-            <X size={16} />
+          <button onClick={onClose} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
+            <X size={13} />
           </button>
         </div>
 

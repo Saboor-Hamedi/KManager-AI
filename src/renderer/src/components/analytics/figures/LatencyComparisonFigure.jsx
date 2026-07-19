@@ -46,7 +46,7 @@ const LatencyComparisonFigure = memo(({ data }) => {
   }
 
   return (
-    <div ref={chartRef} className="bg-[var(--bg-card)]/50 border border-[var(--border-dim)] rounded-xl p-4 hover:border-[var(--border-subtle)] transition-all flex-1 w-full min-w-0 relative">
+    <div ref={chartRef} className="bg-white/[0.01] border border-white/[0.04] rounded-[12px] p-4 hover:border-[var(--border-subtle)] transition-all flex-1 w-full min-w-0 relative">
       <CopyFigureButton targetRef={chartRef} filename="latency-comparison.png" />
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 pr-8">
@@ -68,7 +68,7 @@ const LatencyComparisonFigure = memo(({ data }) => {
                 onClick={() => setTimeWindow(win)}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   timeWindow === win
-                    ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm'
+                    ? 'bg-white/[0.03] text-[var(--text-main)] font-medium shadow-none border border-white/[0.04]'
                     : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
                 }`}
               >

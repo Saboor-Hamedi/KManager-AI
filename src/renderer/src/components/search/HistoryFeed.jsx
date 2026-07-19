@@ -63,16 +63,16 @@ const HistoryFeed = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-1.5 max-w-md">
+            <div className="flex flex-wrap justify-center gap-2 max-w-md">
               {[
-                'Summarize recent notes',
-                'Find concepts in my vault',
-                'Compare two topics'
+                'Summarize key insights across documents',
+                'Find core concepts and definitions',
+                'Compare two related topics'
               ].map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => setQuery(suggestion)}
-                  className="px-2.5 py-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-panel)]/50 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--border-main)] hover:bg-[var(--bg-active)] transition-colors font-normal"
+                  className="px-3 py-1.5 rounded-[5px] border-0 bg-white/[0.03] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.06] transition-colors font-normal"
                 >
                   {suggestion}
                 </button>

@@ -243,8 +243,10 @@ const DashboardSearch = () => {
         return
       }
 
-      // We now limit to 3 results to provide hyper-focused context to the AI, reducing noise
-      const res = await window.api.db.search(searchQuery, 3)
+      // Dynamically fetch context limit (default to 3) to provide controlled AI context
+      const searchLimitStr = await getSetting('SEARCH_RESULT_LIMIT', 3)
+      const searchLimit = parseInt(searchLimitStr) || 3
+      const res = await window.api.db.search(searchQuery, searchLimit)
       
       if (res && res.success) {
         const mapped = res.rows.map(row => ({
@@ -506,31 +508,31 @@ const DashboardSearch = () => {
   const memoizedHistoryFeed = useMemo(() => {
     if (history.length === 0) {
       return (
-          <div className="h-full flex flex-col items-center justify-center gap-5  px-6">
+          <div className="h-full flex flex-col items-center justify-center gap-5 px-6 select-none">
             <div className="flex flex-col items-center text-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-accent)] shadow-sm">
-                <span className="text-sm font-black tracking-tighter">KM</span>
+              <div className="w-9 h-9 rounded-[8px] bg-[var(--bg-panel)] border-0 flex items-center justify-center text-[var(--text-accent)] shadow-none">
+                <span className="text-[13px] font-bold tracking-tight">KM</span>
               </div>
               <div>
-                <h2 className="text-[15px] font-bold text-[var(--text-main)] tracking-tight">
+                <h2 className="text-[13.5px] font-semibold text-[var(--text-main)] tracking-tight">
                   Knowledge Management
                 </h2>
-                <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-normal">
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-normal">
                   Ask anything across your entire knowledge base
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-1.5 max-w-md">
+            <div className="flex flex-wrap justify-center gap-2 max-w-md">
               {[
-                'Summarize recent notes',
-                'Find concepts in my vault',
-                'Compare two topics'
+                'Summarize key insights across documents',
+                'Find core concepts and definitions',
+                'Compare two related topics'
               ].map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => setQuery(suggestion)}
-                  className="px-2.5 py-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-panel)]/50 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--border-main)] hover:bg-[var(--bg-active)] transition-colors font-normal"
+                  className="px-3 py-1.5 rounded-[5px] border-0 bg-white/[0.03] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.06] transition-colors font-normal"
                 >
                   {suggestion}
                 </button>
@@ -649,7 +651,7 @@ const DashboardSearch = () => {
       </div>
 
       {/* Antigravity-Style AI Composer Card */}
-      <div className="px-4 sm:px-6 pb-2 pt-1 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)] to-transparent shrink-0">
+      <div className="px-4 pr-16 md:px-6 pb-2 pt-1 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)] to-transparent shrink-0">
         <div className="max-w-2xl mx-auto relative">
           
           <Autocompletion 
@@ -666,7 +668,7 @@ const DashboardSearch = () => {
             }} 
           />
 
-          <div className={`flex flex-col bg-[var(--bg-card)] transition-all duration-200 overflow-hidden shadow-sm ${showAutocomplete && autocompleteResults.length > 0 ? 'rounded-b-xl rounded-t-none' : 'rounded-xl'}`}>
+          <div className={`flex flex-col bg-[var(--bg-panel)] border border-white/[0.05] transition-all duration-200 overflow-hidden shadow-none ${showAutocomplete && autocompleteResults.length > 0 ? 'rounded-b-[6px] rounded-t-none' : 'rounded-[6px]'}`}>
             {/* Top Row: Auto-growing Textarea */}
             <textarea 
               ref={textareaRef}
@@ -676,74 +678,74 @@ const DashboardSearch = () => {
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything across your knowledge base..."
-              className="w-full bg-transparent border-none outline-none text-[13.5px] font-normal text-[var(--text-main)] py-3 px-4 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
+              className="w-full bg-transparent border-none outline-none text-[13px] font-normal text-[var(--text-main)] py-2.5 px-3.5 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
               autoComplete="off"
               spellCheck="false"
             />
 
             {/* Bottom Row: Actions & Model Pill */}
-            <div className="flex items-center justify-between px-2 pb-2 pt-0 select-none">
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-between px-2 pb-2 pt-0 select-none border-0">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'data' } }))}
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
+                  className="p-1 rounded-[4px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors border-0"
                   title="Upload Data (Settings)"
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                 </button>
                 {history.length > 0 && (
                   <button
                     type="button"
                     onClick={handleNewSession}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-[var(--bg-active)] text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors animate-in fade-in duration-200"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors animate-in fade-in duration-200 border-0"
                     title="Clear chat history and start a new session"
                   >
-                    <RotateCcw size={13} />
+                    <RotateCcw size={12} />
                     <span>New session</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={toggleRag}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[10.5px] font-mono font-medium transition-colors border-0 ${
                     enableRag
-                      ? 'bg-[var(--text-accent)]/10 text-[var(--text-accent)] hover:bg-[var(--text-accent)]/20'
+                      ? 'bg-[var(--text-accent)]/15 text-[var(--text-accent)] hover:bg-[var(--text-accent)]/25'
                       : 'hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
                   }`}
                   title={enableRag ? 'RAG Synthesis Enabled (Click to toggle)' : 'RAG Synthesis Disabled (Click to toggle)'}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${enableRag ? 'bg-[var(--text-accent)] shadow-[0_0_5px_var(--text-accent)]' : 'bg-[var(--text-muted)] opacity-50'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${enableRag ? 'bg-[var(--text-accent)]' : 'bg-[var(--text-muted)] opacity-50'}`} />
                   <span>RAG: {enableRag ? 'ON' : 'OFF'}</span>
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
+                  className="p-1 rounded-[4px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors border-0"
                   title="Voice Search"
                 >
-                  <Mic size={16} />
+                  <Mic size={14} />
                 </button>
                 <button 
                   onClick={submitSearch}
                   disabled={!query || query.trim() === ''}
-                  className="w-7 h-7 rounded-full bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center shadow-sm"
+                  className="w-6 h-6 rounded-[4px] bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center shadow-none border-0 shrink-0"
                   title="Send message"
                 >
-                  <ArrowUp size={16} strokeWidth={2.5} />
+                  <ArrowUp size={14} strokeWidth={2.5} />
                 </button>
-              </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Right Reference Panel */}
-      {selectedPdf && (
-        <div className="w-1/2 h-full flex flex-col bg-[var(--bg-app)] border-l border-[var(--border-subtle)] overflow-hidden animate-in slide-in-from-right duration-200">
+    {/* Right Reference Panel */}
+    {selectedPdf && (
+      <div className="w-1/2 h-full flex flex-col bg-[var(--bg-app)] border-l border-[var(--border-subtle)] overflow-hidden animate-in slide-in-from-right duration-200">
           <Preview
             selectedPdf={selectedPdf}
             onClose={handleCloseModal}

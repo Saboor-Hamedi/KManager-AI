@@ -93,7 +93,7 @@ const AnalyticsTable = memo(({ data }) => {
                   key={r}
                   onClick={() => setFilterRoute(r)}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
-                    filterRoute === r ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-medium shadow-sm border border-[var(--border-dim)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
+                    filterRoute === r ? 'bg-white/[0.04] text-[var(--text-main)] font-medium shadow-none border border-white/[0.04]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
                   }`}
                 >
                   {r === 'all' ? 'All' : r === 'conv' ? 'Conversational' : 'Vector'}

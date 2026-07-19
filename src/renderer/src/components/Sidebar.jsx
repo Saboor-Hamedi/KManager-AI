@@ -8,25 +8,22 @@ const SidebarItem = memo(({ icon: Icon, label, shortcut, active, collapsed, onCl
   <button
     onClick={onClick}
     className={cn(
-      'flex items-center w-full py-2.5 transition-all duration-200 group relative outline-none border-0',
+      'flex items-center w-full py-2 transition-all duration-200 group relative outline-none',
       collapsed ? 'justify-center px-0' : 'px-5',
       active
-        ? 'bg-[var(--bg-active)] text-[var(--text-accent)]'
-        : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
+        ? 'bg-white/[0.03] text-[var(--text-main)] border-l-2 border-[var(--text-accent)]'
+        : 'text-[var(--text-muted)] hover:bg-white/[0.03] hover:text-[var(--text-main)] border-l-2 border-transparent'
     )}
   >
-    {active && (
-      <div className="absolute left-0 top-0.5 bottom-0.5 w-0.5 bg-[var(--text-accent)] rounded-full" />
-    )}
     <Icon
-      size={16}
+      size={15}
       className={cn('shrink-0', active ? 'text-[var(--text-accent)]' : 'group-hover:text-[var(--text-main)]')}
     />
     {!collapsed && (
       <>
-        <span className="ml-4 text-[12px] font-semibold tracking-wide truncate">{label}</span>
+        <span className="ml-3.5 text-[12px] font-medium tracking-tight truncate">{label}</span>
         {shortcut && (
-          <kbd className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-faint)] opacity-0 group-hover:opacity-100 transition-opacity">{shortcut}</kbd>
+          <kbd className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] border border-white/[0.05] text-[var(--text-faint)] opacity-0 group-hover:opacity-100 transition-opacity">{shortcut}</kbd>
         )}
       </>
     )}

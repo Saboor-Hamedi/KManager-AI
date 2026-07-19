@@ -53,14 +53,14 @@ const Setting = ({ isOpen, onClose }) => {
         className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[90vw] h-[85vh] max-w-[1200px] animate-in zoom-in-95 duration-200" 
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="h-8 bg-[var(--bg-panel)]/80 flex items-center justify-between shrink-0 select-none">
-          <div className="flex items-center gap-2 px-4 h-full">
-            <SettingsIcon size={16} className="text-[var(--text-accent)]" />
-            <h2 className="text-[13px] font-bold text-[var(--text-main)] tracking-wide">Settings & Knowledge Hub</h2>
+        <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04]">
+          <div className="flex items-center gap-1.5 px-2.5 h-full">
+            <SettingsIcon size={13} className="text-[var(--text-accent)] shrink-0" />
+            <h2 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">Settings & Knowledge Hub</h2>
           </div>
           <div className="flex-1" />
-          <button onClick={onClose} className="h-full px-4 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center" title="Close (Esc)">
-            <X size={16} />
+          <button onClick={onClose} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
+            <X size={13} />
           </button>
         </div>
 
@@ -76,17 +76,14 @@ const Setting = ({ isOpen, onClose }) => {
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "w-full flex items-center gap-3 px-5 py-2.5 text-[12px] font-semibold transition-all duration-200 relative outline-none border-0",
+                        "w-full flex items-center gap-3 px-5 py-2 transition-all duration-200 group relative outline-none",
                         activeTab === tab.id
-                          ? "bg-[var(--bg-active)] text-[var(--text-accent)]"
-                          : "text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]"
+                          ? "bg-white/[0.03] text-[var(--text-main)] border-l-2 border-[var(--text-accent)]"
+                          : "text-[var(--text-muted)] hover:bg-white/[0.03] hover:text-[var(--text-main)] border-l-2 border-transparent"
                       )}
                     >
-                      {activeTab === tab.id && (
-                        <div className="absolute left-0 top-0.5 bottom-0.5 w-0.5 bg-[var(--text-accent)] rounded-full" />
-                      )}
-                      <tab.icon size={15} className={activeTab === tab.id ? "text-[var(--text-accent)]" : "group-hover:text-[var(--text-main)]"} />
-                      <span className="tracking-wide">{tab.label}</span>
+                      <tab.icon size={15} className={cn("shrink-0", activeTab === tab.id ? "text-[var(--text-accent)]" : "group-hover:text-[var(--text-main)]")} />
+                      <span className="text-[12px] font-medium tracking-tight truncate">{tab.label}</span>
                     </button>
                   ))}
                 </div>

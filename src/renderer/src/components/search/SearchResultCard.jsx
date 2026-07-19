@@ -67,12 +67,16 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
   const handleFeedback = (type) => {
     if (feedback === type) return
     setFeedback(type)
-    if (window.api && window.api.db && window.api.db.feedback) {
+    const score = type === 'helpful' ? 1 : -1
+    if (window.api?.db?.submitFeedback) {
+      window.api.db.submitFeedback(query || item.content?.slice(0, 80) || 'Search query', score, item.id, item.document_id)
+        .catch(err => console.error('Feedback error:', err))
+    } else if (window.api?.db?.feedback) {
       window.api.db.feedback({
         chunkId: item.id,
         documentId: item.document_id,
         query,
-        rating: type === 'helpful' ? 1 : -1
+        rating: score
       }).catch(err => console.error('Feedback error:', err))
     }
   }

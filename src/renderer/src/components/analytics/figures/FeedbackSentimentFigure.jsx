@@ -14,7 +14,7 @@ const FeedbackSentimentFigure = memo(({ data }) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-[var(--bg-card)]/50 border border-[var(--border-dim)] rounded-xl p-4 flex flex-col items-center justify-center flex-1 w-full min-h-[250px] text-[var(--text-muted)] text-sm">
+      <div className="bg-white/[0.01] border border-white/[0.04] rounded-[12px] p-4 flex flex-col items-center justify-center flex-1 w-full min-h-[250px] text-[var(--text-muted)] text-sm">
         No feedback submitted yet.
       </div>
     )
@@ -50,7 +50,7 @@ const FeedbackSentimentFigure = memo(({ data }) => {
   }
 
   return (
-    <div ref={chartRef} className="bg-[var(--bg-card)]/50 border border-[var(--border-dim)] rounded-xl p-4 hover:border-[var(--border-subtle)] transition-all flex-1 w-full min-w-0 relative">
+    <div ref={chartRef} className="bg-white/[0.01] border border-white/[0.04] rounded-[12px] p-4 hover:border-[var(--border-subtle)] transition-all flex-1 w-full min-w-0 relative">
       <CopyFigureButton targetRef={chartRef} filename="feedback-sentiment.png" />
       
       <div className="flex flex-col mb-2 pr-8">

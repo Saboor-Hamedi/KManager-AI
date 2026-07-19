@@ -120,18 +120,18 @@ const PDFUploadZone = ({ onIngestComplete }) => {
   const isBusy = processingItem || progress.status === 'extracting' || progress.status === 'chunking' || progress.status === 'embedding'
 
   return (
-    <div className="w-full  relative z-30 transition-all duration-200">
-      {/* Subtle Centered Header Bar */}
+    <div className="w-full relative z-30 transition-all duration-200 border-b border-white/[0.04] bg-[var(--bg-panel)]/40">
+      {/* Flat Top Ingestion Bar */}
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="max-w-lg mx-auto flex items-center justify-between px-3.5 py-1 rounded-[5px] bg-[var(--bg-card)]/70 hover:bg-[var(--bg-card)] border-0 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-sm"
+        className="w-full h-9 flex items-center justify-between px-4 border-0 text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
       >
         <div className="flex items-center space-x-2 overflow-hidden">
           <Database size={13} className="text-[var(--text-accent)] shrink-0" />
-          <span className="font-semibold tracking-tight truncate">Smart PDF & Multi-Format Ingestion</span>
+          <span className="font-semibold tracking-tight truncate">Ingest Docs</span>
           
           {isBusy && (
-            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[5px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[10px] animate-pulse shrink-0">
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[10px] animate-pulse shrink-0 border-0">
               <Loader2 size={10} className="animate-spin" />
               <span>Indexing...</span>
             </span>
@@ -158,10 +158,10 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               e.stopPropagation()
               handleSelectFolder()
             }}
-            className="px-2 py-0.5 rounded-[5px] bg-[var(--text-accent)]/15 hover:bg-[var(--text-accent)]/25 text-[var(--text-accent)] font-semibold text-[11px] flex items-center space-x-1 transition-all border-0"
+            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[11px] flex items-center space-x-1 transition-all border-0"
             title="Index all PDFs/docs in a local directory"
           >
-            <FolderPlus size={12} />
+            <FolderPlus size={12} className="text-[var(--text-accent)]" />
             <span>Select Folder</span>
           </button>
 
@@ -170,7 +170,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               e.stopPropagation()
               fileInputRef.current?.click()
             }}
-            className="px-2 py-0.5 rounded-[5px] bg-[var(--bg-app)] hover:bg-[var(--bg-active)] text-[var(--text-main)] font-medium text-[11px] flex items-center space-x-1 transition-all border-0"
+            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[11px] flex items-center space-x-1 transition-all border-0"
             title="Upload specific files"
           >
             <FilePlus size={12} />
@@ -178,7 +178,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
           </button>
 
           <div className="text-[var(--text-muted)] pl-0.5">
-            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </div>
         </div>
       </div>

@@ -57,7 +57,7 @@ const LatencyBottleneckFigure = memo(({ data }) => {
   ]
 
   return (
-    <div ref={chartRef} className="bg-[var(--bg-card)]/50 border border-[var(--border-dim)] rounded-xl p-4 hover:border-[var(--border-subtle)] transition-all flex-1 w-full min-w-0 relative">
+    <div ref={chartRef} className="bg-white/[0.01] border border-white/[0.04] rounded-[12px] p-4 hover:border-[var(--border-subtle)] transition-all flex-1 w-full min-w-0 relative">
       <CopyFigureButton targetRef={chartRef} filename="latency-bottlenecks.png" />
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 pr-8">
