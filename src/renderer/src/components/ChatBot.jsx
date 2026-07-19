@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
-import { MessageSquare, X, Send, Bot, User, Plus, Check } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'
@@ -82,8 +82,34 @@ const ChatBot = ({ appState = {} }) => {
   const [dbStats, setDbStats] = useState({})
   const messagesEndRef = useRef(null)
   const scrollRef = useRef(null)
+  const textareaRef = useRef(null)
 
   const enhancedAppState = { ...appState, ...dbStats }
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      if (input && input.trim() !== '') {
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`
+      }
+    }
+  }, [input])
+
+  const handleInput = useCallback((e) => {
+    const val = e.target.value
+    setInput(val)
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`
+    }
+  }, [])
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend(e)
+    }
+  }
 
   useKeyboardShortcuts({
     onEscape: isOpen ? () => {
@@ -169,6 +195,9 @@ const ChatBot = ({ appState = {} }) => {
     const userMsg = { role: 'user', content: input }
     setMessages(prev => [...prev, { role: 'user', text: input }])
     setInput('')
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    }
     setIsTyping(true)
 
     try {
@@ -197,91 +226,108 @@ const ChatBot = ({ appState = {} }) => {
           "fixed bottom-6 right-6 flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-accent)] shadow-lg hover:border-[var(--text-accent)] hover:-translate-y-0.5 transition-all duration-200 z-40",
           isOpen ? "scale-75 opacity-0 pointer-events-none" : "scale-100 opacity-100"
         )}
+        title="Open Assistant"
       >
         <MessageSquare size={18} />
       </button>
 
-      <div
-        className={cn(
-          "fixed bottom-6 right-6 w-80 sm:w-96 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-lg shadow-xl flex flex-col transition-all duration-200 transform origin-bottom-right z-50 overflow-hidden",
-          isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
-        )}
-        style={{ height: '520px', maxHeight: '80vh' }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-dim)] bg-[var(--bg-app)] shrink-0">
-          <div className="flex items-center gap-2">
-            <Bot size={16} className="text-[var(--text-accent)]" />
-            <h3 className="text-xs font-semibold text-[var(--text-main)] tracking-wide">Assistant</h3>
-          </div>
-          <button onClick={() => setIsOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
-            <X size={15} />
-          </button>
-        </div>
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
+          <div
+            className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header matching main window titlebar style & proportions */}
+            <div className="h-7 bg-[var(--bg-panel)]/80 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0 select-none">
+              <div className="flex items-center gap-2 px-3 h-full">
+                <Bot size={15} className="text-[var(--text-accent)]" />
+                <h3 className="text-xs font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="h-full px-3.5 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center" title="Close (Esc)">
+                <X size={14} />
+              </button>
+            </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 custom-scrollbar">
-          <div className="flex flex-col gap-4">
-            {messages.length === 0 && !isTyping && (
-              <div className="flex flex-col items-center justify-center text-center py-8 px-4 h-full animate-in fade-in duration-300">
-                <div className="w-10 h-10 rounded-lg bg-[var(--bg-active)] flex items-center justify-center mb-3 shadow-sm border border-[var(--border-subtle)]">
-                  <kbd className="font-mono font-bold text-sm text-[var(--text-accent)]">KM</kbd>
-                </div>
-                <h3 className="text-sm font-semibold text-[var(--text-main)] mb-1">KManager AI</h3>
-                <p className="text-[11px] text-[var(--text-muted)] mb-6 max-w-[220px] leading-relaxed">
-                  {dbStats.totalDocuments
-                    ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
-                    : 'Ask me about your knowledge base or features.'}
-                </p>
-                <div className="flex flex-col gap-1.5 w-full">
-                  {['Summarize my recent notes', 'Find concepts in my vault', 'Compare two topics'].map((s) => (
-                    <button key={s} onClick={() => sendQuickPrompt(s)}
-                      className="w-full text-left px-3 py-2 text-[11px] text-[var(--text-faint)] hover:text-[var(--text-main)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-md border border-transparent hover:border-[var(--border-subtle)] transition-colors">
-                      {s}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
+              <div className="max-w-3xl mx-auto flex flex-col gap-4 h-full">
+                {messages.length === 0 && !isTyping && (
+                  <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">
+                      <kbd className="font-mono font-bold text-base text-[var(--text-accent)]">KM</kbd>
+                    </div>
+                    <h3 className="text-base font-semibold text-[var(--text-main)] mb-1.5">KManager AI</h3>
+                    <p className="text-xs text-[var(--text-muted)] mb-8 max-w-[320px] leading-relaxed">
+                      {dbStats.totalDocuments
+                        ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
+                        : 'Ask me about your knowledge base or features.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-md">
+                      {['Summarize my recent notes', 'Find concepts in my vault', 'Compare two topics'].map((s) => (
+                        <button key={s} onClick={() => sendQuickPrompt(s)}
+                          className="flex-1 text-left px-3.5 py-2.5 text-xs text-[var(--text-faint)] hover:text-[var(--text-main)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-lg border border-transparent hover:border-[var(--border-subtle)] transition-colors">
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {messages.map((msg, idx) => (
+                  msg.role === 'user'
+                    ? <UserMessage key={idx} text={msg.text} />
+                    : <BotMessage key={idx} text={msg.text} idx={idx} onSave={handleSaveResponse} savedState={savedResponses[idx]} />
+                ))}
+                {isTyping && (
+                  <div className="flex items-start gap-2.5 w-full animate-in fade-in duration-200">
+                    <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
+                      <Bot size={12} />
+                    </div>
+                    <div className="px-3 py-2.5 rounded-lg rounded-tl-sm bg-[var(--bg-panel)] border border-[var(--border-dim)] flex items-center gap-1">
+                      <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" />
+                      <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+                      <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 pt-2 bg-[var(--bg-app)] shrink-0">
+              <div className="max-w-3xl mx-auto w-full">
+                <div className="flex flex-col bg-[var(--bg-card)] rounded-xl border border-[var(--border-dim)] transition-all duration-200 overflow-hidden shadow-sm">
+                  {/* Top Row: Auto-growing Textarea */}
+                  <textarea 
+                    ref={textareaRef}
+                    rows={1}
+                    value={input}
+                    onChange={handleInput}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask a question across your knowledge base..."
+                    className="w-full bg-transparent border-none outline-none text-[13.5px] font-normal text-[var(--text-main)] py-3 px-4 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+
+                  {/* Bottom Row: Send Button & Actions */}
+                  <div className="flex items-center justify-between px-3 pb-2 pt-1 select-none">
+                    <span className="text-[11px] text-[var(--text-faint)]">
+                      Press Enter to send, Shift + Enter for new line
+                    </span>
+                    <button 
+                      onClick={handleSend}
+                      disabled={!input.trim() || isTyping}
+                      className="w-7 h-7 rounded-full bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center shadow-sm shrink-0"
+                      title="Send message"
+                    >
+                      <ArrowUp size={16} strokeWidth={2.5} />
                     </button>
-                  ))}
+                  </div>
                 </div>
               </div>
-            )}
-            {messages.map((msg, idx) => (
-              msg.role === 'user'
-                ? <UserMessage key={idx} text={msg.text} />
-                : <BotMessage key={idx} text={msg.text} idx={idx} onSave={handleSaveResponse} savedState={savedResponses[idx]} />
-            ))}
-            {isTyping && (
-              <div className="flex items-start gap-2.5 w-full animate-in fade-in duration-200">
-                <div className="w-6 h-6 shrink-0 rounded flex items-center justify-center bg-[var(--bg-active)] text-[var(--text-accent)] border border-[var(--border-subtle)]">
-                  <Bot size={12} />
-                </div>
-                <div className="px-3 py-2.5 rounded-lg rounded-tl-sm bg-[var(--bg-panel)] border border-[var(--border-dim)] flex items-center gap-1">
-                  <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" />
-                  <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                  <span className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
-          <div ref={messagesEndRef} />
         </div>
-
-        <div className="p-3 border-t border-[var(--border-dim)] bg-[var(--bg-app)] shrink-0">
-          <form onSubmit={handleSend} className="relative flex items-center">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask a question..."
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-md text-xs text-[var(--text-main)] px-3 py-2.5 pr-10 focus:outline-none focus:border-[var(--text-accent)] transition-colors placeholder:text-[var(--text-faint)]"
-            />
-            <button 
-              type="submit" 
-              disabled={!input.trim() || isTyping}
-              className="absolute right-2 p-1 text-[var(--text-accent)] hover:text-[var(--text-main)] disabled:opacity-50 transition-colors"
-            >
-              <Send size={14} />
-            </button>
-          </form>
-        </div>
-      </div>
+      )}
     </>
   )
 }

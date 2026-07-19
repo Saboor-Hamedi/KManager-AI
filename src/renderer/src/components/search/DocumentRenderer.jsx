@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
+import './horizontal.css'
 const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
@@ -489,17 +490,17 @@ const cleanMarkdownComponents = {
     <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-[var(--bg-panel)]/80 rounded-[5px] px-4 py-3 text-[var(--text-main)] italic my-4 border-0 shadow-sm break-words" {...props} />
   ),
   a: ({node, ...props}) => <a className="text-[var(--text-accent)] hover:underline font-medium break-words" target="_blank" rel="noopener noreferrer" {...props} />,
-  hr: ({node, ...props}) => <hr className="border-[var(--border-subtle)] my-6" {...props} />,
+  hr: ({node, ...props}) => <div className="horizontal-divider my-6" {...props} />,
   table: ({node, ...props}) => (
-    <div className="my-5 overflow-x-auto rounded-[5px] border-0 bg-[var(--bg-card)] max-w-full shadow-sm">
-      <table className="w-full text-left border-collapse text-[13px] text-[var(--text-main)]" {...props} />
+    <div className="my-6 overflow-x-auto bg-transparent border-0 max-w-full shadow-none">
+      <table className="w-full text-left border-collapse text-[14px] text-[var(--text-main)]" {...props} />
     </div>
   ),
-  thead: ({node, ...props}) => <thead className="bg-[var(--bg-panel)] border-b border-[var(--border-subtle)] font-bold text-[var(--text-main)]" {...props} />,
-  tbody: ({node, ...props}) => <tbody className="divide-y divide-[var(--border-subtle)]" {...props} />,
-  tr: ({node, ...props}) => <tr className="hover:bg-[var(--bg-active)] transition-colors" {...props} />,
-  th: ({node, ...props}) => <th className="px-4 py-3 font-semibold text-[var(--text-main)] uppercase tracking-wider text-[11px] whitespace-nowrap" {...props} />,
-  td: ({node, ...props}) => <td className="px-4 py-3 text-[var(--text-main)] break-words" {...props} />,
+  thead: ({node, ...props}) => <thead className="bg-transparent border-b border-white/15 dark:border-[var(--border-subtle)]/60 font-bold text-[var(--text-main)]" {...props} />,
+  tbody: ({node, ...props}) => <tbody className="divide-y divide-white/10 dark:divide-[var(--border-subtle)]/30" {...props} />,
+  tr: ({node, ...props}) => <tr className="bg-transparent transition-none" {...props} />,
+  th: ({node, ...props}) => <th className="py-3.5 pr-8 pl-0 first:pl-0 font-semibold text-[var(--text-main)] text-[14px] normal-case tracking-normal whitespace-nowrap" {...props} />,
+  td: ({node, ...props}) => <td className="py-3.5 pr-8 pl-0 first:pl-0 text-[var(--text-main)]/90 leading-relaxed break-words" {...props} />,
   em: ({node, ...props}) => <em className="italic text-[var(--text-accent)] font-normal" {...props} />
 }
 

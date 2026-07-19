@@ -271,10 +271,10 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           onMouseLeave={handleMouseLeave}
           className="relative flex items-center gap-2 cursor-pointer min-w-0 flex-1 group/title"
         >
-          <h4 className="text-[13px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
+          <h4 className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
             {item.title}
           </h4>
-          <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-panel)] border border-[var(--border-subtle)]/50 shrink-0">
+          <span className="text-[11px] font-mono text-[var(--text-muted)] shrink-0">
             {simPercent}%
           </span>
 

@@ -85,10 +85,10 @@ const HistoryFeed = ({
     return history.map(msg => (
       <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
               
-              {/* User Message flat no shadow */}
-              <div className="flex justify-end w-full py-1">
-                <div className="text-[var(--text-main)] max-w-[85%] text-right shadow-none bg-transparent border-0">
-                  <p className="text-[14.5px] leading-relaxed font-semibold text-[var(--text-accent)]">{msg.query}</p>
+              {/* User Message Bubble matching ChatGPT / reference style */}
+              <div className="flex justify-end w-full py-1.5">
+                <div className="bg-[#2f2f2f] px-5 py-3.5 rounded-[22px] max-w-[80%] border border-white/[0.06] shadow-sm text-left">
+                  <p className="text-[14.5px] leading-relaxed font-normal text-[#ececec] whitespace-pre-wrap break-words">{msg.query}</p>
                 </div>
               </div>
 

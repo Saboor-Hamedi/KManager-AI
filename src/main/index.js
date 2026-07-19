@@ -579,6 +579,27 @@ app.whenReady().then(() => {
     }
   })
 
+  ipcMain.handle('db:update-chunk', async (_event, { chunkId, newContent }) => {
+    if (!db || !db.isConnected()) {
+      return { success: false, error: 'Database not connected' }
+    }
+    try {
+      if (!chunkId || newContent === undefined) {
+        return { success: false, error: 'Missing chunk ID or content' }
+      }
+      const vectorArray = await embeddingService.embedQuery(newContent)
+      const vectorString = '[' + vectorArray.join(',') + ']'
+      await db.query(
+        'UPDATE embedding_documents SET content = $1, embedding = $2::vector WHERE id = $3',
+        [newContent, vectorString, chunkId]
+      )
+      return { success: true }
+    } catch (err) {
+      console.error('db:update-chunk error:', err)
+      return { success: false, error: err.message }
+    }
+  })
+
   ipcMain.handle('db:reembed-all', async (event) => {
     if (!db || !db.isConnected()) {
       return { success: false, message: 'Database not connected' }

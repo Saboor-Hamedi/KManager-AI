@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 import SuggestedPrompts from './SuggestedPrompts'
 import InlineChat from './InlineChat'
+import './horizontal.css'
 
 const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp }) => {
   if (!msg.ragStatus || msg.ragStatus === 'disabled') return null
@@ -27,6 +28,7 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
 
           {msg.ragStatus === 'done' && (
             <>
+              <div className="horizontal-divider my-5" />
               <div className="flex justify-start mt-1 items-center">
                 <button
                   onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
