@@ -26,7 +26,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
   return (
     <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
       <div className="flex flex-col max-w-[85%] w-full">
-        <div className="px-4 py-3 rounded-[5px] text-xs leading-relaxed text-justify bg-[var(--bg-panel)]/90 text-[var(--text-main)] shadow-sm" style={{ overflowWrap: 'break-word' }}>
+        <div className="py-2 text-xs leading-relaxed text-justify bg-transparent text-[var(--text-main)] shadow-none border-0" style={{ overflowWrap: 'break-word' }}>
           <div style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
               p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-justify" {...props} />,
@@ -113,8 +113,8 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
 
 const UserMessage = memo(({ text }) => (
   <div className="flex justify-end w-full py-1 animate-in fade-in duration-200">
-    <div className="bg-[var(--bg-active)] px-4 py-3 rounded-[5px] max-w-[75%] shadow-sm text-left">
-      <p className="text-xs leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words">{text}</p>
+    <div className="bg-transparent max-w-[85%] border-0 shadow-none text-justify">
+      <p className="text-xs leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words text-justify">{text}</p>
     </div>
   </div>
 ))
@@ -295,7 +295,7 @@ const ChatBot = ({ appState = {} }) => {
             </div>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
-              <div className="max-w-3xl mx-auto flex flex-col gap-6 h-full pb-16">
+              <div className="max-w-3xl mx-auto flex flex-col gap-3 h-full pb-16">
                 {messages.length === 0 && !isTyping && (
                   <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
                     <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">

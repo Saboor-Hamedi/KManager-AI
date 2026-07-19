@@ -34,7 +34,7 @@ const InlineChat = ({
                 <div key={reply.id} className="flex flex-col gap-2 animate-in fade-in duration-300 relative">
                   <div className="flex justify-start items-center gap-2 mb-1">
                       <div className="absolute -left-[23px] top-3 w-4 h-[2px] bg-[var(--text-accent)]/30" />
-                      <span className="px-3 py-1.5 rounded-xl rounded-bl-sm bg-[var(--bg-panel)] text-[var(--text-main)] text-[12px] border border-[var(--border-subtle)] shadow-sm">
+                      <span className="bg-transparent text-[var(--text-main)] text-[12px] border-0 shadow-none text-justify">
                         {reply.query}
                       </span>
                   </div>

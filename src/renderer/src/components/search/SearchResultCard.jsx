@@ -262,7 +262,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const createdLabel = formatDate(item.created_at)
 
   return (
-    <div onClick={handleCardClick} className="group relative transition-all duration-200 overflow-visible py-4 shadow-none bg-transparent">
+    <div onClick={handleCardClick} className="group relative transition-all duration-200 overflow-visible py-4 shadow-none bg-transparent border-0">
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 

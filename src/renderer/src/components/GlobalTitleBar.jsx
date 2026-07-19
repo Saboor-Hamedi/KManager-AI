@@ -128,12 +128,12 @@ const GlobalTitleBar = () => {
   const showUpdate = updateState === 'available' || updateState === 'downloading' || updateState === 'downloaded'
 
   return (
-    <div className="h-8 w-full bg-[var(--bg-panel)] flex items-center shrink-0 z-50 [-webkit-app-region:drag]">
+    <div className="h-[26px] w-full bg-[var(--bg-panel)] flex items-center justify-between shrink-0 z-50 [-webkit-app-region:drag] select-none border-0">
       {/* Left: App Identity & Update Button */}
-      <div className="flex items-center gap-3 px-3 min-w-0">
-        <div className="flex items-center gap-2">
-          <CodeXml className="text-[var(--text-accent)] shrink-0" size={16} />
-          <span className="text-xs font-semibold text-[var(--text-main)] tracking-tight truncate">
+      <div className="flex items-center gap-2 px-2.5 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <CodeXml className="text-[var(--text-accent)] shrink-0" size={13} />
+          <span className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight truncate">
             KManager AI
           </span>
         </div>
@@ -229,26 +229,26 @@ const GlobalTitleBar = () => {
         <button
           type="button"
           onClick={handleMinimize}
-          className="h-full px-4 flex items-center justify-center hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+          className="h-full px-3 flex items-center justify-center hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0"
           title="Minimize"
         >
-          <Minus size={13} />
+          <Minus size={12} />
         </button>
         <button
           type="button"
           onClick={handleMaximize}
-          className="h-full px-4 flex items-center justify-center hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+          className="h-full px-3 flex items-center justify-center hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0"
           title="Maximize"
         >
-          <Square size={11} />
+          <Square size={10} />
         </button>
         <button
           type="button"
           onClick={handleClose}
-          className="h-full px-4 flex items-center justify-center hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors"
+          className="h-full px-3 flex items-center justify-center hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors border-0"
           title="Close"
         >
-          <X size={14} />
+          <X size={13} />
         </button>
       </div>
     </div>
