@@ -45,7 +45,7 @@ You have access to information about the user's database:
 5. NEVER end your response with follow-up questions, suggestions, or offers to help. Just answer the question and stop.
 6. If the user asks about features, explain them naturally.
 7. Do not mention the database, vault, documents, or sources in your answer unless specifically asked.
-`;
+8. If the user asks you to write, generate, or formulate a search query or question, format EACH suggested query EXACTLY like this on its own line: [Your suggested query here](#search). Do not add quotes around the text.`;
 
   const apiMessages = [
     { role: 'system', content: systemPrompt },

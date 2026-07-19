@@ -39,11 +39,16 @@ function App() {
   useEffect(() => {
     const handleOpenSettings = (e) => {
       setIsSettingsOpen(true)
-      // Custom tab handling could go here if needed
-      // e.g. e.detail.tab === 'database' -> pass to Setting.jsx
+    }
+    const handleFillSearch = () => {
+      setActiveTab('search')
     }
     window.addEventListener('open-settings', handleOpenSettings)
-    return () => window.removeEventListener('open-settings', handleOpenSettings)
+    window.addEventListener('fill-search', handleFillSearch)
+    return () => {
+      window.removeEventListener('open-settings', handleOpenSettings)
+      window.removeEventListener('fill-search', handleFillSearch)
+    }
   }, [])
 
   // Auto-connect database

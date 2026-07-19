@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
-import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy, Search, ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'
@@ -35,15 +35,94 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
         <div className="py-2 text-xs leading-relaxed text-justify bg-transparent text-[var(--text-main)] shadow-none border-0" style={{ overflowWrap: 'break-word' }}>
           <div style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
-              p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-justify" {...props} />,
+              p: ({node, children, ...props}) => {
+                const extractText = (nodes) => {
+                  return React.Children.toArray(nodes).map(child => {
+                    if (typeof child === 'string') return child
+                    if (child && child.props && child.props.children) return extractText(child.props.children)
+                    return ''
+                  }).join('')
+                }
+                const lineText = extractText(children).trim()
+                
+                if (lineText.endsWith('?') && lineText.length > 5 && lineText.length < 250) {
+                   const cleanText = lineText.replace(/^(\d+\.|-|\*)\s*/, '').trim()
+                   return (
+                      <div className="my-2">
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: cleanText } }))
+                            window.dispatchEvent(new CustomEvent('close-chatbot'))
+                          }}
+                          className="w-full group flex items-start gap-3 px-4 py-3 rounded-[8px] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-white/[0.04] hover:border-[var(--text-accent)]/50 text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 shadow-sm text-left max-w-full break-words"
+                        >
+                          <span className="shrink-0 mt-0.5 text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">💡</span>
+                          <span className="flex-1 transition-colors leading-relaxed">{cleanText}</span>
+                          <ArrowRight size={14} className="shrink-0 mt-1 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--text-accent)]" />
+                        </button>
+                      </div>
+                   )
+                }
+                return <p className="mb-2 last:mb-0 text-justify" {...props}>{children}</p>
+              },
               strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
               em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
               ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
               ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-              li: ({node, ...props}) => <li {...props} />,
+              li: ({node, children, ...props}) => {
+                const extractText = (nodes) => {
+                  return React.Children.toArray(nodes).map(child => {
+                    if (typeof child === 'string') return child
+                    if (child && child.props && child.props.children) return extractText(child.props.children)
+                    return ''
+                  }).join('')
+                }
+                const lineText = extractText(children).trim()
+                
+                if (lineText.endsWith('?') && lineText.length > 5 && lineText.length < 250) {
+                   const cleanText = lineText.replace(/^(\d+\.|-|\*)\s*/, '').trim()
+                   return (
+                      <li className="my-2 list-none" {...props}>
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: cleanText } }))
+                            window.dispatchEvent(new CustomEvent('close-chatbot'))
+                          }}
+                          className="w-full group flex items-start gap-3 px-4 py-3 rounded-[8px] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-white/[0.04] hover:border-[var(--text-accent)]/50 text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 shadow-sm text-left max-w-full break-words -ml-4"
+                        >
+                          <span className="shrink-0 mt-0.5 text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">💡</span>
+                          <span className="flex-1 transition-colors leading-relaxed">{cleanText}</span>
+                          <ArrowRight size={14} className="shrink-0 mt-1 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--text-accent)]" />
+                        </button>
+                      </li>
+                   )
+                }
+                return <li {...props}>{children}</li>
+              },
               code: ({node, inline, ...props}) => inline
                 ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[3px] font-mono text-[10px]" {...props} />
-                : <code className="block bg-[var(--bg-app)] text-[var(--text-muted)] p-2 rounded-[5px] font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />
+                : <code className="block bg-[var(--bg-app)] text-[var(--text-muted)] p-2 rounded-[5px] font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />,
+              a: ({node, href, children, ...props}) => {
+                if (href === '#search') {
+                  return (
+                    <button
+                      onClick={() => {
+                        const queryStr = React.Children.toArray(children).join('')
+                        window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: queryStr } }))
+                        window.dispatchEvent(new CustomEvent('close-chatbot'))
+                      }}
+                      className="flex items-center gap-2.5 px-3.5 py-2.5 my-2 w-full bg-[var(--bg-card)] hover:bg-[var(--bg-active)] border border-[var(--border-subtle)] hover:border-[var(--text-accent)]/50 rounded-[8px] transition-all text-left shadow-sm group"
+                      title="Send this query to Dashboard Search"
+                    >
+                      <div className="w-5 h-5 rounded-full bg-[var(--text-accent)]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Search size={10} className="text-[var(--text-accent)]" />
+                      </div>
+                      <span className="font-semibold text-[12px] text-[var(--text-main)] leading-snug tracking-tight">{children}</span>
+                    </button>
+                  )
+                }
+                return <a href={href} className="text-[var(--text-accent)] hover:underline" {...props}>{children}</a>
+              }
             }}>
               {formatMarkdownText(text)}
             </ReactMarkdown>
@@ -137,6 +216,12 @@ const ChatBot = ({ appState = {} }) => {
   const textareaRef = useRef(null)
 
   const enhancedAppState = { ...appState, ...dbStats }
+
+  useEffect(() => {
+    const handleClose = () => setIsOpen(false)
+    window.addEventListener('close-chatbot', handleClose)
+    return () => window.removeEventListener('close-chatbot', handleClose)
+  }, [])
 
   useEffect(() => {
     if (textareaRef.current) {

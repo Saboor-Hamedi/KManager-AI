@@ -124,6 +124,26 @@ const DashboardSearch = () => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown, true)
   }, [])
 
+  // Listen for AI query injection from ChatBot
+  useEffect(() => {
+    const handleFillSearch = (e) => {
+      const { query: newQuery } = e.detail || {}
+      if (newQuery) {
+        setQuery(newQuery)
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.value = newQuery
+            textareaRef.current.focus()
+            textareaRef.current.style.height = 'auto'
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
+          }
+        }, 50)
+      }
+    }
+    window.addEventListener('fill-search', handleFillSearch)
+    return () => window.removeEventListener('fill-search', handleFillSearch)
+  }, [])
+
   const handleSelect = useCallback((item) => {
     // Save current scroll position before opening modal
     if (scrollRef.current) {

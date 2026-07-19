@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { UploadCloud, FolderPlus, FilePlus, Loader2, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp, Database, RefreshCw, Trash2 } from 'lucide-react'
+import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
 
 /**
  * PDFUploadZone Component
@@ -112,6 +113,16 @@ const PDFUploadZone = ({ onIngestComplete }) => {
       console.error('Folder selection failed:', err)
     }
   }
+
+  useKeyboardShortcuts({
+    onEscape: () => {
+      if (isExpanded) {
+        setIsExpanded(false)
+        return true // Handled
+      }
+      return false
+    }
+  })
 
   const pendingCount = queue.filter(q => q.status === 'pending').length
   const processingItem = queue.find(q => q.status === 'processing')
