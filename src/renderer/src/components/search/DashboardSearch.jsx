@@ -9,6 +9,7 @@ import InlineChat from './InlineChat'
 import RagAnswer from './RagAnswer'
 import { getSetting, saveSetting } from '../../lib/settings'
 import { streamRagAnswer, checkIsConversational } from '../../lib/LLMProvider'
+import './horizontal.css'
 
 const SearchLoadingSkeleton = () => (
   <div className="flex flex-col gap-6 py-3 animate-in fade-in duration-200">
@@ -542,10 +543,10 @@ const DashboardSearch = () => {
     return history.map(msg => (
       <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
               
-              {/* User Message Bubble matching Antigravity card style */}
-              <div className="flex justify-end w-full">
-                <div className="bg-[var(--bg-panel)] text-[var(--text-main)] px-5 py-3.5 rounded-2xl rounded-br-sm max-w-[80%] border border-[var(--border-subtle)] shadow-sm">
-                  <p className="text-[14px] leading-relaxed font-normal">{msg.query}</p>
+              {/* User Message flat no shadow */}
+              <div className="flex justify-end w-full py-1">
+                <div className="text-[var(--text-main)] max-w-[85%] text-right shadow-none bg-transparent border-0">
+                  <p className="text-[14.5px] leading-relaxed font-semibold text-[var(--text-accent)]">{msg.query}</p>
                 </div>
               </div>
 
@@ -593,6 +594,7 @@ const DashboardSearch = () => {
                             }
                           }}
                           isActiveReply={activeReplyId === `${msg.id}-${idx}`}
+                          isLast={idx === msg.results.length - 1}
                         />
                         <div className="mt-2 mb-4">
                           <InlineChat 

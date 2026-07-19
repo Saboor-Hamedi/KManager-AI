@@ -4,6 +4,7 @@ import HoverWikilink from './HoverWikilink'
 import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
 import Wrapper from '../code/Wrapper'
+import './horizontal.css'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
@@ -12,13 +13,23 @@ const ReactMarkdown = lazy(() => import('react-markdown'))
  * Returns an array of React elements with matching words in the accent color.
  * When disabled (e.g. result has been clicked/opened), renders plain text.
  */
-const HighlightedText = memo(({ text, query }) => {
-  if (!query || !text) return <>{text}</>
+const STOP_WORDS = new Set([
+  'the', 'and', 'for', 'with', 'that', 'this', 'from', 'have', 'are', 'was', 'were', 'not', 'but',
+  'you', 'can', 'will', 'our', 'your', 'what', 'when', 'where', 'why', 'how', 'all', 'any', 'both',
+  'each', 'few', 'more', 'most', 'other', 'some', 'such', 'than', 'too', 'very', 'into', 'onto',
+  'upon', 'over', 'under', 'above', 'below', 'after', 'before', 'since', 'while', 'during', 'about',
+  'against', 'between', 'has', 'had', 'they', 'them', 'their', 'there', 'here', 'which', 'who', 'whom',
+  'whose', 'how', 'its', 'it\'s', 'he\'d', 'she\'d', 'we\'d', 'they\'d', 'would', 'could', 'should',
+  'does', 'did', 'done', 'doing', 'being', 'been', 'one', 'two', 'three', 'also', 'just', 'only', 'others'
+])
+
+const HighlightedText = memo(({ text, query, disabled }) => {
+  if (disabled || !query || !text) return <>{text}</>
 
   const words = query
     .trim()
     .split(/\s+/)
-    .filter(w => w.length > 2)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w.toLowerCase()))
     .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
 
   if (words.length === 0) return <>{text}</>
@@ -148,16 +159,24 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
   )
 })
 
-const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveReply }) => {
+const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveReply, isLast }) => {
   // Ensure similarity is clamped between 0 and 1, handling raw float scores safely
   const rawSim = item.similarity !== undefined && item.similarity !== null ? item.similarity : 0.75
   const simPercent = Math.min(100, Math.max(0, Math.round(rawSim * 100)))
   const [selected, setSelected] = useState(false)
+  const [highlightsRemoved, setHighlightsRemoved] = useState(false)
   const [showWikiHover, setShowWikiHover] = useState(false)
   const hoverTimeoutRef = useRef(null)
   const onSelect = (item) => {
     setSelected(true)
+    setHighlightsRemoved(true)
     handleSelect(item)
+  }
+
+  const handleCardClick = () => {
+    if (!highlightsRemoved) {
+      setHighlightsRemoved(true)
+    }
   }
 
   const [localContent, setLocalContent] = useState(item.content)
@@ -243,7 +262,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const createdLabel = formatDate(item.created_at)
 
   return (
-    <div className="group relative transition-all duration-200 overflow-visible rounded-[var(--radius-md,8px)] bg-[var(--bg-card)] border border-[var(--border-card)] p-4 shadow-[var(--shadow-sm,0_1px_3px_rgba(0,0,0,0.4))] hover:shadow-[var(--shadow-md,0_4px_12px_rgba(0,0,0,0.5))] hover:border-[var(--border-main)]">
+    <div onClick={handleCardClick} className="group relative transition-all duration-200 overflow-visible py-4 shadow-none bg-transparent">
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
@@ -330,14 +349,14 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
                 p: ({ node, children, ...props }) => (
                   <p className="mb-1.5 last:mb-0" {...props}>
                     {typeof children === 'string'
-                      ? <HighlightedText text={children} query={query} />
+                      ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
                       : children}
                   </p>
                 ),
                 li: ({ node, children, ...props }) => (
                   <li {...props}>
                     {typeof children === 'string'
-                      ? <HighlightedText text={children} query={query} />
+                      ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
                       : children}
                   </li>
                 ),
@@ -365,6 +384,9 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           onEdit={() => setIsEditing(prev => !prev)}
         />
       </div>
+
+      {/* Centered tapered horizontal divider with 3 CSS link icons */}
+      {!isLast && <div className="horizontal-divider" />}
     </div>
   )
 })

@@ -1,0 +1,42 @@
+/* ── Horizontal Divider (`horizontal.css`) ──────────────────────────────────
+   Custom centered bottom border with tapered edges (narrower at left/right)
+   and 3 pure CSS link icons rendered via pseudo-elements (`content`).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.horizontal-divider {
+  position: relative;
+  width: 65%;
+  max-width: 440px;
+  height: 2px;
+  margin: 1.75rem auto 0.75rem auto;
+  /* Radial ellipse makes the center bright & thick (2px) while left & right edges taper down smoothly to 0 thickness and transparent */
+  background: radial-gradient(
+    ellipse at center,
+    var(--text-accent, #38bdf8) 0%,
+    var(--border-main, #37415b) 45%,
+    transparent 100%
+  );
+  border-radius: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+/* 3 small link icons rendered pure CSS right on the bottom border line */
+.horizontal-divider::after {
+  content: "\26D3    \25C8    \26D3"; /* 3 small link/chain/node symbols */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0 16px;
+  background: var(--bg-app, #0d1017);
+  color: var(--text-accent, #38bdf8);
+  font-size: 11px;
+  letter-spacing: 8px;
+  line-height: 1;
+  opacity: 0.95;
+  text-shadow: 0 0 10px rgba(var(--text-accent-rgb, 56, 189, 248), 0.5);
+  white-space: nowrap;
+}

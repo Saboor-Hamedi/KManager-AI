@@ -115,7 +115,57 @@ const formatMarkdownText = (text) => {
       formattedLines.push(lines[i])
     }
   }
-  return formattedLines.join('\n')
+
+  let finalResult = formattedLines.join('\n')
+
+  // ── Make chunks flow like real, properly formatted paragraphs ──
+  // 1. Capitalize the very first letter of the text if it is lowercase ([a-z])
+  finalResult = finalResult.replace(/^(\s*(?:[>*#\-\d.]+\s+)*)([a-z])/gm, (_, prefix, char) => prefix + char.toUpperCase())
+  
+  // 2. Capitalize the first letter right after a period, question mark, or exclamation point if lowercase
+  finalResult = finalResult.replace(/([.!?]\s+|\n\n\s*|\n\s*-\s+|\n\s*\d+\.\s+)([a-z])/g, (_, prefix, char) => prefix + char.toUpperCase())
+
+  // 3. Clean up artificial single line breaks from PDF extraction (`he'd been using...\nFortunately...`) while keeping paragraphs and tables intact
+  const paragraphLines = finalResult.split('\n')
+  const cleanedParagraphs = []
+  let currentParagraph = []
+  let insideBlock = false
+
+  for (let i = 0; i < paragraphLines.length; i++) {
+    const line = paragraphLines[i]
+    const trimmed = line.trim()
+
+    const isSpecialLine = trimmed.startsWith('|') || 
+                          trimmed.startsWith('#') || 
+                          trimmed.startsWith('- ') || 
+                          trimmed.startsWith('* ') || 
+                          trimmed.startsWith('> ') || 
+                          trimmed.match(/^\d+\.\s+/) || 
+                          trimmed.startsWith('```') || 
+                          trimmed.startsWith('$$') || 
+                          trimmed.includes('---') || 
+                          trimmed.startsWith('`wikilink:') ||
+                          trimmed.startsWith('`sourcecite:')
+
+    if (trimmed.startsWith('```') || trimmed.startsWith('$$')) {
+      insideBlock = !insideBlock
+    }
+
+    if (insideBlock || isSpecialLine || trimmed === '') {
+      if (currentParagraph.length > 0) {
+        cleanedParagraphs.push(currentParagraph.join(' '))
+        currentParagraph = []
+      }
+      cleanedParagraphs.push(line)
+    } else {
+      currentParagraph.push(trimmed)
+    }
+  }
+  if (currentParagraph.length > 0) {
+    cleanedParagraphs.push(currentParagraph.join(' '))
+  }
+
+  return cleanedParagraphs.join('\n')
 }
 
 const CodeCopyButton = ({ code }) => {

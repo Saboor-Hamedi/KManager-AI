@@ -31,10 +31,10 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
         {children}
       </div>
       {isOverflowing && !expanded && (
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[var(--bg-app)] to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--bg-app)] to-transparent pointer-events-none" />
       )}
       {isOverflowing && (
-        <div className="mt-1 flex justify-center">
+        <div className="mt-2 flex justify-start">
           <button
             type="button"
             onClick={(e) => {
@@ -42,9 +42,9 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
               e.stopPropagation()
               setExpanded(!expanded)
             }}
-            className="text-[11px] font-medium text-[var(--text-accent)] hover:text-[var(--text-main)] hover:underline transition-colors border-0 bg-transparent cursor-pointer p-1"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[6px] text-[12px] font-semibold text-[var(--text-accent)] bg-[var(--bg-panel)] border border-[var(--border-subtle)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-none"
           >
-            {expanded ? 'Show Less' : 'See More'}
+            <span>{expanded ? 'Show Less ↑' : 'See More ↓'}</span>
           </button>
         </div>
       )}

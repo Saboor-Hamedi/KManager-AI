@@ -18,7 +18,7 @@ const ConfirmModal = React.memo(({
       {/* Background click to close */}
       <div className="absolute inset-0" onClick={onCancel} />
 
-      <div className="relative w-full max-w-[300px] bg-[var(--bg-card)]/80 backdrop-blur-2xl border border-white/5 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-[300px] bg-[var(--bg-card)]/90 backdrop-blur-2xl border border-[var(--border-subtle)] rounded-xl shadow-[var(--shadow-modal)] overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Subtle top highlight */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 

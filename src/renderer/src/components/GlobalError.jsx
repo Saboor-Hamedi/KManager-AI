@@ -24,7 +24,7 @@ class GlobalError extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-[var(--bg-app)] animate-in fade-in duration-300">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[5px] w-full max-w-2xl flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl w-full max-w-2xl flex flex-col shadow-[var(--shadow-modal)] overflow-hidden">
             {/* Title Bar matching ThemeModal */}
             <div className="h-8 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center shrink-0 select-none">
               <div className="flex items-center gap-2 px-3">
