@@ -144,40 +144,48 @@ const MermaidDiagram = memo(({ chart }) => {
           securityLevel: 'loose',
           fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
           fontSize: 13,
+          flowchart: {
+            htmlLabels: true,
+            useMaxWidth: true
+          },
+          sequence: {
+            useMaxWidth: true,
+            showSequenceNumbers: false
+          },
           themeVariables: {
-            background: '#0e0e10',
-            mainBkg: '#18181b',
-            nodeBorder: '#3f3f46',
-            clusterBkg: '#111113',
-            clusterBorder: '#3f3f46',
-            primaryTextColor: '#e4e4e7',
-            secondaryTextColor: '#a1a1aa',
-            tertiaryTextColor: '#71717a',
-            lineColor: '#52525b',
-            primaryBorderColor: '#4a4a52',
-            secondaryBorderColor: '#3f3f46',
-            primaryColor: '#1c1c22',
-            secondaryColor: '#1a1a20',
-            tertiaryColor: '#16161c',
+            background: isLight ? '#ffffff' : '#0e0e10',
+            mainBkg: isLight ? '#f4f4f5' : '#18181b',
+            nodeBorder: isLight ? '#d4d4d8' : '#3f3f46',
+            clusterBkg: isLight ? '#f4f4f5' : '#111113',
+            clusterBorder: isLight ? '#d4d4d8' : '#3f3f46',
+            primaryTextColor: isLight ? '#18181b' : '#e4e4e7',
+            secondaryTextColor: isLight ? '#52525b' : '#a1a1aa',
+            tertiaryTextColor: isLight ? '#71717a' : '#71717a',
+            lineColor: isLight ? '#a1a1aa' : '#52525b',
+            primaryBorderColor: isLight ? '#a1a1aa' : '#4a4a52',
+            secondaryBorderColor: isLight ? '#d4d4d8' : '#3f3f46',
+            primaryColor: isLight ? '#e4e4e7' : '#1c1c22',
+            secondaryColor: isLight ? '#f4f4f5' : '#1a1a20',
+            tertiaryColor: isLight ? '#f4f4f5' : '#16161c',
             signalColor: '#a78bfa',
-            signalTextColor: '#e4e4e7',
-            actorBkg: '#18181b',
-            actorBorder: '#52525b',
-            actorTextColor: '#e4e4e7',
-            noteBkgColor: '#1a1a22',
-            noteBorderColor: '#4a4a52',
-            noteTextColor: '#c4b5fd',
+            signalTextColor: isLight ? '#18181b' : '#e4e4e7',
+            actorBkg: isLight ? '#f4f4f5' : '#18181b',
+            actorBorder: isLight ? '#a1a1aa' : '#52525b',
+            actorTextColor: isLight ? '#18181b' : '#e4e4e7',
+            noteBkgColor: isLight ? '#f5f3ff' : '#1a1a22',
+            noteBorderColor: isLight ? '#ddd6fe' : '#4a4a52',
+            noteTextColor: isLight ? '#5b21b6' : '#c4b5fd',
             activationBorderColor: '#7c3aed',
-            activationBkgColor: '#1e1b2e',
-            taskBkgColor: '#1c1c22',
-            taskBorderColor: '#52525b',
-            taskTextColor: '#e4e4e7',
-            doneTaskBkgColor: '#14532d',
-            doneTaskBorderColor: '#16a34a',
-            critBkgColor: '#450a0a',
-            critBorderColor: '#dc2626',
+            activationBkgColor: isLight ? '#ede9fe' : '#1e1b2e',
+            taskBkgColor: isLight ? '#e4e4e7' : '#1c1c22',
+            taskBorderColor: isLight ? '#a1a1aa' : '#52525b',
+            taskTextColor: isLight ? '#18181b' : '#e4e4e7',
+            doneTaskBkgColor: isLight ? '#dcfce7' : '#14532d',
+            doneTaskBorderColor: isLight ? '#22c55e' : '#16a34a',
+            critBkgColor: isLight ? '#fee2e2' : '#450a0a',
+            critBorderColor: isLight ? '#ef4444' : '#dc2626',
             todayLineColor: '#7c3aed',
-            gridColor: '#27272a',
+            gridColor: isLight ? '#e4e4e7' : '#27272a',
             pie1: '#7c3aed', pie2: '#6d28d9', pie3: '#5b21b6',
             pie4: '#4c1d95', pie5: '#8b5cf6', pie6: '#a78bfa', pie7: '#c4b5fd',
             git0: '#7c3aed', git1: '#0ea5e9', git2: '#16a34a',
@@ -185,7 +193,12 @@ const MermaidDiagram = memo(({ chart }) => {
             git6: '#ec4899', git7: '#14b8a6',
           }
         })
-        const { svg } = await mermaid.render(idRef.current, chart.trim())
+        // Generate a unique ID every render to prevent Mermaid v10/11 "Element with id already exists" crashes
+        const renderId = `mermaid-${Math.random().toString(36).substring(2, 11)}-${Date.now()}`
+        const existingNode = document.getElementById(renderId)
+        if (existingNode) existingNode.remove()
+
+        const { svg } = await mermaid.render(renderId, chart.trim())
         if (isMounted) setSvgContent(svg)
       } catch (err) {
         console.warn('[MermaidDiagram] render error:', err)

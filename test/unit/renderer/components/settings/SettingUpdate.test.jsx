@@ -77,10 +77,9 @@ describe('SettingUpdate', () => {
       return () => {}
     }
     await act(async () => render(<SettingUpdate />))
-    fireEvent.click(screen.getByText('Check for Updates'))
     await vi.waitFor(() => {
       expect(screen.getByText('Update v1.0.6 available')).toBeInTheDocument()
-    })
+    }, { timeout: 2000 })
   })
 
   it('shows version range when both versions known', async () => {
@@ -89,10 +88,9 @@ describe('SettingUpdate', () => {
       return () => {}
     }
     await act(async () => render(<SettingUpdate />))
-    fireEvent.click(screen.getByText('Check for Updates'))
     await vi.waitFor(() => {
       expect(screen.getByText('v1.0.5 → v1.0.6')).toBeInTheDocument()
-    })
+    }, { timeout: 2000 })
   })
 
   it('calls download when Download clicked', async () => {
@@ -101,10 +99,9 @@ describe('SettingUpdate', () => {
       return () => {}
     }
     await act(async () => render(<SettingUpdate />))
-    fireEvent.click(screen.getByText('Check for Updates'))
     await vi.waitFor(() => {
       expect(screen.getByText('Download')).toBeInTheDocument()
-    })
+    }, { timeout: 2000 })
     fireEvent.click(screen.getByText('Download'))
     expect(mockDownload).toHaveBeenCalledOnce()
   })

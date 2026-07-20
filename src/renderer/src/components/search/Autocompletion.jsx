@@ -57,8 +57,17 @@ const Autocompletion = ({ results, visible, query, onSelect, selectedIndex, onCl
         onClose?.()
       }
     }
+    const handleMouseDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        onClose?.()
+      }
+    }
     window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => {
+      window.removeEventListener('keydown', handleKey)
+      document.removeEventListener('mousedown', handleMouseDown)
+    }
   }, [visible, onClose])
 
   useEffect(() => {

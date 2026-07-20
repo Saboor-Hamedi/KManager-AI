@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Database, RefreshCw, Layers, FileText, HardDrive, CheckCircle2, AlertCircle, Trash2, Cpu, AlertTriangle } from 'lucide-react'
+import { Database, RefreshCw, Layers, FileText, HardDrive, CheckCircle2, AlertCircle, Trash2, Cpu, AlertTriangle, Code, Terminal, FileSpreadsheet } from 'lucide-react'
 import ConfirmModal from '../layout/ConfirmModal'
 
 const SettingDBPropertiesPanel = () => {
@@ -127,25 +127,59 @@ const SettingDBPropertiesPanel = () => {
     }, 50)
   }
 
+  const formatBytes = (bytes, decimals = 1) => {
+    if (!bytes || bytes === 0) return '0 B'
+    const k = 1024
+    const dm = decimals < 0 ? 0 : decimals
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+  }
+
   const totalDocs = dbStats?.total_docs || 0
   const totalChunks = dbStats?.total_chunks || 0
   const avgChunks = totalDocs > 0 ? (totalChunks / totalDocs).toFixed(1) : '0'
+  const totalDbSize = formatBytes(dbStats?.total_db_bytes || 0)
+  const rawFileSize = formatBytes(dbStats?.raw_file_bytes || 0)
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h3 className="text-[13px] font-black tracking-tight text-[var(--text-main)] mb-0.5">DB Properties & Storage</h3>
           <p className="text-[11px] font-bold text-[var(--text-muted)]">Live statistics, format distributions, and maintenance tools for your Knowledge Hub.</p>
         </div>
-        <button
-          onClick={loadStats}
-          disabled={loading}
-          className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--bg-active)] hover:bg-[#2c2c2c] text-[var(--text-main)] border border-[var(--border-subtle)] transition-colors shadow-sm"
-          title="Refresh statistics"
-        >
-          <RefreshCw size={12} className={loading ? 'animate-spin text-[#a855f7]' : 'text-[#a855f7]'} />
-        </button>
+        
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setConfirmReembed(true)}
+            disabled={actionState?.status === 'progress'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#a855f7]/15 hover:bg-[#a855f7]/30 text-[#d8b4fe] disabled:opacity-40 text-[11px] font-bold transition-colors border border-[#a855f7]/30 shadow-sm"
+            title="Re-embed all documents with semantic chunking"
+          >
+            <Cpu size={13} className={actionState?.status === 'progress' && actionState?.type === 'reembed' ? 'animate-spin' : ''} />
+            <span>Re-embed</span>
+          </button>
+
+          <button
+            onClick={() => setConfirmTruncate(true)}
+            disabled={actionState?.status === 'progress'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-red-500/15 hover:bg-red-500/30 text-red-300 disabled:opacity-40 text-[11px] font-bold transition-colors border border-red-500/30 shadow-sm"
+            title="Truncate all data tables instantly"
+          >
+            <Trash2 size={13} />
+            <span>Truncate</span>
+          </button>
+
+          <button
+            onClick={loadStats}
+            disabled={loading}
+            className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--bg-active)] hover:bg-[#2c2c2c] text-[var(--text-main)] border border-[var(--border-subtle)] transition-colors shadow-sm ml-1"
+            title="Refresh statistics"
+          >
+            <RefreshCw size={12} className={loading ? 'animate-spin text-[#a855f7]' : 'text-[#a855f7]'} />
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -156,8 +190,9 @@ const SettingDBPropertiesPanel = () => {
       )}
 
       {/* Action Progress / Notification Banner */}
+      {/* Action Progress / Notification Banner */}
       {actionState && (
-        <div className={`p-3 rounded-md border flex flex-col gap-2 ${
+        <div className={`px-3.5 h-[56px] rounded-md border flex flex-col justify-center gap-1.5 transition-all duration-200 ${
           actionState.status === 'error'
             ? 'bg-red-500/10 border-red-500/30 text-red-300'
             : actionState.status === 'success'
@@ -166,37 +201,41 @@ const SettingDBPropertiesPanel = () => {
         }`}>
           <div className="flex items-center justify-between text-[11px] font-bold">
             <span className="flex items-center gap-2">
-              {actionState.status === 'progress' && <RefreshCw size={12} className="animate-spin text-[#a855f7]" />}
-              {actionState.status === 'success' && <CheckCircle2 size={12} className="text-emerald-400" />}
-              {actionState.status === 'error' && <AlertCircle size={12} className="text-red-400" />}
-              <span>{actionState.message}</span>
+              {actionState.status === 'progress' && <RefreshCw size={12} className="animate-spin text-[#a855f7] shrink-0" />}
+              {actionState.status === 'success' && <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />}
+              {actionState.status === 'error' && <AlertCircle size={12} className="text-red-400 shrink-0" />}
+              <span className="truncate">{actionState.message}</span>
             </span>
             <button
               onClick={() => setActionState(null)}
-              className="text-[var(--text-muted)] hover:text-[var(--text-main)] text-[10px] font-normal"
+              className="text-[var(--text-muted)] hover:text-[var(--text-main)] text-[10px] font-normal ml-2 shrink-0 border-0"
             >
               Dismiss
             </button>
           </div>
-          {actionState.status === 'progress' && (
-            <div className="w-full h-1.5 bg-[#222] rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-[#222] rounded-full overflow-hidden">
+            {actionState.status === 'progress' ? (
               <div
                 className="h-full bg-gradient-to-r from-purple-500 to-[#a855f7] rounded-full transition-all duration-300"
                 style={{ width: `${Math.max(actionState.progress, 5)}%` }}
               />
-            </div>
-          )}
+            ) : actionState.status === 'success' ? (
+              <div className="h-full bg-emerald-400 rounded-full w-full transition-all duration-300" />
+            ) : (
+              <div className="h-full bg-red-400 rounded-full w-full transition-all duration-300" />
+            )}
+          </div>
         </div>
       )}
 
-      {/* Top Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Top Metrics Cards - 4 Column Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Documents</span>
             <FileText size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-[var(--text-main)] tracking-tight">
+          <div className="text-[16px] font-semibold text-[var(--text-main)] font-mono tracking-normal">
             {totalDocs.toLocaleString()}
           </div>
           <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Archived in PostgreSQL</div>
@@ -207,7 +246,7 @@ const SettingDBPropertiesPanel = () => {
             <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Vector Chunks</span>
             <Layers size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-[#a855f7] tracking-tight">
+          <div className="text-[16px] font-semibold text-[#a855f7] font-mono tracking-normal">
             {totalChunks.toLocaleString()}
           </div>
           <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Indexed via pgvector</div>
@@ -215,116 +254,118 @@ const SettingDBPropertiesPanel = () => {
 
         <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">DB Storage Size</span>
+            <Database size={14} className="text-[#a855f7]" />
+          </div>
+          <div className="text-[16px] font-semibold text-[#61afef] font-mono tracking-normal">
+            {totalDbSize}
+          </div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Tables & pgvector indexes</div>
+        </div>
+
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Avg Chunks / Doc</span>
             <HardDrive size={14} className="text-[#a855f7]" />
           </div>
-          <div className="text-2xl font-black text-[var(--text-main)] tracking-tight">
+          <div className="text-[16px] font-semibold text-[var(--text-main)] font-mono tracking-normal">
             {avgChunks}
           </div>
-          <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Semantic density ratio</div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)] mt-1">Raw text size: {rawFileSize}</div>
         </div>
       </div>
 
-      {/* Format Distribution Table / Cards */}
+      {/* Format Distribution Table */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Database size={13} className="text-[#a855f7]" />
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">Ingested File Formats</h4>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-main)]">Ingested File Formats</h4>
           </div>
-          <span className="text-[11px] font-semibold text-[var(--text-muted)]">
+          <span className="text-[10px] font-semibold text-[var(--text-muted)]">
             {dbStats?.by_type ? Object.keys(dbStats.by_type).length : 0} format(s)
           </span>
         </div>
 
         {dbStats && dbStats.by_type && Object.keys(dbStats.by_type).length > 0 ? (
-          <div className="max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Object.entries(dbStats.by_type)
-                .sort(([, a], [, b]) => Number(b) - Number(a))
-                .map(([format, count]) => {
-                  const num = Number(count)
-                  const percentage = totalDocs > 0 ? Math.round((num / totalDocs) * 100) : 0
-                  return (
-                    <div
-                      key={format}
-                      className="bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-[var(--border-main)] rounded-md p-2.5 space-y-2 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#202020] text-[#a855f7] border border-[#2d2d2d]">
-                          {format}
-                        </span>
-                        <span className="font-mono text-xs text-[var(--text-muted)] font-bold">{percentage}%</span>
-                      </div>
-                      <div className="text-xs text-[var(--text-muted)] font-semibold">
-                        {num.toLocaleString()} {num === 1 ? 'file' : 'files'}
-                      </div>
-                      <div className="w-full h-1.5 bg-[#202020] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-purple-500 to-[#a855f7] rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(percentage, 4)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse mt-1">
+              <thead>
+                <tr className="border-b border-[var(--border-subtle)]/40 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  <th className="py-2.5 pl-2">File Type (Icon)</th>
+                  <th className="py-2.5 pl-4">Count</th>
+                  <th className="py-2.5 pl-4">Total Size (MB)</th>
+                  <th className="py-2.5 pl-4">Avg Size/File (KB)</th>
+                  <th className="py-2.5 pl-4 pr-2">Distribution</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]/20">
+                {Object.entries(dbStats.by_type)
+                  .sort(([, a], [, b]) => Number(b) - Number(a))
+                  .map(([format, count]) => {
+                    const num = Number(count)
+                    const percentage = totalDocs > 0 ? Math.round((num / totalDocs) * 100) : 0
+                    const typeDetails = dbStats.by_type_details?.[format] || dbStats.by_type_details?.[`.${format}`] || dbStats.by_type_details?.[format.replace('.', '')]
+                    const typeBytes = typeDetails?.bytes || 0
+                    const avgBytes = num > 0 ? Math.round(typeBytes / num) : 0
+
+                    const baseBadgeClass = "inline-flex items-center justify-center gap-1.5 w-16 py-1 rounded font-mono font-bold text-[10px] shrink-0 border-0"
+                    let iconBadge = <span className={`${baseBadgeClass} bg-[#252833] text-[var(--text-muted)]`}><FileText size={11}/>{format}</span>
+                    if (format === 'md' || format === '.md') {
+                      iconBadge = <span className={`${baseBadgeClass} bg-[#a855f7]/15 text-[#c084fc]`}><FileText size={11}/>.md</span>
+                    } else if (format === 'AI_RESPONSE' || format === 'AI' || format === 'ai') {
+                      iconBadge = <span className={`${baseBadgeClass} bg-purple-500/15 text-purple-300`}><Cpu size={11}/>AI</span>
+                    } else if (format === 'pdf' || format === '.pdf') {
+                      iconBadge = <span className={`${baseBadgeClass} bg-red-500/15 text-red-400`}><FileText size={11}/>.pdf</span>
+                    } else if (format === 'json' || format === '.json') {
+                      iconBadge = <span className={`${baseBadgeClass} bg-amber-500/15 text-amber-300`}><Code size={11}/>.json</span>
+                    } else if (format === 'py' || format === '.py') {
+                      iconBadge = <span className={`${baseBadgeClass} bg-blue-500/15 text-blue-400`}><Terminal size={11}/>.py</span>
+                    } else if (format === 'xlsx' || format === '.xlsx' || format === 'xls' || format === '.xls' || format === 'csv' || format === '.csv') {
+                      iconBadge = <span className={`${baseBadgeClass} bg-emerald-500/15 text-emerald-400`}><FileSpreadsheet size={11}/>.{format.replace('.', '')}</span>
+                    }
+
+                    const displayFormatName = format === 'AI_RESPONSE' || format === 'AI' ? 'AI_RESPONSE' : format.startsWith('.') ? format : `.${format}`
+
+                    return (
+                      <tr key={format} className="hover:bg-[var(--bg-panel)]/50 transition-colors text-[10px] text-[var(--text-main)] font-semibold">
+                        <td className="py-3 pl-2">
+                          <div className="flex items-center gap-3 font-mono">
+                            {iconBadge}
+                            <span className="font-bold text-[10px]">{displayFormatName}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 pl-4 font-mono font-bold">
+                          {num.toLocaleString()}
+                        </td>
+                        <td className="py-3 pl-4 text-[var(--text-muted)] font-mono font-bold">
+                          ~{formatBytes(typeBytes)}
+                        </td>
+                        <td className="py-3 pl-4 text-[var(--text-muted)] font-mono">
+                          ~{formatBytes(avgBytes)}/file
+                        </td>
+                        <td className="py-3 pl-4 pr-2">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-1.5 bg-[#202020] rounded-full overflow-hidden max-w-[200px]">
+                              <div
+                                className="h-full bg-gradient-to-r from-purple-500 to-[#a855f7] rounded-full transition-all duration-500"
+                                style={{ width: `${Math.max(percentage, 2)}%` }}
+                              />
+                            </div>
+                            <span className="font-mono text-[10px] text-[var(--text-muted)] font-bold w-10 text-right">{percentage}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="py-8 text-center text-xs text-[var(--text-faint)] font-medium">
             No files ingested yet. Go to Data Ingestion to upload files.
           </div>
         )}
-      </div>
-
-      {/* Database Maintenance & Operations */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 border-b border-[var(--border-dim)] pb-3">
-          <Cpu size={13} className="text-[#a855f7]" />
-          <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">Database Maintenance & Operations</h4>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Re-embed Operation */}
-          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-md p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-[var(--text-main)] flex items-center gap-2">
-                <Cpu size={13} className="text-purple-400" />
-                Re-embed DB
-              </span>
-              <button
-                onClick={() => setConfirmReembed(true)}
-                disabled={actionState?.status === 'progress'}
-                className="px-2 py-1 rounded bg-[#a855f7]/20 hover:bg-[#a855f7]/40 text-[#d8b4fe] disabled:opacity-40 text-[10px] font-bold transition-colors border border-[#a855f7]/30"
-              >
-                Re-embed
-              </button>
-            </div>
-            <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
-              Re-chunks all archived document content and regenerates semantic embeddings without needing to re-upload files from disk.
-            </p>
-          </div>
-
-          {/* Truncate All Data Operation */}
-          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-md p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-red-400 flex items-center gap-2">
-                <Trash2 size={13} />
-                Truncate DB
-              </span>
-              <button
-                onClick={() => setConfirmTruncate(true)}
-                disabled={actionState?.status === 'progress'}
-                className="px-2 py-1 rounded bg-red-500/15 hover:bg-red-500/30 text-red-300 disabled:opacity-40 text-[10px] font-bold transition-colors border border-red-500/30"
-              >
-                Truncate
-              </button>
-            </div>
-            <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
-              Lightweight instant truncation (<code className="text-red-300">TRUNCATE TABLE</code>) clears all documents, chunks, and feedback in O(1) time.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Storage Architecture Overview */}

@@ -11,11 +11,23 @@
 export function expandQuery(queryText) {
   if (!queryText) return ''
   const q = trimWhitespace(queryText)
-  // Already a proper phrase — no expansion needed
-  if (q.length >= 6 || q.includes(' ')) return q
+  
+  // For short tokens under 6 chars without spaces, append concept hint
+  if (q.length < 6 && !q.includes(' ')) {
+    return `${q} (related topic or concept)`
+  }
 
-  // For very short tokens (typos / prefixes / acronyms like "rsID" or "rus"), append a concept hint.
-  return `${q} (related topic or concept)`
+  // Smart Query Expansion for natural language questions and conversational queries
+  const isQuestion = /^(what|who|where|when|why|how|explain|describe|summarize|compare|define)\b/i.test(q) || q.endsWith('?')
+  if (isQuestion) {
+    const meaningful = extractMeaningfulTerms(q)
+    if (meaningful.length > 0) {
+      const corePhrase = meaningful.join(' ')
+      return `${q} | ${corePhrase} (definition overview mechanism process analysis summary)`
+    }
+  }
+
+  return q
 }
 
 function trimWhitespace(str) {

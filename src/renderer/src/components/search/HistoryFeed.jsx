@@ -43,7 +43,8 @@ const HistoryFeed = ({
   handleSaveResponse,
   savedResponses,
   setQuery,
-  textareaRef
+  textareaRef,
+  onUpdateAnswer
 }) => {
   const memoizedHistoryFeed = useMemo(() => {
     if (history.length === 0) {
@@ -111,60 +112,64 @@ const HistoryFeed = ({
                       </button>
                     ) : null}
                   </div>
-                ) : msg.results.length === 0 ? (
+                ) : msg.results.length === 0 && !msg.ragAnswer && msg.ragStatus === 'disabled' ? (
                   <EmptySearchState query={msg.query} />
                 ) : (
                   <div className="flex flex-col w-full">
-                    {msg.isFallback && (
-                      <div className="flex items-center gap-2 mb-3 px-1">
-                        <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
-                          No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
-                        </span>
-                      </div>
+                    {(!msg.ragStatus || msg.ragStatus === 'disabled') && (
+                      <>
+                        {msg.isFallback && (
+                          <div className="flex items-center gap-2 mb-3 px-1">
+                            <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
+                              No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
+                            </span>
+                          </div>
+                        )}
+                        {msg.queryRefined && msg.refinedQuery && (
+                          <div className="flex items-center gap-2 mb-3 px-1">
+                            <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
+                              Searched with refined terms: <span className="text-[var(--text-main)] font-mono not-italic">"{msg.refinedQuery}"</span>
+                            </span>
+                          </div>
+                        )}
+                        {msg.lowInfoQuery && (
+                          <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+                            <span className="text-[10px] font-medium text-amber-300">
+                              Try using more specific keywords for better results
+                            </span>
+                          </div>
+                        )}
+                        {!msg.isFollowUp && msg.results.map((item, idx) => (
+                          <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
+                            <SearchResultCard
+                              item={item}
+                              query={msg.query}
+                              handleSelect={handleSelect}
+                              onReply={() => {
+                                if (activeReplyId === `${msg.id}-${idx}`) {
+                                  setActiveReplyId(null);
+                                } else {
+                                  setActiveReplyId(`${msg.id}-${idx}`);
+                                }
+                              }}
+                              isActiveReply={activeReplyId === `${msg.id}-${idx}`}
+                              isLast={idx === msg.results.length - 1}
+                            />
+                            <div className="mt-2 mb-4">
+                              <InlineChat 
+                                resultId={`${item.id || 'res'}-${idx}`}
+                                msg={msg}
+                                activeReplyId={activeReplyId}
+                                compositeId={`${msg.id}-${idx}`}
+                                collapsedReplies={collapsedReplies}
+                                setCollapsedReplies={setCollapsedReplies}
+                                submitFollowUp={(val) => submitFollowUp(val, msg, { ...item, uniqueResultId: `${item.id || 'res'}-${idx}` })}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
                     )}
-                    {msg.queryRefined && msg.refinedQuery && (
-                      <div className="flex items-center gap-2 mb-3 px-1">
-                        <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
-                          Searched with refined terms: <span className="text-[var(--text-main)] font-mono not-italic">"{msg.refinedQuery}"</span>
-                        </span>
-                      </div>
-                    )}
-                    {msg.lowInfoQuery && (
-                      <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
-                        <span className="text-[10px] font-medium text-amber-300">
-                          Try using more specific keywords for better results
-                        </span>
-                      </div>
-                    )}
-                    {!msg.isFollowUp && msg.results.map((item, idx) => (
-                      <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
-                        <SearchResultCard
-                          item={item}
-                          query={msg.query}
-                          handleSelect={handleSelect}
-                          onReply={() => {
-                            if (activeReplyId === `${msg.id}-${idx}`) {
-                              setActiveReplyId(null);
-                            } else {
-                              setActiveReplyId(`${msg.id}-${idx}`);
-                            }
-                          }}
-                          isActiveReply={activeReplyId === `${msg.id}-${idx}`}
-                          isLast={idx === msg.results.length - 1}
-                        />
-                        <div className="mt-2 mb-4">
-                          <InlineChat 
-                            resultId={`${item.id || 'res'}-${idx}`}
-                            msg={msg}
-                            activeReplyId={activeReplyId}
-                            compositeId={`${msg.id}-${idx}`}
-                            collapsedReplies={collapsedReplies}
-                            setCollapsedReplies={setCollapsedReplies}
-                            submitFollowUp={(val) => submitFollowUp(val, msg, { ...item, uniqueResultId: `${item.id || 'res'}-${idx}` })}
-                          />
-                        </div>
-                      </div>
-                    ))}
 
                     {/* RAG Synthesized Answer */}
                     <RagAnswer 
@@ -178,13 +183,14 @@ const HistoryFeed = ({
                       collapsedReplies={collapsedReplies}
                       setCollapsedReplies={setCollapsedReplies}
                       submitFollowUp={submitFollowUp}
+                      onUpdateAnswer={onUpdateAnswer}
                     />
                   </div>
                 )}
               </div>
             </div>
           ))
-  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, setQuery, textareaRef, setActiveReplyId, setCollapsedReplies, submitFollowUp, handleSaveResponse])
+  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, setQuery, textareaRef, setActiveReplyId, setCollapsedReplies, submitFollowUp, handleSaveResponse, onUpdateAnswer])
 
   return <>{memoizedHistoryFeed}</>
 }

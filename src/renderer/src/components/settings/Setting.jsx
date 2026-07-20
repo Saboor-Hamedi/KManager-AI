@@ -29,14 +29,24 @@ const Setting = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('open-settings', handleOpenSettings)
   }, [])
 
-  useKeyboardShortcuts({
-    onEscape: () => {
-      if (isOpen) {
+  React.useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault()
+        e.stopPropagation()
         onClose()
-        return true
       }
-      return false
     }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  useKeyboardShortcuts({
+    onEscape: isOpen ? () => {
+      onClose()
+      return true
+    } : undefined
   })
 
   if (!isOpen) return null

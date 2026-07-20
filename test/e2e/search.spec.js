@@ -66,18 +66,18 @@ test.describe('Empty State', () => {
   test('shows suggestion buttons in empty state', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    await expect(window.getByText('Summarize recent notes').first()).toBeVisible()
-    await expect(window.getByText('Find concepts in my vault').first()).toBeVisible()
-    await expect(window.getByText('Compare two topics').first()).toBeVisible()
+    await expect(window.getByText('Summarize key insights across documents').first()).toBeVisible()
+    await expect(window.getByText('Find core concepts and definitions').first()).toBeVisible()
+    await expect(window.getByText('Compare two related topics').first()).toBeVisible()
     await electronApp.close()
   })
 
   test('clicking suggestion sets query text', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    await window.getByText('Summarize recent notes').first().click()
+    await window.getByText('Summarize key insights across documents').first().click()
     const textarea = window.locator('textarea[placeholder*="Ask anything"]')
-    await expect(textarea).toHaveValue('Summarize recent notes')
+    await expect(textarea).toHaveValue('Summarize key insights across documents')
     await electronApp.close()
   })
 })

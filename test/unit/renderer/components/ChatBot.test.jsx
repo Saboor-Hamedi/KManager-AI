@@ -16,8 +16,8 @@ describe('ChatBot', () => {
 
   it('renders suggestion buttons', async () => {
     await openChat()
-    expect(screen.getByRole('button', { name: 'Summarize my recent notes' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Find concepts in my vault' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Compare two topics' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Summarize key insights across documents' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find core concepts and definitions' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Compare two related topics' })).toBeInTheDocument()
   })
 })

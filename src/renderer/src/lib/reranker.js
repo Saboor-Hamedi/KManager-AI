@@ -99,6 +99,19 @@ export function evaluateChunkRelevance(queryText = '', chunk = {}) {
   const baseSim = chunk.similarity !== undefined ? chunk.similarity : (chunk.cosine_similarity || 0)
   score += Math.min(1.0, baseSim) * 0.40
 
+  // 5. Table of Contents / Dot-Leader Contamination Penalty (-0.60)
+  // Penalize Table of Contents or index pages full of dot leaders (. . . . . or .....)
+  // unless the query explicitly asks for a table of contents or index
+  const isAskingForToc = /\b(table of contents|toc|index|contents|chapters)\b/i.test(query)
+  const dotLeaderMatches = content.match(/\.\s*\.\s*\.\s*\.\s*\./g) || []
+  if (!isAskingForToc && (dotLeaderMatches.length >= 2 || /\.\s*\d+\s*$/m.test(content))) {
+    if (dotLeaderMatches.length >= 3 || (content.match(/\.\s*\d+\s*/g) || []).length >= 3) {
+      score -= 0.60
+    } else {
+      score -= 0.30
+    }
+  }
+
   return Math.min(1.0, Math.max(0.0, score))
 }
 
@@ -108,12 +121,13 @@ export function evaluateChunkRelevance(queryText = '', chunk = {}) {
  *
  * @param {string} queryText - User search query
  * @param {Array} chunks - Array of retrieved chunk objects from database
- * @param {Object} options - { topK: 5, mmrLambda: 0.75 }
+ * @param {Object} options - { topK: 5, mmrLambda: 0.75, minScoreThreshold: 0.18 }
  * @returns {Array} Re-ranked and deduplicated hyper-relevant topK chunks
  */
 export function rerankChunks(queryText, chunks = [], options = {}) {
   const topK = options.topK || 5
   const mmrLambda = options.mmrLambda !== undefined ? options.mmrLambda : 0.75
+  const minScoreThreshold = options.minScoreThreshold !== undefined ? options.minScoreThreshold : 0.18
 
   if (!chunks || chunks.length === 0) return []
   if (chunks.length <= 2) return chunks
@@ -127,7 +141,7 @@ export function rerankChunks(queryText, chunks = [], options = {}) {
       // Calibrate similarity badge to the refined rerank score if it improved precision
       similarity: Math.max(chunk.similarity || 0, Math.min(1.0, rerankScore))
     }
-  }).sort((a, b) => b.rerankScore - a.rerankScore)
+  }).filter(c => c.rerankScore >= minScoreThreshold).sort((a, b) => b.rerankScore - a.rerankScore)
 
   // Apply MMR (Maximal Marginal Relevance) selection to select topK while filtering out duplicates
   const selected = []

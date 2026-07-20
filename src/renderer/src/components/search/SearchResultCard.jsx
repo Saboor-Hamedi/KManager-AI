@@ -171,6 +171,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const [highlightsRemoved, setHighlightsRemoved] = useState(false)
   const [showWikiHover, setShowWikiHover] = useState(false)
   const hoverTimeoutRef = useRef(null)
+  const titleRef = useRef(null)
   const onSelect = (item) => {
     setSelected(true)
     setHighlightsRemoved(true)
@@ -233,6 +234,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const handleMouseEnter = () => {
     if (showWikiHover) return
     hoverTimeoutRef.current = setTimeout(() => {
+      if (window.__activeHoverWikilinkClose) window.__activeHoverWikilinkClose()
       setShowWikiHover(true)
     }, 150)
   }
@@ -270,6 +272,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
+          ref={titleRef}
           onClick={() => onSelect(item)}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -284,7 +287,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
 
           {/* NotebookLM-Style Wiki Hover Popover */}
           {showWikiHover && (
-            <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} />
+            <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} anchorRef={titleRef} />
           )}
         </div>
 

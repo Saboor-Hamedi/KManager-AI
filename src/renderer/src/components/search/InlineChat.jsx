@@ -49,7 +49,7 @@ const InlineChat = ({
                     
                     {reply.ragAnswer && (
                       <div className="text-[12px]">
-                        <DocumentRenderer content={reply.ragAnswer} category="DOCUMENT" />
+                        <DocumentRenderer content={reply.ragAnswer} category="DOCUMENT" results={reply.results || msg.results} />
                         {reply.ragStatus === 'generating' && (
                           <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
                         )}

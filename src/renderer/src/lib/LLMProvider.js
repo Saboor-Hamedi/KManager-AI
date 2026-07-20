@@ -61,14 +61,27 @@ You have access to information about the user's database:
   return client.query(apiMessages, apiKey);
 };
 
-export const checkIsConversational = async (query, provider, apiKey) => {
-  if (!apiKey || apiKey === 'your_deepseek_api_key_here') return false;
-  
-  // Fast local check for common 1-2 word greetings to save API latency
-  const cleanQuery = query.trim().toLowerCase().replace(/[^a-z\s]/g, '');
-  if (['hi', 'hello', 'hey', 'greetings', 'sup', 'yo', 'hi there', 'hello there'].includes(cleanQuery)) {
+export const isCasualGreeting = (query = '') => {
+  const clean = query.trim().toLowerCase().replace(/[^a-z\s']/g, '').replace(/\s+/g, ' ');
+  const greetings = [
+    'hi', 'hello', 'hey', 'greetings', 'sup', 'yo', 'hi there', 'hello there',
+    'how are you', 'how are you doing', "how's it going", 'good morning',
+    'good afternoon', 'good evening', 'thanks', 'thank you', 'thanks much',
+    'who are you', 'what is your name', 'what can you do', 'good day', 'ciao',
+    'hey ai', 'hello ai', 'hi ai', 'what is up', "whats up"
+  ];
+  if (greetings.includes(clean)) return true;
+  if (clean.length < 35 && greetings.some(g => clean === g || clean.startsWith(g + ' ') || clean.endsWith(' ' + g))) {
     return true;
   }
+  return false;
+};
+
+export const checkIsConversational = async (query, provider, apiKey) => {
+  if (isCasualGreeting(query)) return true;
+  if (!apiKey || apiKey === 'your_deepseek_api_key_here') return false;
+  
+  const cleanQuery = query.trim().toLowerCase().replace(/[^a-z\s]/g, '');
   if (cleanQuery.length > 50) return false; // long queries are likely real searches
 
   const client = PROVIDERS[provider] || PROVIDERS.deepseek;
@@ -86,25 +99,95 @@ export const checkIsConversational = async (query, provider, apiKey) => {
   }
 };
 
+export const streamOfflineExtractiveRag = async (query, retrievedChunks, onChunk) => {
+  const stopWords = new Set([
+    'the','a','an','is','it','not','or','and','to','of','in','that','for',
+    'on','are','was','but','this','get','have','what','why','how','does','do',
+    'can','will','would','could','should','its','been','has','had','very',
+    'just','really','there','their','they','them','then','some','with','out',
+    'up','all','if','no','so','my','me','we','he','she','his','her','be','at'
+  ])
+  
+  if (!retrievedChunks || retrievedChunks.length === 0) {
+    if (isCasualGreeting(query)) {
+      onChunk("Hello! I'm doing great, thank you for asking! I am KManager AI, your intelligent assistant. How can I help you today?")
+    } else {
+      onChunk("No exact local document matches found in your knowledge base for this query.\n\n*(Tip: Configure a cloud or local LLM API key in **Settings** or enable AI RAG to generate code and answers beyond your stored documents!)*")
+    }
+    return
+  }
+
+  const queryTerms = query.toLowerCase().split(/\W+/).filter(t => t.length > 2 && !stopWords.has(t))
+  
+  let synthesizedText = `### **Local Research Synthesis**\n\nBased on your stored documents regarding **${query}**, here are the primary technical and conceptual findings extracted from your knowledge base:\n\n#### **Key Insights & Evidence**\n\n`
+  onChunk(synthesizedText)
+  await new Promise(resolve => setTimeout(resolve, 20))
+
+  for (let i = 0; i < Math.min(retrievedChunks.length, 5); i++) {
+    const chunk = retrievedChunks[i]
+    const title = chunk.title || chunk.file_name || `Document ${i + 1}`
+    const idx = chunk.id || (i + 1)
+    const content = chunk.content || ''
+    
+    const sentences = content.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 25)
+    
+    // Pick up to 2 top scoring sentences for rich context
+    let scoredSentences = sentences.map(s => {
+      const sLower = s.toLowerCase()
+      let score = 0
+      for (const qt of queryTerms) {
+        if (sLower.includes(qt)) score += 3
+      }
+      return { text: s.trim(), score }
+    }).sort((a, b) => b.score - a.score)
+
+    let topPoints = scoredSentences.slice(0, 2).map(item => item.text).filter(Boolean)
+    if (topPoints.length === 0 && content.trim().length > 0) {
+      topPoints = [content.slice(0, 320).trim() + (content.length > 320 ? '...' : '')]
+    }
+
+    if (topPoints.length > 0) {
+      let cleaned = topPoints.join(' ').replace(/\n+/g, ' ').trim()
+      if (cleaned.length > 450) cleaned = cleaned.slice(0, 450) + '...'
+      
+      const bullet = `- **[Source #${idx}]**: ${cleaned} \`sourcecite:${idx}|${title}\`\n\n`
+      
+      const words = bullet.split(' ')
+      for (const word of words) {
+        synthesizedText += word + ' '
+        onChunk(synthesizedText)
+        await new Promise(resolve => setTimeout(resolve, 12))
+      }
+    }
+  }
+
+  synthesizedText += `#### **Summary Notes**\n\nThese findings reflect the direct references stored across ${retrievedChunks.length} matching document sections in your local repository. You can directly edit or add notes to this synthesis using the action bar below.\n\n*Extracted offline from local documents.*`
+  onChunk(synthesizedText)
+}
+
 export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, onChunk, history = []) => {
-  if (!apiKey || apiKey === 'your_deepseek_api_key_here') {
-    throw new Error('API key not configured in Settings.');
+  if (!apiKey || apiKey === 'your_deepseek_api_key_here' || apiKey === 'your_api_key_here') {
+    return streamOfflineExtractiveRag(query, retrievedChunks, onChunk);
   }
 
   const hasContext = retrievedChunks && retrievedChunks.length > 0;
-  const contextText = hasContext ? retrievedChunks.map((chunk) => {
-    return `${chunk.content || ''}`;
-  }).join('\n\n') : '';
+  const contextText = hasContext ? retrievedChunks.map((chunk, index) => {
+    const sourceNum = index + 1;
+    const chunkTitle = chunk.title || chunk.file_name || `Document ${sourceNum}`;
+    return `[Source #${sourceNum} | Document Title: ${chunkTitle}]\n${chunk.content || ''}`;
+  }).join('\n\n---\n\n') : '';
 
-  const systemPrompt = `You are a helpful, conversational, and brilliant AI assistant (like ChatGPT). You have access to context extracted from the user's personal documents. Answer their questions naturally, seamlessly blending the provided context with your general knowledge.
+  const systemPrompt = `You are KManager AI, an advanced, intellectually brilliant AI research assistant modeled after ChatGPT and NotebookLM. Your tone is articulate, deeply analytical, authoritative, and profoundly knowledgeable across all technical and domain areas.
 
-### CRITICAL FORMATTING RULES:
-1. **Markdown is MANDATORY**: You MUST format your response beautifully using Markdown.
-2. **Bold text**: ALWAYS use **bold text** for key concepts, names, and section headers.
-3. **Bullet points**: ALWAYS use bullet points (\`-\` or \`*\`) when listing items, differences, or steps. NEVER output plain text lists.
-4. **Clean up artifacts**: The provided context is extracted from PDFs and may have weird line breaks or artifacts. Ignore them and output perfectly clean, structured paragraphs.
-5. **No Source Citations**: Never say "based on the provided text", "according to the document", or "in the context". Just state the facts as if you naturally know them.
-6. **No trailing questions**: Never end your response with "Would you like to know more?", "How else can I help?", or similar follow-ups.`;
+### YOUR CORE INTELLECTUAL RULES:
+1. **Deep Cross-Document Synthesis & Multi-Hop Reasoning**: When document context IS provided and directly or partially relevant to the user's query, do not merely summarize single chunks in isolation. Synthesize, compare, and contrast information across ALL provided sources. Identify hidden connections, architectural patterns, or data trends, and cite facts precisely using numeric markers like [Source #1], [Source #2], etc., corresponding directly to the [Source #1], [Source #2] headers in the context.
+2. **Exact Data & Spreadsheet Extraction**: When analyzing spreadsheets (.xlsx, .csv), numeric records, or structured tables, perform rigorous, exact data extraction. Present clean comparative Markdown tables, step-by-step calculations, or exact metrics without skipping details or making vague approximations.
+3. **Conversational Continuity & Context Awareness**: You are participating in an ongoing dialogue. Always incorporate the prior messages and follow-up history provided in the chat. If the user asks "what about X?" or asks for a comparison based on your previous turn, build directly upon your past responses and the newly retrieved sources.
+4. **Masterful Domain Elaboration**: After synthesizing what the sources say, transition seamlessly into a rich, intellectually rewarding elaboration using your vast general intelligence. Provide architectural insights, industry best practices, concrete examples, or fully functioning code solutions when appropriate.
+5. **Handling Missing or Unrelated Context**: If the retrieved documents do NOT contain exact details regarding the user's query or are clearly unrelated (for example, if you retrieve a Table of Contents or a Vim guide when asked about English material), DO NOT cite those sources ([Source #1], etc.) and DO NOT attempt to force false connections to unrelated text. Do NOT write repetitive robotic disclaimers analyzing what the unrelated documents are about. Instead, smoothly and naturally note: "I don't see exact details in your stored documents, but here is the comprehensive answer based on domain expertise..." and immediately deliver a world-class, definitive answer!
+6. **Pure Casual Small Talk Only**: ONLY if the user's prompt is strictly a casual greeting (like "hello", "hi", "how are you") with zero topic keywords, reply warmly and naturally without mentioning sources.
+7. **Clean Markdown & Editable Structure**: Format your response with polished, highly structured Markdown using clear section headers (###), bulleted breakdowns, and crisp paragraphs or code blocks so the user can review, copy, modify, and save them. ALWAYS place a clean blank line right before any section header (like ### Header) so it renders as a proper heading tag.
+8. **No Trailing Questions**: Never end your turn with generic follow-up prompts like "Would you like to know more?". Deliver a complete, authoritative answer.`;
 
   const formattedHistory = (history || [])
     .filter(m => m && m.content && typeof m.content === 'string' && m.content.trim() !== '')
@@ -114,7 +197,7 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
     }));
 
   const userContent = hasContext
-    ? `CONTEXT FROM USER DOCUMENTS:\n---\n${contextText}\n---\n\nUSER QUESTION:\n${query}`
+    ? `CONTEXT FROM USER DOCUMENTS & EMBEDDED KNOWLEDGE BASE:\n---\n${contextText}\n---\n\nUSER QUESTION/TOPIC:\n${query}\n\n(IMPORTANT INSTRUCTION: If the above CONTEXT SOURCES directly relate to "${query}", synthesize across them using exact numeric citations ([Source #1], [Source #2], etc.). However, if the sources are unrelated to "${query}" (such as an unrelated guide or Table of Contents), DO NOT cite them or force false connections. Instead, note "I don't see exact details in your stored documents, but here is the comprehensive answer..." and immediately provide a masterful, full answer based on domain expertise. Ensure all headings like ### have blank lines before and after.)`
     : `USER QUESTION:\n${query}`;
 
   const apiMessages = [
@@ -124,7 +207,12 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
   ];
 
   const client = PROVIDERS[provider] || PROVIDERS.deepseek;
-  return client.stream(apiMessages, apiKey, onChunk);
+  try {
+    return await client.stream(apiMessages, apiKey, onChunk);
+  } catch (err) {
+    console.warn('Cloud API streaming failed, falling back to offline extractive RAG:', err);
+    return streamOfflineExtractiveRag(query, retrievedChunks, onChunk);
+  }
 };
 
 export const fetchDynamicPrompts = async (query, ragAnswer, provider, apiKey) => {

@@ -82,7 +82,40 @@ export class PDFIngestionService {
         throw new Error('pdf-parse module could not be loaded as a function.')
       }
 
-      const result = await pdfParse(dataBuffer)
+      const result = await pdfParse(dataBuffer, {
+        pagerender: async function(pageData) {
+          const render_options = {
+            normalizeWhitespace: true,
+            disableCombineTextItems: false
+          }
+          const textContent = await pageData.getTextContent(render_options)
+          let lastY = null
+          let text = ''
+
+          for (const item of textContent.items) {
+            if (!item?.str) continue
+            const currentY = item.transform ? item.transform[5] : null
+
+            // If vertical Y position jumped (> 4 units), add a newline
+            if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 4) {
+              text += '\n'
+            } else if (
+              text.length > 0 &&
+              !text.endsWith(' ') &&
+              !text.endsWith('\n') &&
+              !text.endsWith('-') &&
+              !item.str.startsWith(' ') &&
+              !/^[.,;:!?')\]]/.test(item.str)
+            ) {
+              // Same line: insert space if neither previous ends with space/hyphen nor current starts with space/punctuation
+              text += ' '
+            }
+            text += item.str
+            lastY = currentY
+          }
+          return text
+        }
+      })
       const sanitized = this.sanitizeText(result.text)
 
       if (_extractionCache.size >= 200) {

@@ -150,14 +150,15 @@ class IngestionService {
     }
 
     const contentHash = crypto.createHash('sha256').update(sanitizedText).digest('hex')
-    const vaultPath = `ai-response-${contentHash.slice(0, 16)}`
+    const titleHash = crypto.createHash('sha256').update((title || 'AI Response').toLowerCase().trim()).digest('hex')
+    const vaultPath = `ai-response-${titleHash.slice(0, 16)}`
     const fileSize = Buffer.byteLength(sanitizedText, 'utf8')
     
     return await db.transaction(async (client) => {
       const docInsertRes = await client.query(
         `INSERT INTO documents (vault_path, file_name, file_type, file_size, content, content_hash)
          VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()
+         ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, content_hash = EXCLUDED.content_hash, updated_at = NOW()
          RETURNING id`,
         [vaultPath, title || 'AI Response', 'ai_response', fileSize, sanitizedText, contentHash]
       )

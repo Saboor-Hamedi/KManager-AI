@@ -1,12 +1,55 @@
-import React from 'react'
-import { Plus } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Plus, Copy, ThumbsUp, ThumbsDown, Check, Edit as EditIcon } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 import SuggestedPrompts from './SuggestedPrompts'
 import InlineChat from './InlineChat'
 import './horizontal.css'
 
-const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp }) => {
+const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp, onUpdateAnswer }) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [feedback, setFeedback] = useState(null)
+  const editRef = useRef(null)
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(msg?.ragAnswer || '')
+    }
+  }, [msg?.ragAnswer, isEditing])
+
+  useEffect(() => {
+    if (isEditing && editRef.current) {
+      editRef.current.style.height = 'auto'
+      editRef.current.style.height = `${editRef.current.scrollHeight}px`
+    }
+  }, [isEditing, editValue])
+
   if (!msg.ragStatus || msg.ragStatus === 'disabled') return null
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.ragAnswer || '')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleFeedback = (type) => {
+    if (feedback === type) return
+    setFeedback(type)
+    const score = type === 'helpful' ? 1 : -1
+    if (window.api?.db?.submitFeedback) {
+      window.api.db.submitFeedback(msg.query || 'AI synthesis', score, msg.id, null)
+        .catch(err => console.error('Feedback error:', err))
+    }
+  }
+
+  const handleSaveEdit = () => {
+    const formatted = editValue.split('\n').map(l => l.trimEnd() + '  ').join('\n')
+    if (onUpdateAnswer && formatted !== msg.ragAnswer) {
+      onUpdateAnswer(msg.id, formatted)
+    }
+    setIsEditing(false)
+  }
 
   return (
     <div className="w-full">
@@ -19,17 +62,84 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
 
       {msg.ragAnswer && (
         <div className="flex flex-col">
-          <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none text-justify">
-            <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" />
-            {msg.ragStatus === 'generating' && (
-              <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
-            )}
-          </div>
+          {isEditing ? (
+            <div className="flex flex-col gap-2.5 mt-2">
+              <textarea
+                ref={editRef}
+                className="w-full p-3.5 text-[13px] font-mono bg-[var(--bg-active)] border border-[var(--border-subtle)] rounded-[6px] text-[var(--text-main)] focus:outline-none focus:border-[var(--text-accent)] focus:shadow-[0_0_0_2px_rgba(var(--text-accent-rgb,64,186,250),0.15)] resize-none leading-relaxed min-h-[120px]"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+              />
+              <div className="flex justify-end gap-1.5">
+                <button
+                  onClick={() => {
+                    setEditValue(msg.ragAnswer || '')
+                    setIsEditing(false)
+                  }}
+                  className="px-3 py-1.5 text-[11px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-3 py-1.5 text-[11px] font-medium bg-[var(--text-accent)] text-white rounded-[4px] hover:opacity-90 transition-opacity"
+                >
+                  Update Answer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none text-justify">
+              <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" results={msg.results} />
+              {msg.ragStatus === 'generating' && (
+                <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
+              )}
+            </div>
+          )}
 
           {msg.ragStatus === 'done' && (
             <>
               <div className="horizontal-divider my-5" />
-              <div className="flex justify-start mt-1 items-center">
+              <div className="flex items-center justify-between flex-wrap gap-3 mt-1">
+                {/* Action Bar (Like, Dislike, Copy, Edit) */}
+                <div className="flex items-center bg-[var(--bg-panel)]/80 border-0 rounded-[5px] overflow-hidden h-7 shrink-0 select-none">
+                  <button 
+                    onClick={() => handleFeedback('helpful')}
+                    className={`h-full px-2.5 transition-colors flex items-center justify-center border-0 ${
+                      feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                    }`}
+                    title="Helpful AI response"
+                  >
+                    <ThumbsUp size={13} />
+                  </button>
+                  <button 
+                    onClick={() => handleFeedback('unhelpful')}
+                    className={`h-full px-2.5 transition-colors flex items-center justify-center border-0 ${
+                      feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                    }`}
+                    title="Not helpful"
+                  >
+                    <ThumbsDown size={13} />
+                  </button>
+                  <button 
+                    onClick={handleCopy}
+                    className="h-full px-2.5 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+                    title="Copy AI answer"
+                  >
+                    {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  </button>
+                  <button
+                    onClick={() => setIsEditing(prev => !prev)}
+                    className={`h-full px-2.5 hover:bg-[var(--bg-active)] transition-colors flex items-center justify-center border-0 ${
+                      isEditing ? 'bg-[var(--bg-active)] text-[var(--text-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    }`}
+                    title="Edit answer text"
+                  >
+                    <EditIcon size={13} />
+                  </button>
+                </div>
+
+                {/* Save Button */}
                 <button
                   onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
                   disabled={savedResponses[msg.id] === 'saving' || savedResponses[msg.id] === 'saved'}
@@ -63,6 +173,7 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
                   )}
                 </button>
               </div>
+
               <div className="mt-3">
                 <SuggestedPrompts msg={msg} onSelectPrompt={(p) => {
                   setQuery(p)

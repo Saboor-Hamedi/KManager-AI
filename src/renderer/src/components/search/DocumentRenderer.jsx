@@ -1,4 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react'
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
+import { createPortal } from 'react-dom'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Copy, Check, X } from 'lucide-react'
@@ -8,6 +9,7 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import './horizontal.css'
 const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
+const HoverWikilink = lazy(() => import('./HoverWikilink'))
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
@@ -60,9 +62,37 @@ const formatMarkdownText = (text) => {
   // Convert remaining standalone [[wikilinks]] to inline wikilink tokens
   result = result.replace(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (_, page) => `\`wikilink:${page.trim()}\``)
 
-  // Convert [Source X] or [Source X: Title] into `sourcecite:` inline code tokens so they render as clickable badges
-  result = result.replace(/\[Source\s+#?(\d+)(?:\s*[:|-]\s*([^\]]+))?\]/gi, (_, idx, title) => {
-    return `\`sourcecite:${idx}|${(title || '').trim()}\``
+  // Convert [Source X] or [Source X: Title] or [Doc X] or standalone [1], [2] into `sourcecite:` tokens with sequential display numbers 1, 2, 3...
+  let citeCounter = 1
+  const citeMap = new Map()
+
+  // Match [Source #1], [Source 1: Title], [Doc #1], [Ref 1], or standalone [1] (up to 2 digits)
+  result = result.replace(/\[(?:(?:Source|Doc|Ref|Document)\s*#?)?([0-9]{1,2})(?:\s*[:|-]\s*([^\]]+))?\]/gi, (match, idx, title) => {
+    const key = String(idx).trim()
+    if (!citeMap.has(key)) {
+      const num = (!isNaN(Number(idx)) && Number(idx) < 100) ? Number(idx) : citeCounter++
+      citeMap.set(key, num)
+    }
+    return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
+  })
+
+  result = result.replace(/\[Source\s+#?([a-zA-Z0-9_-]+)(?:\s*[:|-]\s*([^\]]+))?\]/gi, (_, idx, title) => {
+    const key = String(idx).trim()
+    if (!citeMap.has(key)) {
+      const num = (!isNaN(Number(idx)) && Number(idx) < 100) ? Number(idx) : citeCounter++
+      citeMap.set(key, num)
+    }
+    return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
+  })
+
+  result = result.replace(/`sourcecite:([^|`]+)(?:\|([^|`]*))?(?:\|([^|`]*))?`/g, (match, idx, title, existingNum) => {
+    if (existingNum) return match
+    const key = String(idx).trim()
+    if (!citeMap.has(key)) {
+      const num = (!isNaN(Number(idx)) && Number(idx) < 100) ? Number(idx) : citeCounter++
+      citeMap.set(key, num)
+    }
+    return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
   })
 
   // Clean up and normalize Markdown tables across chunks so they always render properly
@@ -126,7 +156,22 @@ const formatMarkdownText = (text) => {
   // 2. Capitalize the first letter right after a period, question mark, or exclamation point if lowercase
   finalResult = finalResult.replace(/([.!?]\s+|\n\n\s*|\n\s*-\s+|\n\s*\d+\.\s+)([a-z])/g, (_, prefix, char) => prefix + char.toUpperCase())
 
-  // 3. Clean up artificial single line breaks from PDF extraction (`he'd been using...\nFortunately...`) while keeping paragraphs and tables intact
+  // ── Smart Section & Numbered List Formatting ──
+  // Break inline numbered list items (`1. `, `2. ` or `1) `, `2) `) onto double newlines when following punctuation or continuing a list
+  finalResult = finalResult.replace(/([.:!?;])\s+(\d{1,2}[\.\)])\s+([A-Z])/g, '$1\n\n$2 $3')
+  finalResult = finalResult.replace(/([.:!?;])\s+(\d{1,2}[\.\)])\s+([A-Z])/g, '$1\n\n$2 $3')
+
+  // Break inline numbered headings/sections (`2:3b Program input files:`, `1: Embedding strategies`) onto double newlines as distinct headers
+  finalResult = finalResult.replace(/([.:!?;])\s+(\d{1,2}(?::[0-9a-zA-Z]+)?\s+[^.:!?;]+:)\s+([A-Z])/g, '$1\n\n### $2\n\n$3')
+
+  // Ensure any heading (#, ##, ###) is strictly preceded and followed by blank lines so react-markdown always renders an actual heading tag
+  finalResult = finalResult.replace(/([^\n])\s*\n*(#{1,6}\s+[^\n]+)/g, '$1\n\n$2')
+  finalResult = finalResult.replace(/(#{1,6}\s+[^\n]+)\n*([^\n#])/g, '$1\n\n$2')
+
+  // Break right after introductory colons when immediately followed by a list item (`The following is the process:\n\n1. ...`)
+  finalResult = finalResult.replace(/:\s+(\d{1,2}[\.\)])\s+/g, ':\n\n$1 ')
+
+  // 3. Clean up artificial single line breaks from PDF extraction while keeping paragraphs, tables, and lists intact
   const paragraphLines = finalResult.split('\n')
   const cleanedParagraphs = []
   let currentParagraph = []
@@ -141,7 +186,7 @@ const formatMarkdownText = (text) => {
                           trimmed.startsWith('- ') || 
                           trimmed.startsWith('* ') || 
                           trimmed.startsWith('> ') || 
-                          trimmed.match(/^\d+\.\s+/) || 
+                          trimmed.match(/^\d+[\.\)]\s+/) || 
                           trimmed.startsWith('```') || 
                           trimmed.startsWith('$$') || 
                           trimmed.includes('---') || 
@@ -156,8 +201,17 @@ const formatMarkdownText = (text) => {
       if (currentParagraph.length > 0) {
         cleanedParagraphs.push(currentParagraph.join(' '))
         currentParagraph = []
+        if (isSpecialLine && cleanedParagraphs.length > 0 && cleanedParagraphs[cleanedParagraphs.length - 1] !== '') {
+          cleanedParagraphs.push('')
+        }
+      }
+      if (isSpecialLine && (trimmed.startsWith('#') || trimmed.match(/^\d+[\.\)]\s+/)) && cleanedParagraphs.length > 0 && cleanedParagraphs[cleanedParagraphs.length - 1] !== '') {
+        cleanedParagraphs.push('')
       }
       cleanedParagraphs.push(line)
+      if (isSpecialLine && trimmed.startsWith('#')) {
+        cleanedParagraphs.push('')
+      }
     } else {
       currentParagraph.push(trimmed)
     }
@@ -166,7 +220,21 @@ const formatMarkdownText = (text) => {
     cleanedParagraphs.push(currentParagraph.join(' '))
   }
 
-  return cleanedParagraphs.join('\n')
+  const endRefsParagraphs = cleanedParagraphs.map(line => {
+    if (!line.includes('`sourcecite:')) return line
+    const citeTokens = []
+    let cleaned = line.replace(/`sourcecite:([^|`]+)(?:\|([^|`]*))?(?:\|([^|`]*))?`/g, (match) => {
+      citeTokens.push(match)
+      return ''
+    })
+    cleaned = cleaned.replace(/\s+([.,!?;:])/g, '$1').replace(/\s{2,}/g, ' ').trimEnd()
+    if (citeTokens.length > 0) {
+      return cleaned + (cleaned.length > 0 ? ' ' : '') + citeTokens.join(' ')
+    }
+    return cleaned
+  })
+
+  return endRefsParagraphs.join('\n')
 }
 
 const CodeCopyButton = ({ code }) => {
@@ -181,18 +249,18 @@ const CodeCopyButton = ({ code }) => {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-white/40 hover:text-white hover:bg-white/10 transition-colors border-0"
+      className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors text-[10.5px] font-medium border border-[var(--border-subtle)] h-5"
       title="Copy to clipboard"
     >
       {copied ? (
         <>
-          <Check size={11} className="text-emerald-400" />
-          <span className="text-[10px] font-medium text-emerald-400">Copied</span>
+          <Check size={11} className="text-emerald-500" />
+          <span className="text-emerald-500">Copied</span>
         </>
       ) : (
         <>
           <Copy size={11} />
-          <span className="text-[10px] font-medium">Copy</span>
+          <span>Copy</span>
         </>
       )}
     </button>
@@ -201,29 +269,37 @@ const CodeCopyButton = ({ code }) => {
 
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
-    <div className="relative group my-4 rounded-lg overflow-hidden border border-[var(--border-subtle)] shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-[#1e1e1e]">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#161b22] border-b border-white/[0.05]">
-        <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">{title || language || 'Code'}</span>
+    <div className="my-3 rounded-[5px] overflow-hidden border border-[var(--border-main)] bg-[var(--bg-card)] max-w-full">
+      {/* Unified DashboardSearch-Styled Header */}
+      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between select-none h-8">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)]" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-accent)]">
+            {title || language || 'Code'}
+          </span>
+        </div>
         <CodeCopyButton code={code} />
       </div>
-      <SyntaxHighlighter
-        children={code}
-        style={vscDarkPlus}
-        language={language || 'text'}
-        showLineNumbers={showLineNumbers}
-        PreTag="div"
-        customStyle={{
-          margin: 0,
-          background: '#1e1e1e',
-          color: '#d4d4d4',
-          fontSize: '11.5px',
-          padding: '1rem',
-          overflowX: 'auto',
-          lineHeight: '1.6'
-        }}
-        wrapLines={true}
-        wrapLongLines={false}
-      />
+      <div className="overflow-x-auto custom-scrollbar">
+        <SyntaxHighlighter
+          children={code}
+          style={vscDarkPlus}
+          language={language || 'text'}
+          showLineNumbers={showLineNumbers}
+          PreTag="div"
+          customStyle={{
+            margin: 0,
+            background: 'transparent',
+            color: '#d4d4d4',
+            fontSize: '12px',
+            padding: '1.25rem',
+            overflowX: 'auto',
+            lineHeight: '1.6'
+          }}
+          wrapLines={true}
+          wrapLongLines={false}
+        />
+      </div>
     </div>
   )
 }
@@ -308,20 +384,52 @@ const renderCalloutOrParagraph = (children, props) => {
   )
 }
 
-const WikiHoverCite = ({ idx, title }) => {
+const WikiHoverCite = ({ idx, title, displayNum }) => {
   const [showHover, setShowHover] = React.useState(false)
   const [chunkText, setChunkText] = React.useState('')
+  const [itemTitle, setItemTitle] = React.useState(title || '')
+  const [itemCategory, setItemCategory] = React.useState('DOCUMENT')
+  const buttonRef = React.useRef(null)
   const hoverTimeoutRef = React.useRef(null)
 
   const handleMouseEnter = () => {
     if (showHover) return
     hoverTimeoutRef.current = setTimeout(() => {
+      if (window.__activeHoverWikilinkClose) window.__activeHoverWikilinkClose()
       setShowHover(true)
+      
+      const activeResults = window.__currentSearchMappedResults || []
+      const numIdx = !isNaN(Number(idx)) ? Number(idx) - 1 : -1
+      let matched = null
+      
+      if (numIdx >= 0 && numIdx < activeResults.length) {
+        matched = activeResults[numIdx]
+      } else {
+        matched = activeResults.find(r => String(r.id) === String(idx) || String(r.document_id) === String(idx) || (title && r.title && r.title.toLowerCase() === title.toLowerCase()))
+      }
+
+      if (matched) {
+        if (matched.content) setChunkText(matched.content)
+        if (matched.title) setItemTitle(matched.title)
+        if (matched.category) setItemCategory(matched.category.toUpperCase())
+        return
+      }
+
       if (!chunkText && window.api?.db?.query) {
-        window.api.db.query('SELECT content FROM document_chunks WHERE id = $1 OR source_index = $1 LIMIT 1', [idx])
+        const strId = String(idx).trim()
+        window.api.db.query(
+          `SELECT dc.content, d.file_type, d.file_name FROM embedding_documents dc 
+           LEFT JOIN documents d ON dc.document_id = d.id 
+           WHERE dc.id::text = $1 OR dc.document_id::text = $1 OR dc.chunk_index::text = $1 OR d.file_name ILIKE $2 
+           LIMIT 1`,
+          [strId, title ? `%${title}%` : '']
+        )
           .then(res => {
-            if (res && res[0] && res[0].content) {
-              setChunkText(res[0].content)
+            const rows = res?.rows || res
+            if (rows && rows[0]) {
+              if (rows[0].content) setChunkText(rows[0].content)
+              if (rows[0].file_name) setItemTitle(rows[0].file_name)
+              if (rows[0].file_type) setItemCategory(rows[0].file_type.toUpperCase())
             }
           })
           .catch(() => {})
@@ -333,57 +441,44 @@ const WikiHoverCite = ({ idx, title }) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
   }
 
-  useEffect(() => {
-    if (!showHover) return
-    const handleClickOutside = () => {
-      setShowHover(false)
-    }
-    window.addEventListener('click', handleClickOutside)
-    return () => window.removeEventListener('click', handleClickOutside)
-  }, [showHover])
+  const numLabel = displayNum || (isNaN(Number(idx)) ? '?' : idx)
 
   return (
     <span className="relative inline-block overflow-visible" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
           if (window.__openCitationPreviewModal) {
-            window.__openCitationPreviewModal(idx, title)
+            window.__openCitationPreviewModal(idx, itemTitle || title)
           }
         }}
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded-[5px] bg-[var(--text-accent)]/15 hover:bg-[var(--text-accent)]/25 border-0 text-[var(--text-accent)] text-[11px] font-bold cursor-pointer transition-all shadow-sm select-none align-middle"
-        title={`Click to preview Source ${idx}`}
+        className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 mx-0.5 rounded-full bg-[var(--bg-active)] hover:bg-[var(--text-accent)] text-[var(--text-accent)] hover:text-white text-[10.5px] font-bold cursor-pointer transition-colors shadow-sm select-none align-baseline -translate-y-[1px] border-0"
+        title={itemTitle || title ? `Source ${numLabel}: ${itemTitle || title}` : `Source ${numLabel}`}
       >
-        <span>[Source {idx}]</span>
+        <span>{numLabel}</span>
       </button>
 
       {showHover && (
-        <div 
-          onClick={(e) => e.stopPropagation()}
-          style={{ backgroundColor: '#141822', opacity: 1, backdropFilter: 'none' }}
-          className="absolute left-0 bottom-full mb-2 z-[99999] w-[460px] max-w-[95vw] rounded-[5px] border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden animate-in fade-in duration-150 text-left select-text"
-        >
-          {/* Compact GlobalTitleBar-Styled Header without blur */}
-          <div className="h-[26px] bg-[#0e1117] border-b border-white/[0.08] flex items-center justify-between shrink-0 select-none">
-            <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
-              <span className="text-[11px] font-semibold text-[var(--text-main)] truncate tracking-tight uppercase">{title || `Source #${idx}`}</span>
-            </div>
-            <div className="flex items-center h-full shrink-0">
-              <button
-                onClick={() => setShowHover(false)}
-                className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0"
-                title="Close popover"
-              >
-                <X size={13} />
-              </button>
-            </div>
-          </div>
-          {/* Solid Body with text-justify */}
-          <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-3.5 text-[13px] text-[var(--text-main)] leading-relaxed font-sans break-words bg-[#141822] text-justify">
-            <DocumentRenderer className="text-[var(--text-main)] text-[13px] leading-relaxed max-w-full overflow-visible text-justify" content={chunkText || `Source citation #${idx}. Preview content loading or unavailable.`} category="TEXT" fileTitle={title} />
-          </div>
-        </div>
+        <Suspense fallback={null}>
+          <HoverWikilink 
+            item={{ 
+              id: idx, 
+              title: itemTitle || title || `Source #${numLabel}`, 
+              content: chunkText || `Preview content for source #${numLabel} is loading or not stored locally.`, 
+              category: itemCategory 
+            }} 
+            setShowWikiHover={setShowHover} 
+            onSelect={(item) => {
+              setShowHover(false)
+              if (window.__openCitationPreviewModal) {
+                window.__openCitationPreviewModal(item.id || idx, item.title)
+              }
+            }} 
+            anchorRef={buttonRef} 
+          />
+        </Suspense>
       )}
     </span>
   )
@@ -413,9 +508,11 @@ const cleanMarkdownComponents = {
 
     if (codeString.startsWith('sourcecite:')) {
       const parts = codeString.slice('sourcecite:'.length).split('|')
-      const idx = parseInt(parts[0], 10)
+      const rawIdx = parts[0]
+      const idx = isNaN(Number(rawIdx)) ? rawIdx : Number(rawIdx)
       const title = parts[1] || `Source ${idx}`
-      return <WikiHoverCite idx={idx} title={title} />
+      const displayNum = parts[2] || (isNaN(Number(idx)) ? '?' : idx)
+      return <WikiHoverCite idx={idx} title={title} displayNum={displayNum} />
     }
 
     const cleanCode = codeString.trim()
@@ -460,8 +557,16 @@ const cleanMarkdownComponents = {
   a: ({node, ...props}) => <a className="text-[var(--text-accent)] hover:underline font-medium break-words" target="_blank" rel="noopener noreferrer" {...props} />,
   hr: ({node, ...props}) => <div className="horizontal-divider my-6" {...props} />,
   table: ({node, ...props}) => (
-    <div className="my-6 overflow-x-auto bg-transparent border-0 max-w-full shadow-none">
-      <table className="w-full text-left border-collapse text-[14px] text-[var(--text-main)]" {...props} />
+    <div className="my-4 rounded-[5px] overflow-hidden border border-[var(--border-main)] bg-[var(--bg-card)] max-w-full">
+      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between select-none h-8">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)]" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-accent)]">Table Data</span>
+        </div>
+      </div>
+      <div className="overflow-x-auto p-4 custom-scrollbar">
+        <table className="w-full text-left border-collapse text-[13.5px] text-[var(--text-main)]" {...props} />
+      </div>
     </div>
   ),
   thead: ({node, ...props}) => <thead className="bg-transparent border-b border-white/15 dark:border-[var(--border-subtle)]/60 font-bold text-[var(--text-main)]" {...props} />,
@@ -481,7 +586,13 @@ const formatJsonContent = (content) => {
   }
 }
 
-const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', className }) => {
+const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', results = null, className }) => {
+  React.useEffect(() => {
+    if (results && Array.isArray(results) && results.length > 0) {
+      window.__currentSearchMappedResults = results
+    }
+  }, [results])
+
   if (!content) return null
 
   const ext = fileTitle ? fileTitle.split('.').pop().toLowerCase() : ''

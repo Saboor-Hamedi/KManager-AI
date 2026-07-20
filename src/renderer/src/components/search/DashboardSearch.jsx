@@ -7,8 +7,10 @@ import PDFUploadZone from './PDFUploadZone'
 import EmptySearchState from './EmptySearchState'
 import InlineChat from './InlineChat'
 import RagAnswer from './RagAnswer'
+import HistoryFeed from './HistoryFeed'
 import { getSetting, saveSetting } from '../../lib/settings'
-import { streamRagAnswer, checkIsConversational } from '../../lib/LLMProvider'
+import { streamRagAnswer, streamOfflineExtractiveRag, checkIsConversational, isCasualGreeting } from '../../lib/LLMProvider'
+import { rerankChunks } from '../../lib/reranker'
 import './horizontal.css'
 
 const SearchLoadingSkeleton = () => (
@@ -156,6 +158,62 @@ const DashboardSearch = () => {
     setSelectedPdf(null)
   }, [])
 
+  useEffect(() => {
+    window.__openCitationPreviewModal = (itemOrId, title) => {
+      if (typeof itemOrId === 'object' && itemOrId !== null) {
+        handleSelect(itemOrId)
+      } else {
+        let found = null
+        const numIdx = !isNaN(Number(itemOrId)) ? Number(itemOrId) - 1 : -1
+
+        for (const msg of history) {
+          if (msg.results && Array.isArray(msg.results) && msg.results.length > 0) {
+            if (numIdx >= 0 && numIdx < msg.results.length) {
+              found = msg.results[numIdx]
+            } else {
+              found = msg.results.find(r => String(r.id) === String(itemOrId) || String(r.document_id) === String(itemOrId) || r.title === title)
+            }
+            if (found) break
+          }
+        }
+
+        if (!found && numIdx >= 0 && window.__currentSearchMappedResults && Array.isArray(window.__currentSearchMappedResults) && numIdx < window.__currentSearchMappedResults.length) {
+          found = window.__currentSearchMappedResults[numIdx]
+        }
+
+        if (found) {
+          handleSelect(found)
+        } else if (window.api?.db?.query) {
+          const strId = String(itemOrId).trim()
+          window.api.db.query(
+            `SELECT dc.id, dc.document_id, dc.content, d.file_type, d.file_name, d.vault_path 
+             FROM embedding_documents dc 
+             LEFT JOIN documents d ON dc.document_id = d.id 
+             WHERE dc.id::text = $1 OR dc.chunk_index::text = $1 OR d.file_name ILIKE $2 
+             LIMIT 1`,
+            [strId, title ? `%${title}%` : '']
+          )
+            .then(res => {
+              const rows = res?.rows || res
+              if (rows && rows[0]) {
+                handleSelect({
+                  id: rows[0].id,
+                  document_id: rows[0].document_id,
+                  category: rows[0].file_type ? rows[0].file_type.toUpperCase() : 'DOCUMENT',
+                  title: title || rows[0].file_name || `Source #${itemOrId}`,
+                  content: rows[0].content,
+                  vault_path: rows[0].vault_path
+                })
+              }
+            }).catch(() => {})
+        }
+      }
+    }
+    return () => {
+      delete window.__openCitationPreviewModal
+    }
+  }, [history, handleSelect])
+
   // Smooth auto-scroll chat to bottom only when history length changes (new message added/removed)
   useEffect(() => {
     if (scrollRef.current) {
@@ -226,7 +284,9 @@ const DashboardSearch = () => {
     if (!q || q.trim() === '' || isSearchingRef.current) return
 
     // Debounce guard: prevent duplicate submissions fired within 300ms
-    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current)
+    if (autocompleteTimeoutRef.current) clearTimeout(autocompleteTimeoutRef.current)
+    setShowAutocomplete(false)
+    setAutocompleteResults([])
     isSearchingRef.current = true
 
     if (selectedPdf) setSelectedPdf(null)
@@ -247,29 +307,45 @@ const DashboardSearch = () => {
     try {
       const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
       const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
-      const isConv = await checkIsConversational(searchQuery, provider, apiKey)
-      
-      if (isConv) {
+
+      const isCasual = isCasualGreeting(searchQuery) || await checkIsConversational(searchQuery, provider, apiKey)
+      if (isCasual) {
+        window.__currentSearchMappedResults = []
         setHistory(prev => prev.map(msg => 
           msg.id === messageId ? { 
             ...msg, 
             results: [], 
             isLoading: false, 
             error: null,
-            ragStatus: 'done',
-            ragAnswer: 'Hello! I am your KManager AI assistant. What would you like to search for in your knowledge base today?'
+            ragStatus: 'generating',
+            ragAnswer: ''
           } : msg
         ))
+
+        streamRagAnswer(searchQuery, [], provider, apiKey, (accumulated) => {
+          setHistory(prev => prev.map(msg => 
+            msg.id === messageId ? { ...msg, ragAnswer: accumulated } : msg
+          ))
+        }).then(() => {
+          setHistory(prev => prev.map(msg => 
+            msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
+          ))
+        }).catch(ragErr => {
+          setHistory(prev => prev.map(msg => 
+            msg.id === messageId ? { ...msg, ragStatus: 'error', ragError: ragErr.message } : msg
+          ))
+        })
         return
       }
 
       // Dynamically fetch context limit (default to 3) to provide controlled AI context
       const searchLimitStr = await getSetting('SEARCH_RESULT_LIMIT', 3)
       const searchLimit = parseInt(searchLimitStr) || 3
-      const res = await window.api.db.search(searchQuery, searchLimit)
+      const ragLimit = Math.max(searchLimit, 12)
+      const res = await window.api.db.search(searchQuery, ragLimit)
       
       if (res && res.success) {
-        const mapped = res.rows.map(row => ({
+        const mappedAll = res.rows.map(row => ({
           id: row.id,
           document_id: row.document_id,
           category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
@@ -279,32 +355,38 @@ const DashboardSearch = () => {
           vault_path: row.vault_path,
           created_at: row.created_at
         }))
+        const rerankedAll = rerankChunks(searchQuery, mappedAll, { 
+          topK: Math.max(searchLimit, 6), 
+          mmrLambda: 0.75, 
+          minScoreThreshold: 0.18 
+        })
+        const mapped = rerankedAll.slice(0, searchLimit)
+        window.__currentSearchMappedResults = mapped
+        const shouldRunRag = enableRag
         setHistory(prev => prev.map(msg => 
           msg.id === messageId ? { 
             ...msg, 
             results: mapped, 
             isLoading: false, 
             error: null,
-            isFallback: res.isFallback || false,
-            ragStatus: enableRag && mapped.length > 0 ? 'generating' : 'disabled',
+            ragStatus: shouldRunRag ? 'generating' : 'disabled',
             ragAnswer: ''
           } : msg
         ))
 
-        if (enableRag && mapped.length > 0) {
-          const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
-          const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
-          
-          if (!apiKey || apiKey === 'your_deepseek_api_key_here' || apiKey === 'your_api_key_here') {
-            setHistory(prev => prev.map(m => m.id === messageId ? { ...m, ragStatus: 'error', ragAnswer: 'API key not configured in Settings.' } : m))
-            return
-          }
-          
-          streamRagAnswer(searchQuery, mapped.slice(0, 5), provider, apiKey, (accumulated) => {
+        if (shouldRunRag) {
+          const priorHistory = history.slice(-6).flatMap(msg => [
+            { role: 'user', content: msg.query || '' },
+            { role: 'assistant', content: msg.ragAnswer || '' }
+          ]).filter(m => m.content.trim() !== '')
+
+          // Only feed high-confidence re-ranked chunks to RAG to prevent hallucinated citations to irrelevant documents
+          const ragContextChunks = rerankedAll.slice(0, 6)
+          streamRagAnswer(searchQuery, ragContextChunks, provider, apiKey, (accumulated) => {
             setHistory(prev => prev.map(msg => 
               msg.id === messageId ? { ...msg, ragAnswer: accumulated } : msg
             ))
-          }).then(() => {
+          }, priorHistory).then(() => {
             setHistory(prev => prev.map(msg => 
               msg.id === messageId ? { ...msg, ragStatus: 'done' } : msg
             ))
@@ -359,9 +441,33 @@ const DashboardSearch = () => {
       try {
         const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
         const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
-        const relevantChunks = targetItem
+        let relevantChunks = targetItem
           ? [targetItem]
-          : (parentMsg.results || []).slice(0, 5)
+          : (parentMsg.results || []).slice(0, 12)
+
+        if (!targetItem && relevantChunks.length < 6) {
+          const extraRes = await window.api.db.search(`${parentMsg.query} ${replyText}`, 12)
+          if (extraRes && extraRes.success && extraRes.rows) {
+            relevantChunks = extraRes.rows.map(row => ({
+              id: row.id,
+              document_id: row.document_id,
+              category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
+              title: row.file_name,
+              content: row.content,
+              similarity: row.similarity,
+              vault_path: row.vault_path
+            }))
+          }
+        }
+
+        const conversationHistory = [
+          { role: 'user', content: parentMsg.query || '' },
+          { role: 'assistant', content: parentMsg.ragAnswer || '' },
+          ...(parentMsg.replies || []).filter(r => r.id !== messageId).flatMap(r => [
+            { role: 'user', content: r.query || '' },
+            { role: 'assistant', content: r.ragAnswer || '' }
+          ])
+        ].filter(m => m.content.trim() !== '')
 
         await streamRagAnswer(replyText, relevantChunks, provider, apiKey, (accumulated) => {
           setHistory(prev => prev.map(msg =>
@@ -376,7 +482,7 @@ const DashboardSearch = () => {
               el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
             }
           }
-        });
+        }, conversationHistory);
 
         setHistory(prev => prev.map(msg =>
           msg.id === parentMsg.id
@@ -399,6 +505,10 @@ const DashboardSearch = () => {
       ));
     }
   }
+
+  const handleUpdateAnswer = useCallback((msgId, newAnswer) => {
+    setHistory(prev => prev.map(m => m.id === msgId ? { ...m, ragAnswer: newAnswer } : m))
+  }, [])
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -425,8 +535,10 @@ const DashboardSearch = () => {
 
     if (autocompleteTimeoutRef.current) clearTimeout(autocompleteTimeoutRef.current)
     autocompleteTimeoutRef.current = setTimeout(async () => {
+      if (isSearchingRef.current || !textareaRef.current || textareaRef.current.value.trim() === '') return
       try {
         const results = await window.api.db.lexicalSearch(val, 20)
+        if (isSearchingRef.current || !textareaRef.current || textareaRef.current.value.trim() === '') return
         if (results && results.length > 0) {
           const uniqueResults = []
           const seen = new Set()
@@ -498,7 +610,9 @@ const DashboardSearch = () => {
       if (e.key === 'Enter' && !e.shiftKey && selectedIndex >= 0) {
         e.preventDefault()
         const selectedRes = autocompleteResults[selectedIndex]
+        if (autocompleteTimeoutRef.current) clearTimeout(autocompleteTimeoutRef.current)
         setShowAutocomplete(false)
+        setAutocompleteResults([])
         const newQuery = selectedRes.suggestion || extractSuggestion(selectedRes.content, query)
         setQuery(newQuery)
         setTimeout(() => submitSearch(newQuery), 50)
@@ -508,12 +622,13 @@ const DashboardSearch = () => {
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      if (autocompleteTimeoutRef.current) clearTimeout(autocompleteTimeoutRef.current)
       setShowAutocomplete(false)
+      setAutocompleteResults([])
       submitSearch()
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
-    
     }
   }
 
@@ -562,95 +677,24 @@ const DashboardSearch = () => {
         )
     }
 
-    return history.map(msg => (
-      <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
-              
-              {/* User Prompt Text without background, aligned flush with response boundary */}
-              <div className="flex justify-end w-full py-1">
-                <div className="bg-transparent max-w-[85%] border-0 shadow-none text-justify">
-                  <p className="text-[14px] leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words text-justify">{msg.query}</p>
-                </div>
-              </div>
-
-              {/* AI Response Area centered with same width */}
-              <div className="w-full flex flex-col">
-                {msg.isLoading ? (
-                  <SearchLoadingSkeleton />
-                ) : msg.error ? (
-                  <div className="flex items-center justify-between p-5 rounded-xl bg-[#873636]/10 shadow-sm animate-in fade-in duration-200">
-                    <div className="flex flex-col gap-1.5">
-                      <strong className="text-[13px] font-semibold text-red-400">Search Failed</strong>
-                      <p className="text-[12px] text-red-400/80">{msg.error}</p>
-                    </div>
-                    {msg.error.toLowerCase().includes('database') || msg.error.toLowerCase().includes('connect') ? (
-                      <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'database' } }))}
-                        className="px-3 py-1.5 rounded-md text-[11px] font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all flex-shrink-0 ml-4"
-                      >
-                        Connect Database
-                      </button>
-                    ) : null}
-                  </div>
-                ) : msg.results.length === 0 ? (
-                  <EmptySearchState query={msg.query} />
-                ) : (
-                  <div className="flex flex-col w-full">
-                    {msg.isFallback && (
-                      <div className="flex items-center gap-2 mb-3 px-1">
-                        <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
-                          No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
-                        </span>
-                      </div>
-                    )}
-                    {!msg.isFollowUp && msg.results.map((item, idx) => (
-                      <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
-                        <SearchResultCard
-                          item={item}
-                          query={msg.query}
-                          handleSelect={handleSelect}
-                          onReply={() => {
-                            if (activeReplyId === `${msg.id}-${idx}`) {
-                              setActiveReplyId(null);
-                            } else {
-                              setActiveReplyId(`${msg.id}-${idx}`);
-                            }
-                          }}
-                          isActiveReply={activeReplyId === `${msg.id}-${idx}`}
-                          isLast={idx === msg.results.length - 1}
-                        />
-                        <div className="mt-2 mb-4">
-                          <InlineChat 
-                            resultId={`${item.id || 'res'}-${idx}`}
-                            msg={msg}
-                            activeReplyId={activeReplyId}
-                            compositeId={`${msg.id}-${idx}`}
-                            collapsedReplies={collapsedReplies}
-                            setCollapsedReplies={setCollapsedReplies}
-                            submitFollowUp={(val) => submitFollowUp(val, msg, { ...item, uniqueResultId: `${item.id || 'res'}-${idx}` })}
-                          />
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* RAG Synthesized Answer */}
-                    <RagAnswer 
-                      msg={msg}
-                      handleSaveResponse={handleSaveResponse}
-                      savedResponses={savedResponses}
-                      setQuery={setQuery}
-                      textareaRef={textareaRef}
-                      activeReplyId={activeReplyId}
-                      setActiveReplyId={setActiveReplyId}
-                      collapsedReplies={collapsedReplies}
-                      setCollapsedReplies={setCollapsedReplies}
-                      submitFollowUp={submitFollowUp}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies])
+    return (
+      <HistoryFeed
+        history={history}
+        handleSelect={handleSelect}
+        activeReplyId={activeReplyId}
+        setActiveReplyId={setActiveReplyId}
+        collapsedReplies={collapsedReplies}
+        setCollapsedReplies={setCollapsedReplies}
+        submitFollowUp={submitFollowUp}
+        enableRag={enableRag}
+        handleSaveResponse={handleSaveResponse}
+        savedResponses={savedResponses}
+        setQuery={setQuery}
+        textareaRef={textareaRef}
+        onUpdateAnswer={handleUpdateAnswer}
+      />
+    )
+  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, handleUpdateAnswer])
 
   return (
     <div className="flex-1 flex flex-row h-full bg-[var(--bg-app)] overflow-hidden relative">

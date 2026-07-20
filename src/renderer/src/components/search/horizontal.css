@@ -5,38 +5,38 @@
 
 .horizontal-divider {
   position: relative;
-  width: 65%;
-  max-width: 440px;
-  height: 2px;
+  width: 60%;
+  max-width: 400px;
+  height: 1.5px;
   margin: 1.75rem auto 0.75rem auto;
-  /* Radial ellipse makes the center bright & thick (2px) while left & right edges taper down smoothly to 0 thickness and transparent */
+  /* Radial ellipse with a soft, subtle taper using the theme's accent color */
   background: radial-gradient(
     ellipse at center,
     var(--text-accent, #38bdf8) 0%,
-    var(--border-main, #37415b) 45%,
+    var(--border-subtle, rgba(255, 255, 255, 0.08)) 60%,
     transparent 100%
   );
   border-radius: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.85;
+  opacity: 0.5;
 }
 
-/* 3 small link icons rendered pure CSS right on the bottom border line */
+/* 3 small link icons rendered pure CSS right on the bottom border line - subtle theme accent */
 .horizontal-divider::after {
   content: "\26D3    \25C8    \26D3"; /* 3 small link/chain/node symbols */
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 0 16px;
+  padding: 0 14px;
   background: var(--bg-app, #0d1017);
   color: var(--text-accent, #38bdf8);
-  font-size: 11px;
-  letter-spacing: 8px;
+  font-size: 9.5px;
+  letter-spacing: 7px;
   line-height: 1;
-  opacity: 0.95;
-  text-shadow: 0 0 10px rgba(var(--text-accent-rgb, 56, 189, 248), 0.5);
+  opacity: 0.65;
+  text-shadow: none;
   white-space: nowrap;
 }

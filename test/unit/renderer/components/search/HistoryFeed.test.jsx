@@ -27,9 +27,9 @@ describe('HistoryFeed', () => {
 
   it('renders suggestion buttons in empty state', () => {
     render(<HistoryFeed {...defaultProps} />)
-    expect(screen.getByText('Summarize recent notes')).toBeInTheDocument()
-    expect(screen.getByText('Find concepts in my vault')).toBeInTheDocument()
-    expect(screen.getByText('Compare two topics')).toBeInTheDocument()
+    expect(screen.getByText('Summarize key insights across documents')).toBeInTheDocument()
+    expect(screen.getByText('Find core concepts and definitions')).toBeInTheDocument()
+    expect(screen.getByText('Compare two related topics')).toBeInTheDocument()
   })
 
   it('renders user message in history', () => {

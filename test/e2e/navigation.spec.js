@@ -39,9 +39,9 @@ test.describe('Navigation & Sidebar', () => {
   test('shows suggestion buttons on empty search', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    await expect(window.locator('text=Summarize recent notes').first()).toBeVisible()
-    await expect(window.locator('text=Find concepts in my vault').first()).toBeVisible()
-    await expect(window.locator('text=Compare two topics').first()).toBeVisible()
+    await expect(window.locator('text=Summarize key insights across documents').first()).toBeVisible()
+    await expect(window.locator('text=Find core concepts and definitions').first()).toBeVisible()
+    await expect(window.locator('text=Compare two related topics').first()).toBeVisible()
     await electronApp.close()
   })
 })

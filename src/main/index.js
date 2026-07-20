@@ -10,6 +10,7 @@ import path from 'path'
 import http from 'http'
 import { performHybridSearch } from './db/Hybrid.js'
 import pdfIngestionService from './services/pdfIngestion.js'
+import fileSizeService from './db/fileSize.js'
 
 // PDF Server
 let pdfPort = 0
@@ -659,13 +660,62 @@ app.whenReady().then(() => {
       if (!chunkId || newContent === undefined) {
         return { success: false, error: 'Missing chunk ID or content' }
       }
-      const vectorArray = await embeddingService.embedQuery(newContent)
-      const vectorString = '[' + vectorArray.join(',') + ']'
-      await db.query(
-        'UPDATE embedding_documents SET content = $1, embedding = $2::vector WHERE id = $3',
-        [newContent, vectorString, chunkId]
+      const chunkRes = await db.query(
+        'SELECT document_id, chunk_index, section FROM embedding_documents WHERE id = $1',
+        [chunkId]
       )
-      return { success: true }
+      if (chunkRes.rows.length === 0) {
+        return { success: false, error: 'Chunk not found in database' }
+      }
+      const { document_id, section } = chunkRes.rows[0]
+
+      const sanitized = ingestionService.sanitizeText(newContent) || newContent
+      const semanticChunks = ingestionService.chunkText(sanitized)
+      if (!semanticChunks || semanticChunks.length === 0) {
+        return { success: false, error: 'Text resulted in zero semantic chunks after sanitization' }
+      }
+
+      const batchVectors = await embeddingService.embedQuery(semanticChunks)
+
+      return await db.transaction(async (client) => {
+        const firstContent = semanticChunks[0]
+        const firstVector = '[' + batchVectors[0].join(',') + ']'
+        const firstTokens = firstContent.split(/\s+/).length
+        const firstSectionMatch = firstContent.match(/^##\s+(.+?)\n\n/)
+        const firstSection = firstSectionMatch ? firstSectionMatch[1].trim() : section
+
+        await client.query(
+          `UPDATE embedding_documents 
+           SET content = $1, embedding = $2::vector, token_count = $3, section = $4 
+           WHERE id = $5`,
+          [firstContent, firstVector, firstTokens, firstSection, chunkId]
+        )
+
+        if (semanticChunks.length > 1) {
+          const maxRes = await client.query(
+            'SELECT COALESCE(MAX(chunk_index), 0) as max_idx FROM embedding_documents WHERE document_id = $1',
+            [document_id]
+          )
+          let nextIndex = (maxRes.rows[0].max_idx || 0) + 1
+
+          for (let j = 1; j < semanticChunks.length; j++) {
+            const content = semanticChunks[j]
+            const vectorStr = '[' + batchVectors[j].join(',') + ']'
+            const tokenCount = content.split(/\s+/).length
+            const sectionMatch = content.match(/^##\s+(.+?)\n\n/)
+            const sec = sectionMatch ? sectionMatch[1].trim() : section
+
+            await client.query(
+              `INSERT INTO embedding_documents (document_id, chunk_index, content, embedding, token_count, section)
+               VALUES ($1, $2, $3, $4::vector, $5, $6)`,
+              [document_id, nextIndex++, content, vectorStr, tokenCount, sec]
+            )
+          }
+        }
+
+        await client.query('UPDATE documents SET updated_at = NOW() WHERE id = $1', [document_id])
+        return { success: true, chunksUpdated: semanticChunks.length }
+      })
     } catch (err) {
       console.error('db:update-chunk error:', err)
       return { success: false, error: err.message }
@@ -722,7 +772,12 @@ app.whenReady().then(() => {
     }
     try {
       const res = await db.query('SELECT * FROM get_document_stats()')
-      return { success: true, stats: res.rows[0] }
+      const stats = res.rows[0] || {}
+      const sizes = await fileSizeService.getStorageSize(db)
+      stats.raw_file_bytes = sizes.raw_file_bytes
+      stats.total_db_bytes = sizes.total_db_bytes
+      stats.by_type_details = sizes.by_type_details
+      return { success: true, stats }
     } catch (err) {
       try {
         const docRes = await db.query('SELECT COUNT(*)::bigint AS cnt FROM documents')
@@ -730,12 +785,17 @@ app.whenReady().then(() => {
         const typeRes = await db.query('SELECT file_type, COUNT(*)::bigint AS cnt FROM documents GROUP BY file_type')
         const byType = {}
         typeRes.rows.forEach(r => { byType[r.file_type] = Number(r.cnt) })
+        const sizes = await fileSizeService.getStorageSize(db)
+
         return {
           success: true,
           stats: {
             total_docs: Number(docRes.rows[0].cnt),
             total_chunks: Number(chunkRes.rows[0].cnt),
-            by_type: byType
+            by_type: byType,
+            by_type_details: sizes.by_type_details,
+            raw_file_bytes: sizes.raw_file_bytes,
+            total_db_bytes: sizes.total_db_bytes
           }
         }
       } catch (fallbackErr) {
