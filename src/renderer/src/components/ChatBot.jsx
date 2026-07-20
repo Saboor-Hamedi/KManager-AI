@@ -1,13 +1,68 @@
-import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
-import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy, Search, ArrowRight } from 'lucide-react'
+import React, { useState, useRef, useEffect, useLayoutEffect, memo, useCallback, useMemo } from 'react'
+import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy, Search, ArrowRight, Trash2, FileText, Paperclip } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'
 import SuggestedPrompts from './search/SuggestedPrompts'
 import { cn } from '../lib/utils'
 import { getSetting } from '../lib/settings'
 import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
+
+const ChatCodeBlock = memo(({ lang, codeString }) => {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(codeString)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="relative group my-4 rounded-lg overflow-hidden border border-[var(--border-subtle)] shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-[#1e1e1e]">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#161b22] border-b border-white/[0.05]">
+        <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">{lang || 'Code'}</span>
+        <button 
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-white/40 hover:text-white hover:bg-white/10 transition-colors border-0"
+          title="Copy to clipboard"
+        >
+          {copied ? (
+            <>
+              <Check size={11} className="text-emerald-400" />
+              <span className="text-[10px] font-medium text-emerald-400">Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy size={11} />
+              <span className="text-[10px] font-medium">Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <SyntaxHighlighter
+        children={codeString}
+        style={vscDarkPlus}
+        language={lang || 'text'}
+        showLineNumbers={false}
+        PreTag="div"
+        customStyle={{
+          margin: 0,
+          background: '#1e1e1e',
+          color: '#d4d4d4',
+          fontSize: '11.5px',
+          padding: '1rem',
+          overflowX: 'auto',
+          lineHeight: '1.6'
+        }}
+        wrapLines={true}
+        wrapLongLines={false}
+      />
+    </div>
+  )
+})
 
 const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPrompt }) => {
   const [copied, setCopied] = useState(false)
@@ -31,7 +86,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
 
   return (
     <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
-      <div className="flex flex-col max-w-[85%] w-full">
+      <div className="flex flex-col w-full">
         <div className="py-2 text-xs leading-relaxed text-justify bg-transparent text-[var(--text-main)] shadow-none border-0" style={{ overflowWrap: 'break-word' }}>
           <div style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
@@ -99,9 +154,16 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 }
                 return <li {...props}>{children}</li>
               },
-              code: ({node, inline, ...props}) => inline
-                ? <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1 py-0.5 rounded-[3px] font-mono text-[10px]" {...props} />
-                : <code className="block bg-[var(--bg-app)] text-[var(--text-muted)] p-2 rounded-[5px] font-mono text-[10px] mb-2 overflow-x-auto whitespace-pre custom-scrollbar" {...props} />,
+              code: ({node, inline, className, children, ...props}) => {
+                if (inline) {
+                  return <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1.5 py-0.5 rounded-[4px] font-mono text-[11.5px]" {...props}>{children}</code>
+                }
+                const match = /language-(\w+)/.exec(className || '')
+                const lang = match ? match[1] : ''
+                const codeString = String(children).replace(/\n$/, '')
+                
+                return <ChatCodeBlock lang={lang} codeString={codeString} />
+              },
               a: ({node, href, children, ...props}) => {
                 if (href === '#search') {
                   return (
@@ -122,7 +184,17 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                   )
                 }
                 return <a href={href} className="text-[var(--text-accent)] hover:underline" {...props}>{children}</a>
-              }
+              },
+              table: ({node, ...props}) => (
+                <div className="w-full overflow-x-auto my-4 bg-transparent border-0 shadow-none custom-scrollbar">
+                  <table className="w-full text-left border-collapse text-[12px] text-[var(--text-main)]" {...props} />
+                </div>
+              ),
+              thead: ({node, ...props}) => <thead className="bg-transparent border-b border-white/10 dark:border-[var(--border-subtle)]/50 font-bold text-[var(--text-main)]" {...props} />,
+              tbody: ({node, ...props}) => <tbody className="divide-y divide-white/5 dark:divide-[var(--border-subtle)]/20" {...props} />,
+              tr: ({node, ...props}) => <tr className="bg-transparent transition-none" {...props} />,
+              th: ({node, ...props}) => <th className="py-2.5 pr-6 pl-0 first:pl-0 font-semibold text-[var(--text-main)] normal-case tracking-normal whitespace-nowrap" {...props} />,
+              td: ({node, ...props}) => <td className="py-2.5 pr-6 pl-0 first:pl-0 text-[var(--text-main)]/80 leading-relaxed break-words" {...props} />
             }}>
               {formatMarkdownText(text)}
             </ReactMarkdown>
@@ -196,26 +268,45 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
   )
 })
 
-const UserMessage = memo(({ text }) => (
-  <div className="flex justify-end w-full py-1 animate-in fade-in duration-200">
-    <div className="bg-transparent max-w-[85%] border-0 shadow-none text-justify">
-      <p className="text-xs leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words text-justify">{text}</p>
+const UserMessage = memo(({ text, attachedFile }) => (
+  <div className="flex flex-col items-end w-full py-1 animate-in fade-in duration-200">
+    {attachedFile && (
+      <div className="relative flex flex-col mb-3 w-[140px] h-[140px] bg-[var(--bg-active)] border border-white/[0.05] rounded-[24px] opacity-90 transition-colors shadow-sm self-end">
+        <div className="p-4 pb-2">
+          <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[var(--bg-panel)] mb-1 shadow-sm">
+            <FileText size={20} className="text-[#10a37f] dark:text-[#2dd4bf]" />
+          </div>
+        </div>
+        <div className="px-4 pb-4 flex-1 overflow-hidden flex items-start">
+          <span className="text-[12px] font-semibold text-[var(--text-main)] leading-[1.3] line-clamp-3 break-words uppercase tracking-wide opacity-90">
+            {attachedFile.name}
+          </span>
+        </div>
+      </div>
+    )}
+    <div className="bg-[var(--bg-panel)] px-4 py-3 max-w-[90%] rounded-2xl rounded-tr-sm border border-white/[0.05] shadow-sm">
+      <p className="text-[13.5px] leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words">{text}</p>
     </div>
   </div>
 ))
 
-const ChatBot = ({ appState = {} }) => {
+const EMPTY_STATE = {}
+
+const ChatBot = ({ appState = EMPTY_STATE }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [savedResponses, setSavedResponses] = useState({})
   const [dbStats, setDbStats] = useState({})
+  const [isDragging, setIsDragging] = useState(false)
+  const [attachedFile, setAttachedFile] = useState(null)
   const messagesEndRef = useRef(null)
   const scrollRef = useRef(null)
   const textareaRef = useRef(null)
+  const fileInputRef = useRef(null)
 
-  const enhancedAppState = { ...appState, ...dbStats }
+  const enhancedAppState = useMemo(() => ({ ...appState, ...dbStats }), [appState, dbStats])
 
   useEffect(() => {
     const handleClose = () => setIsOpen(false)
@@ -223,7 +314,7 @@ const ChatBot = ({ appState = {} }) => {
     return () => window.removeEventListener('close-chatbot', handleClose)
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       if (input && input.trim() !== '') {
@@ -233,12 +324,7 @@ const ChatBot = ({ appState = {} }) => {
   }, [input])
 
   const handleInput = useCallback((e) => {
-    const val = e.target.value
-    setInput(val)
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`
-    }
+    setInput(e.target.value)
   }, [])
 
   const handleKeyDown = (e) => {
@@ -246,6 +332,81 @@ const ChatBot = ({ appState = {} }) => {
       e.preventDefault()
       handleSend(e)
     }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+
+    // Prevent massive files from exceeding the LLM context limit
+    if (file.size > 1024 * 1024) {
+      setMessages(prev => [...prev, { 
+        role: 'bot', 
+        text: `**File Too Large**: The file \`${file.name}\` is ${(file.size / (1024*1024)).toFixed(2)} MB. \n\nFiles attached directly to the chat must be under **1 MB** to fit securely within the AI's short-term memory limit. For massive files or datasets, please ingest them into your Knowledge Base first, and then ask me to search for them instead!` 
+      }])
+      return
+    }
+
+    try {
+      const path = window.api.getPathForFile(file)
+      if (path) {
+        const content = await window.api.system.readFileContent(path)
+        if (content) {
+          setAttachedFile({ name: file.name, content })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to read dragged file:', err)
+    }
+  }
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    // Reset the input so the same file can be selected again if needed
+    e.target.value = ''
+
+    if (file.size > 1024 * 1024) {
+      setMessages(prev => [...prev, { 
+        role: 'bot', 
+        text: `**File Too Large**: The file \`${file.name}\` is ${(file.size / (1024*1024)).toFixed(2)} MB. \n\nFiles attached directly to the chat must be under **1 MB**. For massive files, please ingest them into your Knowledge Base first!` 
+      }])
+      return
+    }
+
+    try {
+      const path = window.api.getPathForFile(file)
+      if (path) {
+        const content = await window.api.system.readFileContent(path)
+        if (content) {
+          setAttachedFile({ name: file.name, content })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to read selected file:', err)
+    }
+  }
+
+  const handleClearChat = () => {
+    setMessages([])
+    setAttachedFile(null)
+    setSavedResponses({})
   }
 
   useKeyboardShortcuts({
@@ -285,7 +446,7 @@ const ChatBot = ({ appState = {} }) => {
     fetchStats()
   }, [isOpen])
 
-  const sendQuickPrompt = async (text) => {
+  const sendQuickPrompt = useCallback(async (text) => {
     if (!text.trim() || isTyping) return
     const userMsg = { role: 'user', content: text }
     setMessages(prev => [...prev, { role: 'user', text }])
@@ -305,7 +466,7 @@ const ChatBot = ({ appState = {} }) => {
     } finally {
       setIsTyping(false)
     }
-  }
+  }, [isTyping, messages, enhancedAppState])
 
   const handleSaveResponse = useCallback(async (idx, text) => {
     setSavedResponses(prev => ({ ...prev, [idx]: 'saving' }))
@@ -327,11 +488,13 @@ const ChatBot = ({ appState = {} }) => {
 
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!input.trim() || isTyping) return
+    if ((!input.trim() && !attachedFile) || isTyping) return
 
-    const userMsg = { role: 'user', content: input }
-    setMessages(prev => [...prev, { role: 'user', text: input }])
+    const currentAttached = attachedFile
+    const userMsg = { role: 'user', content: input, attachedFile: currentAttached }
+    setMessages(prev => [...prev, { role: 'user', text: input, attachedFile: currentAttached }])
     setInput('')
+    setAttachedFile(null)
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
@@ -371,18 +534,26 @@ const ChatBot = ({ appState = {} }) => {
       {isOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
           <div
-            className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200"
+            className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200 relative"
             onClick={(e) => e.stopPropagation()}
           >
+
             {/* Header matching main window titlebar style & proportions */}
-            <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04]">
+            <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04] relative z-40">
               <div className="flex items-center gap-1.5 px-2.5 h-full">
                 <Bot size={13} className="text-[var(--text-accent)] shrink-0" />
                 <h3 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
               </div>
-              <button onClick={() => setIsOpen(false)} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
-                <X size={13} />
-              </button>
+              <div className="flex h-full items-center">
+                {messages.length > 0 && (
+                  <button onClick={handleClearChat} className="h-full px-3 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-red-400 transition-colors flex items-center justify-center border-0" title="Clear Session">
+                    <Trash2 size={12} />
+                  </button>
+                )}
+                <button onClick={() => setIsOpen(false)} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
+                  <X size={13} />
+                </button>
+              </div>
             </div>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
@@ -410,7 +581,7 @@ const ChatBot = ({ appState = {} }) => {
                 )}
                 {messages.map((msg, idx) => (
                   msg.role === 'user'
-                    ? <UserMessage key={idx} text={msg.text} />
+                    ? <UserMessage key={idx} text={msg.text} attachedFile={msg.attachedFile} />
                     : <BotMessage
                         key={idx}
                         text={msg.text}
@@ -434,9 +605,44 @@ const ChatBot = ({ appState = {} }) => {
               </div>
             </div>
 
-            <div className="px-6 pb-6 pt-2 bg-transparent shrink-0">
+            <div className="px-6 pb-6 pt-2 bg-transparent shrink-0 relative z-40">
               <div className="max-w-3xl mx-auto w-full">
-                <div className="flex flex-col bg-white/[0.02] border border-white/[0.05] rounded-[12px] transition-all duration-200 overflow-hidden">
+                <div 
+                  className="flex flex-col bg-white/[0.02] border border-white/[0.05] rounded-[24px] transition-all duration-200 overflow-hidden relative"
+                  onDragEnter={handleDragOver}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  
+                  {isDragging && (
+                    <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 backdrop-blur flex flex-col items-center justify-center border-2 border-dashed border-[var(--text-accent)] rounded-[24px] pointer-events-none transition-all duration-200">
+                      <FileText size={24} className="text-[var(--text-accent)] mb-2 animate-bounce" />
+                      <h3 className="text-sm font-bold text-[var(--text-main)]">Drop file to attach</h3>
+                    </div>
+                  )}
+
+                  {attachedFile && (
+                    <div className="relative flex flex-col mx-4 mt-4 w-[140px] h-[140px] bg-[var(--bg-active)] hover:bg-white/[0.04] border border-white/[0.05] rounded-[24px] group animate-in slide-in-from-bottom-2 duration-200 transition-colors shadow-sm">
+                      <div className="p-4 pb-2">
+                        <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[var(--bg-panel)] mb-1 shadow-sm">
+                          <FileText size={20} className="text-[#10a37f] dark:text-[#2dd4bf]" />
+                        </div>
+                      </div>
+                      <div className="px-4 pb-4 flex-1 overflow-hidden flex items-start">
+                        <span className="text-[12px] font-semibold text-[var(--text-main)] leading-[1.3] line-clamp-3 break-words uppercase tracking-wide opacity-90">
+                          {attachedFile.name}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setAttachedFile(null)} 
+                        className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center bg-[var(--bg-card)] border border-white/[0.1] hover:bg-red-500 hover:border-red-500 hover:text-white rounded-full text-[var(--text-muted)] transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+                      >
+                        <X size={14} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Top Row: Auto-growing Textarea */}
                   <textarea 
                     ref={textareaRef}
@@ -444,20 +650,37 @@ const ChatBot = ({ appState = {} }) => {
                     value={input}
                     onChange={handleInput}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask a question across your knowledge base..."
+                    placeholder="Ask a question or drop a file to attach..."
                     className="w-full bg-transparent border-none outline-none text-[13.5px] font-normal text-[var(--text-main)] py-3 px-4 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
                     autoComplete="off"
                     spellCheck="false"
                   />
 
+                  {/* Hidden File Input */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    style={{ display: 'none' }} 
+                    onChange={handleFileSelect}
+                  />
+
                   {/* Bottom Row: Send Button & Actions */}
                   <div className="flex items-center justify-between px-3 pb-2 pt-1 select-none">
-                    <span className="text-[11px] text-[var(--text-faint)]">
-                      Press Enter to send, Shift + Enter for new line
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center justify-center w-7 h-7 rounded-[8px] bg-white/[0.02] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-all border-0 shrink-0" 
+                        title="Click to select a file or drag & drop anywhere"
+                      >
+                        <Paperclip size={14} />
+                      </button>
+                      <span className="text-[11px] text-[var(--text-faint)] hidden sm:block">
+                        Press Enter to send • Drag & drop to attach files
+                      </span>
+                    </div>
                     <button 
                       onClick={handleSend}
-                      disabled={!input.trim() || isTyping}
+                      disabled={(!input.trim() && !attachedFile) || isTyping}
                       className="w-7 h-7 rounded-[8px] bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center border-0 shrink-0"
                       title="Send message"
                     >

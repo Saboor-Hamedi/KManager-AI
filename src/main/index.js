@@ -9,6 +9,7 @@ import fs from 'fs'
 import path from 'path'
 import http from 'http'
 import { performHybridSearch } from './db/Hybrid.js'
+import pdfIngestionService from './services/pdfIngestion.js'
 
 // PDF Server
 let pdfPort = 0
@@ -849,7 +850,8 @@ app.whenReady().then(() => {
   ipcMain.handle('system:read-file-content', async (_event, filePath) => {
     try {
       if (!filePath || !fs.existsSync(filePath)) return null
-      const content = fs.readFileSync(filePath, 'utf8')
+      // Use the advanced ingestion service to parse PDFs, Excel, Word, and text files natively
+      const content = await pdfIngestionService.extractText(filePath)
       return content
     } catch (err) {
       console.error('Failed to read file:', err)

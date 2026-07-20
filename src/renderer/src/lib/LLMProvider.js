@@ -51,7 +51,9 @@ You have access to information about the user's database:
     { role: 'system', content: systemPrompt },
     ...messages.filter(m => m.role !== 'system').map(m => ({
       role: m.role === 'bot' ? 'assistant' : m.role,
-      content: m.text || m.content
+      content: m.attachedFile 
+        ? `[Attached File: ${m.attachedFile.name}]\n\n${m.attachedFile.content}\n\nUser Query: ${m.text || m.content}` 
+        : (m.text || m.content)
     }))
   ];
 

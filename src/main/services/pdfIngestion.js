@@ -91,17 +91,30 @@ export class PDFIngestionService {
       }
       _extractionCache.set(bufHash, sanitized)
       return sanitized
-    } else if (ext === '.doc' || ext === '.docx' || ext === '.xlsx') {
-      // Extract printable ascii/utf-8 strings from word/excel binary/xml archives
-      const dataBuffer = await fs.promises.readFile(filePath)
-      const rawStr = dataBuffer.toString('utf8')
-      // Strip XML tags and unprintable characters for clean text
-      const cleanStr = rawStr
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-      return this.sanitizeText(cleanStr || `[Document content from ${path.basename(filePath)}]`)
+    } else if (ext === '.xlsx' || ext === '.xls') {
+      try {
+        const xlsx = require('xlsx')
+        const workbook = xlsx.readFile(filePath)
+        let allText = ''
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName]
+          const sheetText = xlsx.utils.sheet_to_csv(sheet)
+          allText += `\n--- Sheet: ${sheetName} ---\n` + sheetText
+        }
+        return this.sanitizeText(allText)
+      } catch (err) {
+        console.error('Failed to parse excel file:', err)
+        throw new Error('Failed to parse excel file. Make sure it is not corrupted.')
+      }
+    } else if (ext === '.docx' || ext === '.doc') {
+      try {
+        const mammoth = require('mammoth')
+        const result = await mammoth.extractRawText({ path: filePath })
+        return this.sanitizeText(result.value)
+      } catch (err) {
+        console.error('Failed to parse word doc:', err)
+        throw new Error('Failed to parse word document. Make sure it is a valid .docx file.')
+      }
     } else {
       const rawText = await fs.promises.readFile(filePath, 'utf8')
       return this.sanitizeText(rawText)

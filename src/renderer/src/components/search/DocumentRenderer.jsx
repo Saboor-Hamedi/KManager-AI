@@ -181,66 +181,48 @@ const CodeCopyButton = ({ code }) => {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] border-0 bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors text-[10.5px] font-medium h-5"
-      title="Copy code"
+      className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-white/40 hover:text-white hover:bg-white/10 transition-colors border-0"
+      title="Copy to clipboard"
     >
       {copied ? (
         <>
-          <Check size={12} className="text-emerald-400" />
-          <span className="text-emerald-400">Copied!</span>
+          <Check size={11} className="text-emerald-400" />
+          <span className="text-[10px] font-medium text-emerald-400">Copied</span>
         </>
       ) : (
         <>
-          <Copy size={12} />
-          <span>Copy</span>
+          <Copy size={11} />
+          <span className="text-[10px] font-medium">Copy</span>
         </>
       )}
     </button>
   )
 }
 
-const getIsLight = () => {
-  if (typeof document === 'undefined') return false
-  const dt = document.documentElement.getAttribute('data-theme')
-  if (dt === 'light') return true
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-app').trim().toLowerCase()
-  return bg === '#ffffff' || bg === '#fff' || bg === 'rgb(255, 255, 255)' || bg === '#f9fafb'
-}
-
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
-  const [isLight, setIsLight] = useState(getIsLight)
-
-  useEffect(() => {
-    setIsLight(getIsLight())
-    const observer = new MutationObserver(() => {
-      setIsLight(getIsLight())
-    })
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style', 'class'] })
-    return () => observer.disconnect()
-  }, [])
-
   return (
-    <div className="my-3 rounded-[5px] overflow-hidden border-0 bg-[var(--bg-card)] max-w-full shadow-sm">
-      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between text-xs font-semibold text-[var(--text-main)] h-8">
-        <span className="font-mono uppercase text-[var(--text-accent)] tracking-wider text-[11px]">{title || language || 'CODE'}</span>
+    <div className="relative group my-4 rounded-lg overflow-hidden border border-[var(--border-subtle)] shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-[#1e1e1e]">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#161b22] border-b border-white/[0.05]">
+        <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">{title || language || 'Code'}</span>
         <CodeCopyButton code={code} />
       </div>
       <SyntaxHighlighter
         children={code}
-        style={isLight ? oneLight : vscDarkPlus}
+        style={vscDarkPlus}
         language={language || 'text'}
         showLineNumbers={showLineNumbers}
         PreTag="div"
         customStyle={{
           margin: 0,
-          background: 'transparent',
-          color: isLight ? '#1f2937' : '#e5e7eb',
-          fontSize: '13px',
+          background: '#1e1e1e',
+          color: '#d4d4d4',
+          fontSize: '11.5px',
           padding: '1rem',
-          overflowX: 'auto'
+          overflowX: 'auto',
+          lineHeight: '1.6'
         }}
         wrapLines={true}
-        wrapLongLines={true}
+        wrapLongLines={false}
       />
     </div>
   )
