@@ -799,18 +799,11 @@ const DashboardSearch = () => {
                   title={enableRag ? 'Smart Chat Enabled (Click to toggle)' : 'Smart Chat Disabled (Click to toggle)'}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${enableRag ? 'bg-[var(--text-accent)]' : 'bg-[var(--text-muted)] opacity-50'}`} />
-                  <span>Smart Chat: {enableRag ? 'ON' : 'OFF'}</span>
+                  <span>AI Answers: {enableRag ? 'On' : 'Off'}</span>
                 </button>
               </div>
 
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  className="p-1 rounded-[4px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors border-0"
-                  title="Voice Search"
-                >
-                  <Mic size={14} />
-                </button>
                 <button 
                   onClick={submitSearch}
                   disabled={!query || query.trim() === ''}

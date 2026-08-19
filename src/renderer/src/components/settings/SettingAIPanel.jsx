@@ -175,10 +175,10 @@ const SettingAIPanel = memo(() => {
         <div className="relative w-full">
           <input
             type="text"
-            value={embeddingModel}
-            onChange={(e) => handleModelChange(e.target.value)}
-            placeholder="Xenova/paraphrase-multilingual-MiniLM-L12-v2"
-            className="custom-input font-mono"
+            value="Xenova/paraphrase-multilingual-MiniLM-L12-v2"
+            readOnly
+            disabled
+            className="custom-input font-mono opacity-50 cursor-not-allowed"
           />
         </div>
       </div>
@@ -186,7 +186,7 @@ const SettingAIPanel = memo(() => {
       {/* RAG Toggle */}
       <div className="flex items-center justify-between p-3.5 rounded-[6px] border border-[var(--border-subtle)] bg-white/[0.02]">
         <div>
-          <h4 className="text-[12px] font-bold text-[var(--text-main)] tracking-tight">Enable Smart Chat Answers</h4>
+          <h4 className="text-[12px] font-bold text-[var(--text-main)] tracking-tight">Enable AI Answers</h4>
           <p className="text-[12px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
             When enabled, KManager AI provides a direct chat answer using your files as context.
           </p>

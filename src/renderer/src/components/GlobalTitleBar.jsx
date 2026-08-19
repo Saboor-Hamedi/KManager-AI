@@ -207,23 +207,27 @@ const GlobalTitleBar = () => {
       {/* Right: Status & Window Controls */}
       <div className="flex items-center h-full [-webkit-app-region:no-drag] shrink-0">
         {!checking && (
-          <div className={`flex items-center gap-1.5 px-1.5 text-[12px] font-medium mr-2 ${
-            dbConnected
-              ? 'text-[var(--text-muted)]'
-              : 'text-amber-400'
-          }`}>
-          {dbConnected ? (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Postgres Connected</span>
-            </>
-          ) : (
-            <>
-              <WifiOff size={10} />
-              <span>DB Disconnected</span>
-            </>
-          )}
-        </div>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'database' } }))}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-[12px] font-medium mr-2 transition-colors cursor-pointer border-0 ${
+              dbConnected
+                ? 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                : 'text-amber-400 hover:bg-amber-400/10'
+            }`}
+          >
+            {dbConnected ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Library Connected</span>
+              </>
+            ) : (
+              <>
+                <WifiOff size={10} />
+                <span>Library Disconnected</span>
+              </>
+            )}
+          </button>
         )}
 
         <button

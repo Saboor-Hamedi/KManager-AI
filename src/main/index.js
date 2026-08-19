@@ -913,11 +913,13 @@ app.whenReady().then(() => {
     const results = []
     
     async function scan(currentPath) {
+      if (results.length >= 5000) return // Hard cap to prevent runaway memory
       try {
         const stat = await fs.promises.stat(currentPath)
         if (stat.isDirectory()) {
           const entries = await fs.promises.readdir(currentPath, { withFileTypes: true })
           for (const entry of entries) {
+            if (results.length >= 5000) return
             await scan(path.join(currentPath, entry.name))
           }
         } else {

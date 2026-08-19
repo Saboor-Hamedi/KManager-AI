@@ -151,7 +151,7 @@ const SettingDataPanel = () => {
             <UploadCloud className={`mx-auto mb-2 transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} size={32} strokeWidth={1.5} />
             <h4 className="text-sm font-bold text-[var(--text-main)] mb-1">Drag and drop files or folders here</h4>
             <p className="text-xs text-[var(--text-muted)]">or click to browse your computer</p>
-            <p className="text-[12px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf .txt .md .json .csv</p>
+            <p className="text-[12px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf, .txt, .md, .json, .csv, code & office</p>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center relative z-10 w-full animate-in fade-in zoom-in duration-300">
@@ -169,7 +169,7 @@ const SettingDataPanel = () => {
           <div className="absolute bottom-0 left-0 h-1 bg-[var(--text-accent)] transition-all duration-300 ease-out z-0" style={{ width: `${ingestState.progress}%` }} />
         )}
         
-        <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.txt,.md,.json,.csv" multiple onChange={handleFileSelect} />
+        <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.txt,.md,.json,.csv,.doc,.docx,.xlsx,.py,.js,.jsx,.ts,.tsx,.sql,.sh,.yml,.yaml" multiple onChange={handleFileSelect} />
       </div>
 
       {/* Queue */}
@@ -220,10 +220,11 @@ const SettingDataPanel = () => {
                         {item.status === 'error'      && <AlertCircle size={11} className="text-red-400" />}
                         {item.status === 'pending'    && <File size={11} className="text-[var(--text-faint)]" />}
                       </div>
-                      <p className={`flex-1 text-[12px] truncate font-medium ${item.status === 'error' ? 'text-red-300/90' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>{item.name}</p>
+                      <p className={`flex-1 text-[12px] truncate font-medium ${item.status === 'error' ? 'text-red-300/90' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`} title={item.name}>{item.name}</p>
                       {item.timing && (
-                        <span className="shrink-0 flex items-center gap-1 text-[12px] font-mono text-[var(--text-faint)]">
-                          <Clock size={8} />{item.timing}
+                        <span className={`shrink-0 flex items-center gap-1 text-[12px] font-mono truncate max-w-[200px] ${item.status === 'error' ? 'text-red-400' : 'text-[var(--text-faint)]'}`} title={item.timing}>
+                          {item.status !== 'error' && <Clock size={8} />}
+                          {item.timing}
                         </span>
                       )}
                     </div>

@@ -42,6 +42,9 @@ const api = {
     version: () => ipcRenderer.invoke('app:version'),
     checkLatestVersion: () => ipcRenderer.invoke('update:check-latest')
   },
+  server: {
+    getPort: () => ipcRenderer.invoke('get-pdf-port')
+  },
   system: {
     openFile: (filePath) => ipcRenderer.invoke('system:open-file', filePath),
     fileExists: (filePath) => ipcRenderer.invoke('system:file-exists', filePath),

@@ -123,12 +123,20 @@ const SettingDBPanel = memo(() => {
   }
 
   const fields = [
-    { key: 'host', label: 'Host', icon: Server, placeholder: 'localhost' },
-    { key: 'port', label: 'Port', icon: Server, placeholder: '5432' },
-    { key: 'database', label: 'Database', icon: Database, placeholder: 'mydb' },
-    { key: 'user', label: 'Username', icon: User, placeholder: 'postgres' },
-    { key: 'password', label: 'Password', icon: Key, placeholder: '••••••••', type: 'password' }
+    { key: 'host', label: 'Host', icon: Server, placeholder: 'localhost', help: 'Usually localhost if running on this computer' },
+    { key: 'port', label: 'Port', icon: Server, placeholder: '5432', help: 'Default PostgreSQL port is 5432' },
+    { key: 'database', label: 'Database', icon: Database, placeholder: 'mydb', help: 'The name of the database you created' },
+    { key: 'user', label: 'Username', icon: User, placeholder: 'postgres', help: 'Your PostgreSQL username' },
+    { key: 'password', label: 'Password', icon: Key, placeholder: '••••••••', type: 'password', help: 'Your PostgreSQL password' }
   ]
+
+  const getFriendlyError = (msg) => {
+    if (!msg) return ''
+    if (msg.includes('ECONNREFUSED')) return 'PostgreSQL is not running on this host/port. Please ensure your database server is started.'
+    if (msg.includes('password authentication failed')) return 'Incorrect username or password. Please check your credentials.'
+    if (msg.includes('does not exist') && msg.includes('database')) return 'Database not found. Please ensure the database exists.'
+    return msg
+  }
 
   return (
     <div className="space-y-5">
@@ -148,12 +156,15 @@ const SettingDBPanel = memo(() => {
         </span>
       </div>
 
-      <div className="space-y-3">
-        {fields.map(({ key, label, icon: Icon, placeholder, type }) => (
+      <div className="space-y-4">
+        {fields.map(({ key, label, icon: Icon, placeholder, type, help }) => (
           <div key={key}>
-            <label className="block text-[12px] font-bold text-[var(--text-muted)] tracking-wider mb-1.5">
-              {label}
-            </label>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <label className="text-[12px] font-bold text-[var(--text-muted)] tracking-wider">
+                {label}
+              </label>
+              <span className="text-[10px] text-[var(--text-faint)] italic">{help}</span>
+            </div>
             <div className="relative">
               <Icon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-faint)]" />
               <input
@@ -186,7 +197,7 @@ const SettingDBPanel = memo(() => {
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-xs font-medium bg-[#307049] hover:bg-[#3d8c5b] border border-[#448c5f] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all disabled:opacity-50"
             >
               {loadingAction === 'init' ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
-              {loadingAction === 'init' ? 'Initializing...' : 'Init Schema'}
+              {loadingAction === 'init' ? 'Initializing...' : 'Re-init Schema'}
             </button>
             <button
               onClick={handleDisconnect}
@@ -216,7 +227,7 @@ const SettingDBPanel = memo(() => {
             ? "text-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
             : "text-[var(--icon-danger)] bg-[var(--icon-danger)]/10"
         )}>
-          {status.message}
+          {getFriendlyError(status.message)}
         </div>
       )}
     </div>

@@ -476,11 +476,11 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                             </div>
 
                             <div className="flex items-center space-x-2 shrink-0 ml-2">
-                              <span className={`text-[12px] font-mono px-1.5 py-0.5 rounded-[3px] ${
+                              <span className={`text-[12px] font-mono px-1.5 py-0.5 rounded-[3px] truncate max-w-[200px] ${
                                 isItemProcessing ? 'bg-[var(--text-accent)]/20 text-[var(--text-accent)] font-bold' :
                                 isItemDone ? 'text-emerald-400 font-semibold' :
                                 isItemError ? 'text-red-400 font-semibold' : 'text-[var(--text-muted)]'
-                              }`}>
+                              }`} title={item.timing || item.status}>
                                 {isItemProcessing ? `${progress.progress || 0}% (${progress.status === 'embedding' ? 'reading' : progress.status || 'adding'})` : item.timing || item.status.toUpperCase()}
                               </span>
                             </div>

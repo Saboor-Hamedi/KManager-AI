@@ -11,8 +11,8 @@ import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
 const tabs = [
   { id: 'system', label: 'System', icon: Package },
   { id: 'database', label: 'Connection', icon: Server },
-  { id: 'db_properties', label: 'DB Properties', icon: BarChart3 },
-  { id: 'data', label: 'Data Ingestion', icon: UploadCloud },
+  { id: 'db_properties', label: 'Library', icon: BarChart3 },
+  { id: 'data', label: 'Files', icon: UploadCloud },
   { id: 'ai', label: 'AI', icon: Cpu },
 ]
 
