@@ -151,7 +151,7 @@ const SettingDataPanel = () => {
             <UploadCloud className={`mx-auto mb-2 transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} size={32} strokeWidth={1.5} />
             <h4 className="text-sm font-bold text-[var(--text-main)] mb-1">Drag and drop files or folders here</h4>
             <p className="text-xs text-[var(--text-muted)]">or click to browse your computer</p>
-            <p className="text-[10px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf .txt .md .json .csv</p>
+            <p className="text-[12px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf .txt .md .json .csv</p>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center relative z-10 w-full animate-in fade-in zoom-in duration-300">
@@ -176,13 +176,13 @@ const SettingDataPanel = () => {
       {statsVisible && pendingOrErrorQueue.length > 0 && (
         <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md overflow-hidden mt-2 shadow-sm">
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border-dim)] bg-[var(--bg-panel)]">
-            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
               {pendingOrErrorQueue.filter(q => q.status === 'pending' || q.status === 'processing').length} in queue
               {pendingOrErrorQueue.some(q => q.status === 'error') && ` · ${pendingOrErrorQueue.filter(q => q.status === 'error').length} failed`}
             </span>
             <div className="flex items-center gap-2">
               {pendingOrErrorQueue.some(q => q.status === 'processing' || q.status === 'pending') && (
-                <button onClick={() => setShowCancelModal(true)} className="flex items-center gap-1.5 px-2 py-0.5 rounded text-red-400/80 hover:text-red-400 hover:bg-red-400/10 text-[9px] font-bold tracking-widest uppercase transition-colors">
+                <button onClick={() => setShowCancelModal(true)} className="flex items-center gap-1.5 px-2 py-0.5 rounded text-red-400/80 hover:text-red-400 hover:bg-red-400/10 text-[12px] font-bold tracking-widest uppercase transition-colors">
                   <StopCircle size={10} /> Cancel
                 </button>
               )}
@@ -220,9 +220,9 @@ const SettingDataPanel = () => {
                         {item.status === 'error'      && <AlertCircle size={11} className="text-red-400" />}
                         {item.status === 'pending'    && <File size={11} className="text-[var(--text-faint)]" />}
                       </div>
-                      <p className={`flex-1 text-[11px] truncate font-medium ${item.status === 'error' ? 'text-red-300/90' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>{item.name}</p>
+                      <p className={`flex-1 text-[12px] truncate font-medium ${item.status === 'error' ? 'text-red-300/90' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>{item.name}</p>
                       {item.timing && (
-                        <span className="shrink-0 flex items-center gap-1 text-[9px] font-mono text-[var(--text-faint)]">
+                        <span className="shrink-0 flex items-center gap-1 text-[12px] font-mono text-[var(--text-faint)]">
                           <Clock size={8} />{item.timing}
                         </span>
                       )}

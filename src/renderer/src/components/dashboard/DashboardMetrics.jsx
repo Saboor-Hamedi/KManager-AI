@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils'
 const MetricCard = memo(({ title, value, icon: Icon, trend, colorClass, bgClass, trendUp, neutral, trendLabel }) => (
   <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-xl p-3 hover:border-[var(--border-subtle)] transition-all duration-300">
     <div className="flex justify-between items-center mb-1.5">
-      <h3 className="text-[9px] font-black text-[var(--text-main)] tracking-widest uppercase leading-tight">{title}</h3>
+      <h3 className="text-[12px] font-black text-[var(--text-main)] tracking-widest uppercase leading-tight">{title}</h3>
       <div className={cn("p-1 rounded-md", bgClass)}>
         <Icon size={12} className={colorClass} strokeWidth={2.5} />
       </div>
@@ -16,7 +16,7 @@ const MetricCard = memo(({ title, value, icon: Icon, trend, colorClass, bgClass,
     
     <div className="mt-1.5 flex items-center gap-1.5">
       <span className={cn(
-        "text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1",
+        "text-[12px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1",
         neutral ? 'bg-[var(--bg-panel)] text-[var(--text-main)]' : 
         trendUp ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-[var(--icon-danger)]/10 text-[var(--icon-danger)]'
       )}>

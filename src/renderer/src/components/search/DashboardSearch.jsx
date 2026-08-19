@@ -58,7 +58,24 @@ const DashboardSearch = () => {
   const [previewItem, setPreviewItem] = useState(null)
   const [activeReplyId, setActiveReplyId] = useState(null)
   const [collapsedReplies, setCollapsedReplies] = useState({})
+  const [isTyping, setIsTyping] = useState(false)
+  const [dbConnected, setDbConnected] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
+
+  useEffect(() => {
+    // Initial and periodic check for DB connection to guide users
+    const checkDb = async () => {
+      try {
+        const res = await window.electron.ipcRenderer.invoke('db:status')
+        setDbConnected(res?.connected || false)
+      } catch (err) {
+        setDbConnected(false)
+      }
+    }
+    checkDb()
+    const interval = setInterval(checkDb, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSaveResponse = async (msgId, query, answer) => {
     setSavedResponses(prev => ({ ...prev, [msgId]: 'saving' }))
@@ -662,7 +679,7 @@ const DashboardSearch = () => {
                 <h2 className="text-[13.5px] font-semibold text-[var(--text-main)] tracking-tight">
                   Knowledge Management
                 </h2>
-                <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-normal">
+                <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-normal">
                   Ask anything across your entire knowledge base
                 </p>
               </div>
@@ -677,7 +694,7 @@ const DashboardSearch = () => {
                 <button
                   key={suggestion}
                   onClick={() => setQuery(suggestion)}
-                  className="px-3 py-1.5 rounded-[5px] border-0 bg-white/[0.03] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.06] transition-colors font-normal"
+                  className="px-3 py-1.5 rounded-[5px] border-0 bg-white/[0.03] text-[12px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.06] transition-colors font-normal"
                 >
                   {suggestion}
                 </button>
@@ -702,9 +719,10 @@ const DashboardSearch = () => {
         setQuery={setQuery}
         textareaRef={textareaRef}
         onUpdateAnswer={handleUpdateAnswer}
+        dbConnected={dbConnected}
       />
     )
-  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, handleUpdateAnswer])
+  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, handleUpdateAnswer, dbConnected])
 
   return (
     <div className="flex-1 flex flex-row h-full bg-[var(--bg-app)] overflow-hidden relative">

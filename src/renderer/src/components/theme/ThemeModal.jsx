@@ -44,7 +44,7 @@ const ThemeModal = ({ isOpen, onClose }) => {
         <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04]">
           <div className="flex items-center gap-1.5 px-2.5 h-full">
             <Palette size={13} className="text-[var(--text-accent)] shrink-0" />
-            <h2 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">Appearance</h2>
+            <h2 className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight">Appearance</h2>
           </div>
           <div className="flex-1" />
           <button onClick={onClose} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">

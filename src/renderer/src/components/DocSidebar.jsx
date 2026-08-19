@@ -84,7 +84,7 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
             <div key={category} className="px-2.5 mb-2">
               <button 
                 onClick={() => toggleCategory(category)}
-                className="w-full flex items-center justify-between text-[10px] font-bold text-[var(--text-main)] hover:text-[var(--text-accent)] py-1.5 px-2.5 rounded-md uppercase tracking-widest hover:bg-[var(--bg-active)] transition-colors outline-none"
+                className="w-full flex items-center justify-between text-[12px] font-bold text-[var(--text-main)] hover:text-[var(--text-accent)] py-1.5 px-2.5 rounded-md uppercase tracking-widest hover:bg-[var(--bg-active)] transition-colors outline-none"
                 >
                   <span>{category}</span>
                   <ChevronDown size={11} className={`text-[var(--text-muted)] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />

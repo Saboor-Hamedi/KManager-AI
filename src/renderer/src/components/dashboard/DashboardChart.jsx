@@ -48,14 +48,14 @@ const DashboardChart = memo(({ results }) => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
         <div>
           <h2 className="text-sm font-black text-[var(--text-main)] tracking-widest uppercase">Latency Comparison (ms)</h2>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">
+          <p className="text-[12px] text-[var(--text-muted)] mt-1 font-medium">
             Showing {displayData.length} data points across {rawData.length} total historical queries
           </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
           {/* Time Window Selector */}
-          <div className="flex bg-[var(--bg-app)] border border-[var(--border-dim)] rounded-lg p-0.5 text-[11px]">
+          <div className="flex bg-[var(--bg-app)] border border-[var(--border-dim)] rounded-lg p-0.5 text-[12px]">
             {['25', '50', '100', 'all'].map(win => (
               <button
                 key={win}
@@ -74,11 +74,11 @@ const DashboardChart = memo(({ results }) => {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[var(--icon-danger)]/80"></span>
-              <span className="text-[10px] text-[var(--text-faint)] font-bold">Standard</span>
+              <span className="text-[12px] text-[var(--text-faint)] font-bold">Standard</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[var(--icon-secondary)]/80"></span>
-              <span className="text-[10px] text-[var(--text-faint)] font-bold">Hybrid</span>
+              <span className="text-[12px] text-[var(--text-faint)] font-bold">Hybrid</span>
             </div>
           </div>
         </div>
@@ -91,7 +91,7 @@ const DashboardChart = memo(({ results }) => {
           <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-[0.05] z-0">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="w-full border-b border-[var(--text-main)] flex justify-end pr-1">
-                <span className="text-[9px] text-[var(--text-muted)] -mt-4">
+                <span className="text-[12px] text-[var(--text-muted)] -mt-4">
                   {Math.round(maxLatency * (1 - i * 0.25))}ms
                 </span>
               </div>
@@ -147,7 +147,7 @@ const DashboardChart = memo(({ results }) => {
                   </div>
                 </div>
 
-                <span className="text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors truncate max-w-[40px]">
+                <span className="text-[12px] sm:text-[12px] font-bold text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors truncate max-w-[40px]">
                   {data.label}
                 </span>
               </div>

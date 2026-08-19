@@ -13,7 +13,7 @@ const DocHeader = ({ isSidebarOpen, onToggleSidebar, onClose }) => {
           {isSidebarOpen ? <PanelLeftClose size={13} /> : <PanelLeft size={13} />}
         </button>
         <div className="flex items-center gap-1.5 ml-1">
-          <h2 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">Documentation</h2>
+          <h2 className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight">Documentation</h2>
         </div>
       </div>
       <div className="flex items-center h-full">

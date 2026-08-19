@@ -58,7 +58,7 @@ const QualityCoherenceFigure = memo(({ data }) => {
           <h2 className="text-xs font-semibold text-[var(--text-main)]">
             {viewMode === 'trend' ? 'Quality & Coherence Progression (%)' : 'Overall Quality Benchmark Comparison (%)'}
           </h2>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+          <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
             {viewMode === 'trend' 
               ? `Real-time evaluation curves across ${visibleData.length} queries` 
               : `Average of ${rawData.length} benchmarked responses vs baseline`}
@@ -120,7 +120,7 @@ const QualityCoherenceFigure = memo(({ data }) => {
                 </div>
                 <div className="w-full bg-[var(--bg-panel)] rounded-xl h-6 relative overflow-hidden flex shadow-inner">
                   <div 
-                    className="h-full transition-all duration-700 rounded-l-xl flex items-center px-3 shadow-md font-mono text-[11px] font-black text-white"
+                    className="h-full transition-all duration-700 rounded-l-xl flex items-center px-3 shadow-md font-mono text-[12px] font-black text-white"
                     style={{ width: `${m.hybrid}%`, backgroundColor: m.color }}
                   >
                     {m.hybrid.toFixed(0)}%

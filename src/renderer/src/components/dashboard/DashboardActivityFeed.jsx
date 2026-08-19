@@ -22,7 +22,7 @@ const DashboardActivityFeed = memo(({ results }) => {
     <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-xl p-6 hover:border-[var(--border-subtle)] transition-all duration-300 w-full lg:w-80 shrink-0 flex flex-col max-h-[500px] overflow-hidden">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-sm font-black text-[var(--text-main)] tracking-widest uppercase">Real-Time Telemetry Feed</h2>
-        <span className="text-[10px] bg-[var(--bg-panel)] px-2 py-0.5 rounded font-mono text-[var(--text-muted)]">
+        <span className="text-[12px] bg-[var(--bg-panel)] px-2 py-0.5 rounded font-mono text-[var(--text-muted)]">
           {feed.length} Events
         </span>
       </div>
@@ -69,14 +69,14 @@ const DashboardActivityFeed = memo(({ results }) => {
                 </div>
                 
                 <div className="pt-0.5 flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-[var(--text-main)] group-hover:text-[var(--text-accent)] transition-colors truncate" title={titleText}>
+                  <p className="text-[12px] font-bold text-[var(--text-main)] group-hover:text-[var(--text-accent)] transition-colors truncate" title={titleText}>
                     {titleText}
                   </p>
                   <div className="flex items-center justify-between gap-2 mt-1">
-                    <span className="text-[10px] font-medium text-[var(--text-muted)] truncate">
+                    <span className="text-[12px] font-medium text-[var(--text-muted)] truncate">
                       {detailsText}
                     </span>
-                    <span className="text-[9px] font-mono text-[var(--text-faint)] shrink-0">
+                    <span className="text-[12px] font-mono text-[var(--text-faint)] shrink-0">
                       {formatRelativeTime(log.created_at)}
                     </span>
                   </div>

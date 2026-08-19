@@ -246,7 +246,7 @@ const MermaidDiagram = memo(({ chart }) => {
       <div className="my-6 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
         {/* Persistent Small Header - Ultra Subtle */}
         <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
-          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest pl-1">
+          <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1">
             Mermaid
           </div>
           <div className="flex items-center gap-0.5 opacity-80 hover:opacity-100 transition-opacity">
@@ -264,7 +264,7 @@ const MermaidDiagram = memo(({ chart }) => {
             </button>
             <button
               onClick={() => setShowRaw(!showRaw)}
-              className="px-2 py-1 ml-1 text-[9px] font-bold tracking-wider uppercase rounded text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
+              className="px-2 py-1 ml-1 text-[12px] font-bold tracking-wider uppercase rounded text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
             >
               {showRaw ? 'Preview' : 'Code'}
             </button>

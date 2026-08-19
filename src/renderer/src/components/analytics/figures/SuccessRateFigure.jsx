@@ -56,7 +56,7 @@ const SuccessRateFigure = memo(({ data }) => {
         <h2 className="text-xs font-semibold text-[var(--text-main)]">
           Search Success Rate
         </h2>
-        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
           Proportion of queries that found matching documents vs zero-hits
         </p>
       </div>

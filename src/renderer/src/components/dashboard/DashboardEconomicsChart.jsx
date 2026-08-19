@@ -38,7 +38,7 @@ const DashboardEconomicsChart = ({ results }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
           <h2 className="text-sm font-black text-[var(--text-main)] tracking-widest uppercase">Cumulative Token Cost</h2>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">Standard RAG vs Hybrid Smart RAG across {results.chartData.length} historical queries</p>
+          <p className="text-[12px] text-[var(--text-muted)] mt-1 font-medium">Standard RAG vs Hybrid Smart RAG across {results.chartData.length} historical queries</p>
         </div>
       </div>
       

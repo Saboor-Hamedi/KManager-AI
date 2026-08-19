@@ -69,14 +69,14 @@ const DashboardQualityChart = memo(({ results }) => {
           <h2 className="text-sm font-black text-[var(--text-main)] tracking-widest uppercase">
             {viewMode === 'trend' ? 'Coherence & Quality Trend (%)' : 'Overall Quality Benchmark (%)'}
           </h2>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">
+          <p className="text-[12px] text-[var(--text-muted)] mt-1 font-medium">
             {viewMode === 'trend' ? `Time-series progression over ${displayData.length} data points` : `Average of ${rawData.length} real historical queries`}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Mode Toggle */}
-          <div className="flex bg-[var(--bg-app)] border border-[var(--border-dim)] rounded-lg p-0.5 text-[11px]">
+          <div className="flex bg-[var(--bg-app)] border border-[var(--border-dim)] rounded-lg p-0.5 text-[12px]">
             <button
               onClick={() => setViewMode('trend')}
               className={`px-2.5 py-1 rounded-md font-bold transition-all ${
@@ -98,7 +98,7 @@ const DashboardQualityChart = memo(({ results }) => {
       </div>
 
       {viewMode === 'trend' && (
-        <div className="flex items-center justify-between gap-4 mb-4 pb-2 border-b border-[var(--border-dim)] text-[10px]">
+        <div className="flex items-center justify-between gap-4 mb-4 pb-2 border-b border-[var(--border-dim)] text-[12px]">
           <div className="flex flex-wrap gap-3">
             <span className="flex items-center gap-1 font-bold text-[#3b82f6]">
               <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></span> Coherence
@@ -110,7 +110,7 @@ const DashboardQualityChart = memo(({ results }) => {
               <span className="w-2.5 h-2.5 rounded-full bg-[#a855f7]"></span> Faithfulness
             </span>
           </div>
-          <div className="flex gap-1 text-[10px]">
+          <div className="flex gap-1 text-[12px]">
             {['25', '50', 'all'].map(win => (
               <button
                 key={win}
@@ -130,7 +130,7 @@ const DashboardQualityChart = memo(({ results }) => {
           <div className="flex flex-col gap-4">
             {summaryMetrics.map((m, idx) => (
               <div key={idx} className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-end text-[11px] font-bold text-[var(--text-muted)]">
+                <div className="flex justify-between items-end text-[12px] font-bold text-[var(--text-muted)]">
                   <span>{m.label}</span>
                   <span className="text-[var(--text-main)] font-mono">{m.hybrid.toFixed(1)}% (vs Base {m.base.toFixed(1)}%)</span>
                 </div>
@@ -139,7 +139,7 @@ const DashboardQualityChart = memo(({ results }) => {
                     className="h-full transition-all duration-500 rounded-l flex items-center px-2 shadow-sm"
                     style={{ width: `${m.hybrid}%`, backgroundColor: m.color }}
                   >
-                    <span className="text-[9px] font-bold text-white shadow-sm">{m.hybrid.toFixed(0)}%</span>
+                    <span className="text-[12px] font-bold text-white shadow-sm">{m.hybrid.toFixed(0)}%</span>
                   </div>
                 </div>
               </div>
@@ -169,7 +169,7 @@ const DashboardQualityChart = memo(({ results }) => {
                     onMouseLeave={() => setHoveredIdx(null)}
                   >
                     {hoveredIdx === idx && (
-                      <div className="absolute bottom-full mb-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2 shadow-xl text-[11px] z-50 pointer-events-none whitespace-nowrap">
+                      <div className="absolute bottom-full mb-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2 shadow-xl text-[12px] z-50 pointer-events-none whitespace-nowrap">
                         <div className="font-bold text-[var(--text-main)] border-b border-[var(--border-dim)] pb-1 mb-1">{d.label}: {d.queryText}</div>
                         <div className="text-[#3b82f6]">Coherence: {coh.toFixed(1)}%</div>
                         <div className="text-[#10b981]">Relevance: {rel.toFixed(1)}%</div>

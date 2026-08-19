@@ -65,7 +65,7 @@ const LatencyBottleneckFigure = memo(({ data }) => {
           <h2 className="text-xs font-semibold text-[var(--text-main)]">
             Execution Bottlenecks ({totalAvg}ms Avg Hybrid)
           </h2>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+          <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
             Where time is spent during RAG execution
           </p>
         </div>
@@ -77,11 +77,11 @@ const LatencyBottleneckFigure = memo(({ data }) => {
             <div className="flex items-center justify-between mb-1.5">
               <div>
                 <span className="text-xs font-medium text-[var(--text-main)]">{step.name}</span>
-                <span className="text-[11px] text-[var(--text-muted)] ml-2">{step.desc}</span>
+                <span className="text-[12px] text-[var(--text-muted)] ml-2">{step.desc}</span>
               </div>
               <div className="text-right font-mono text-xs">
                 <span className="font-semibold text-[var(--text-main)]">{step.time}</span>
-                <span className="text-[11px] text-[var(--text-muted)] ml-2">({step.pct})</span>
+                <span className="text-[12px] text-[var(--text-muted)] ml-2">({step.pct})</span>
               </div>
             </div>
 
@@ -93,7 +93,7 @@ const LatencyBottleneckFigure = memo(({ data }) => {
               />
             </div>
 
-            <p className="text-[10px] text-[var(--text-faint)]">{step.details}</p>
+            <p className="text-[12px] text-[var(--text-faint)]">{step.details}</p>
           </div>
         ))}
       </div>

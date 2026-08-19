@@ -68,7 +68,7 @@ const AnalyticsTable = memo(({ data }) => {
             <h2 className="text-[13px] font-bold text-[var(--text-main)]">
               Raw Query Telemetry
             </h2>
-            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+            <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
               Per-query inspection across latency, quality, and routing ({filteredData.length} records)
             </p>
           </div>
@@ -107,7 +107,7 @@ const AnalyticsTable = memo(({ data }) => {
         <div className="overflow-x-auto overflow-y-auto max-h-[520px] min-h-[400px] w-full custom-scrollbar pr-2">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-[var(--bg-app)]/95 backdrop-blur-sm z-10">
-              <tr className="border-b border-[var(--border-dim)] text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+              <tr className="border-b border-[var(--border-dim)] text-[12px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                 <th className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-main)] transition-colors w-16" onClick={() => toggleSort('label')}>
                   <div className="flex items-center gap-1">
                     ID <ArrowUpDown size={10} className="opacity-50" />
@@ -142,7 +142,7 @@ const AnalyticsTable = memo(({ data }) => {
                 </th>
               </tr>
             </thead>
-            <tbody className="text-[11px] font-mono">
+            <tbody className="text-[12px] font-mono">
               {filteredData.slice(0, 50).map((q, idx) => {
                 const coh = q.metrics?.hybridCoherence || 95
                 const rel = q.metrics?.hybridRelevance || 90
@@ -156,14 +156,14 @@ const AnalyticsTable = memo(({ data }) => {
                       {q.queryText}
                     </td>
                     <td className="py-3 px-3 font-sans">
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase text-[var(--text-muted)] bg-[var(--bg-panel)]">
+                      <span className="px-1.5 py-0.5 rounded text-[12px] font-bold tracking-wide uppercase text-[var(--text-muted)] bg-[var(--bg-panel)]">
                         {q.isConv ? 'Conv' : 'Vector'}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right text-[var(--text-muted)]">{q.standard}ms</td>
                     <td className="py-3 px-3 text-right text-[var(--text-main)] font-semibold">
                       {q.hybrid}ms
-                      {savings > 0 && <span className="text-[9px] text-[var(--text-muted)] ml-1 font-normal opacity-0 group-hover:opacity-100 transition-opacity">(-{savings}ms)</span>}
+                      {savings > 0 && <span className="text-[12px] text-[var(--text-muted)] ml-1 font-normal opacity-0 group-hover:opacity-100 transition-opacity">(-{savings}ms)</span>}
                     </td>
                     <td className="py-3 px-3 text-right text-[var(--text-main)]">{coh.toFixed(0)}%</td>
                     <td className="py-3 px-3 text-right text-[var(--text-main)]">{rel.toFixed(0)}%</td>
@@ -177,7 +177,7 @@ const AnalyticsTable = memo(({ data }) => {
       </div>
       
       {filteredData.length > 50 && (
-        <p className="text-[11px] text-[var(--text-muted)] text-center mt-3">
+        <p className="text-[12px] text-[var(--text-muted)] text-center mt-3">
           Showing top 50 of {filteredData.length} records
         </p>
       )}

@@ -49,7 +49,7 @@ const CopyFigureButton = ({ targetRef, filename = 'figure.png' }) => {
       title="Copy Figure to Clipboard"
     >
       {copied ? <Check size={14} className="text-[#10b981]" /> : <Copy size={14} />}
-      <span className="text-[9px] font-bold uppercase tracking-wider hidden group-hover:block transition-all">
+      <span className="text-[12px] font-bold uppercase tracking-wider hidden group-hover:block transition-all">
         {copied ? 'Copied!' : 'Copy'}
       </span>
     </button>

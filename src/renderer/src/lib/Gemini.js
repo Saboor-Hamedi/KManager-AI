@@ -72,3 +72,4 @@ export const stream = async (messages, apiKey, onChunk) => {
 
   return fullAnswer;
 };
+

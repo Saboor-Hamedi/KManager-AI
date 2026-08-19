@@ -53,46 +53,10 @@ body {
    interactive element. We suppress it universally and replace it with
    nothing — our components provide their own hover/active feedback.
    ─────────────────────────────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  outline: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-:focus,
-:focus-visible,
-:focus-within {
-  outline: none !important;
-  box-shadow: none !important;
-  -webkit-box-shadow: none !important;
-}
-
-button,
-button:focus,
-button:focus-visible,
-button:active,
-input,
-input:focus,
-input:focus-visible,
-textarea,
-textarea:focus,
-textarea:focus-visible,
-select,
-select:focus,
-a,
-a:focus,
-a:focus-visible,
-[role="button"],
-[role="button"]:focus,
-[role="tab"],
-[role="tab"]:focus,
-[tabindex],
-[tabindex]:focus {
-  outline: none !important;
-  box-shadow: none !important;
-  -webkit-box-shadow: none !important;
-  -webkit-tap-highlight-color: transparent !important;
+:focus-visible {
+  outline: 2px solid var(--text-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* ─── Mermaid SVG isolation ─────────────────────────────────────────────────

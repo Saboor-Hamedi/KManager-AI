@@ -12,7 +12,7 @@ const Header = ({ toggleSidebar, collapsed }) => {
         >
           {collapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
         </button>
-        <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] font-medium select-none">
+        <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] font-medium select-none">
           <span className="text-[var(--text-faint)]">My Files</span>
           <span className="opacity-40">/</span>
           <span className="text-[var(--text-main)] font-semibold">Search</span>

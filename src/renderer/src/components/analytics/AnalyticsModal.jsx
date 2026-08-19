@@ -76,7 +76,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
               {isSidebarOpen ? <PanelLeftClose size={13} /> : <PanelLeft size={13} />}
             </button>
             <div className="flex items-center gap-1.5 ml-1">
-              <h2 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">Hybrid RAG Analytics</h2>
+              <h2 className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight">Hybrid RAG Analytics</h2>
             </div>
           </div>
           <div className="flex items-center h-full">
@@ -87,7 +87,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
               title="Sync Metrics"
             >
               {isLoading ? <Loader2 size={12} className="animate-spin text-[var(--text-accent)]" /> : <RefreshCw size={12} />}
-              <span className="text-[10px] font-semibold">{isLoading ? 'Syncing...' : 'Sync Data'}</span>
+              <span className="text-[12px] font-semibold">{isLoading ? 'Syncing...' : 'Sync Data'}</span>
             </button>
             <button
               onClick={onClose}
@@ -109,7 +109,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
           )}>
             <div className="w-56 py-4 space-y-5">
               <div className="space-y-1.5">
-                <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-5 pb-1.5">Views</h3>
+                <h3 className="text-[12px] font-black text-[var(--text-muted)] uppercase tracking-widest px-5 pb-1.5">Views</h3>
                 <div className="flex flex-col">
                   {tabs.map(tab => {
                     const Icon = tab.icon
@@ -140,9 +140,9 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
                 <div className="mt-4 p-3 rounded-md bg-[var(--bg-active)] border border-[var(--border-dim)]">
                   <div className="flex items-center gap-1.5 text-[var(--text-accent)] mb-1">
                     <Activity size={12} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Benchmark Mode</span>
+                    <span className="text-[12px] font-bold uppercase tracking-wider">Benchmark Mode</span>
                   </div>
-                  <p className="text-[10px] text-[var(--text-muted)] leading-tight">
+                  <p className="text-[12px] text-[var(--text-muted)] leading-tight">
                     Tracking <span className="text-[var(--text-main)] font-semibold">{data.totalQueries}</span> points in eval mode.
                   </p>
                 </div>

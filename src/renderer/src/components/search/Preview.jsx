@@ -48,12 +48,12 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
             <FileText size={15} className="text-[var(--text-accent)] shrink-0" />
             <span className="text-xs font-semibold text-[var(--text-main)] truncate tracking-tight">{selectedPdf.title}</span>
             {selectedPdf.category && (
-              <span className="px-1.5 py-0.5 rounded-[3px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
+              <span className="px-1.5 py-0.5 rounded-[3px] text-[12px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
                 {selectedPdf.category}
               </span>
             )}
             {!fileExists && (
-              <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold shrink-0 leading-none">
+              <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[12px] font-bold shrink-0 leading-none">
                 Archived (disk file removed)
               </span>
             )}

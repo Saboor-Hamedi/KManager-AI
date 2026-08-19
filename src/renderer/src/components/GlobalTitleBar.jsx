@@ -133,7 +133,7 @@ const GlobalTitleBar = () => {
       <div className="flex items-center gap-2 px-2.5 min-w-0">
         <div className="flex items-center gap-1.5">
           <CodeXml className="text-[var(--text-accent)] shrink-0" size={13} />
-          <span className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight truncate">
+          <span className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight truncate">
             KManager AI
           </span>
         </div>
@@ -187,10 +187,10 @@ const GlobalTitleBar = () => {
                       <Package size={14} className="text-[var(--text-accent)] shrink-0" />
                       <div>
                         <p className="text-xs font-semibold text-[var(--text-main)]">Update Available</p>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">v{currentVersion} → <span className="text-[var(--text-accent)] font-medium">v{updateVersion}</span></p>
+                        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">v{currentVersion} → <span className="text-[var(--text-accent)] font-medium">v{updateVersion}</span></p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                    <p className="text-[12px] text-[var(--text-muted)] leading-relaxed">
                       A new version of KManager AI is ready. Click the update button to get new features, improvements, and bug fixes.
                     </p>
                   </div>
@@ -207,7 +207,7 @@ const GlobalTitleBar = () => {
       {/* Right: Status & Window Controls */}
       <div className="flex items-center h-full [-webkit-app-region:no-drag] shrink-0">
         {!checking && (
-          <div className={`flex items-center gap-1.5 px-1.5 text-[10px] font-medium mr-2 ${
+          <div className={`flex items-center gap-1.5 px-1.5 text-[12px] font-medium mr-2 ${
             dbConnected
               ? 'text-[var(--text-muted)]'
               : 'text-amber-400'

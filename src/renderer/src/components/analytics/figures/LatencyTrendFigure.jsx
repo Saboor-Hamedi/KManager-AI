@@ -46,7 +46,7 @@ const LatencyTrendFigure = memo(({ data }) => {
         <h2 className="text-xs font-semibold text-[var(--text-main)]">
           Real-time Latency Trend (ms)
         </h2>
-        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
           End-to-end response time over the last {chartData.length} queries
         </p>
       </div>

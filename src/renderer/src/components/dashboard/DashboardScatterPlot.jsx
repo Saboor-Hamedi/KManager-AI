@@ -42,7 +42,7 @@ const DashboardScatterPlot = ({ results }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-[var(--bg-panel)] border border-[var(--border-dim)] p-2 rounded-lg text-[10px] font-bold text-[var(--text-main)] shadow-xl">
+        <div className="bg-[var(--bg-panel)] border border-[var(--border-dim)] p-2 rounded-lg text-[12px] font-bold text-[var(--text-main)] shadow-xl">
           <p className="mb-1 text-[var(--text-muted)]">{data.name}</p>
           <p>Latency: <span className="text-[var(--text-accent)]">{data.latency}ms</span></p>
           <p>Quality: <span className="text-[#10b981]">{data.quality.toFixed(1)}%</span></p>
@@ -59,7 +59,7 @@ const DashboardScatterPlot = ({ results }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
           <h2 className="text-sm font-black text-[var(--text-main)] tracking-widest uppercase">Accuracy vs. Latency Trade-off</h2>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">Clustering of Architecture Performance</p>
+          <p className="text-[12px] text-[var(--text-muted)] mt-1 font-medium">Clustering of Architecture Performance</p>
         </div>
       </div>
       

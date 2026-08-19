@@ -12,11 +12,11 @@ const AnalyticsActivityFeed = memo(({ data }) => {
             <h2 className="text-[13px] font-bold text-[var(--text-main)]">
               Live Database Activity Telemetry
             </h2>
-            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+            <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
               Real-time stream of RAG queries, user evaluations, and document chunk ingestion
             </p>
           </div>
-          <span className="px-2 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-muted)] text-[11px] font-mono border border-[var(--border-subtle)] shadow-sm">
+          <span className="px-2 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-muted)] text-[12px] font-mono border border-[var(--border-subtle)] shadow-sm">
             {feed.length} events
           </span>
         </div>
@@ -47,11 +47,11 @@ const AnalyticsActivityFeed = memo(({ data }) => {
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors">
+                          <span className="text-[12px] font-semibold text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors">
                             {isSearch ? 'Query' : isFeedback ? 'Rating' : 'Ingest'}
                           </span>
                           {isSearch && item.top_similarity && (
-                            <span className="text-[9px] font-mono font-bold tracking-wider text-[var(--text-muted)] bg-[var(--bg-panel)] px-1.5 py-0.5 rounded uppercase">
+                            <span className="text-[12px] font-mono font-bold tracking-wider text-[var(--text-muted)] bg-[var(--bg-panel)] px-1.5 py-0.5 rounded uppercase">
                               Sim: {Number(item.top_similarity).toFixed(2)}
                             </span>
                           )}
@@ -62,7 +62,7 @@ const AnalyticsActivityFeed = memo(({ data }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 shrink-0 font-mono text-[11px] mt-2 sm:mt-0 ml-7 sm:ml-0">
+                    <div className="flex items-center gap-4 shrink-0 font-mono text-[12px] mt-2 sm:mt-0 ml-7 sm:ml-0">
                       {isSearch && item.latency_ms && (
                         <span className="text-[var(--text-accent)] font-semibold">{item.latency_ms} ms</span>
                       )}
@@ -76,7 +76,7 @@ const AnalyticsActivityFeed = memo(({ data }) => {
                           <CheckCircle2 size={10} /> Indexed
                         </span>
                       )}
-                      <span className="text-[10px] text-[var(--text-faint)] group-hover:text-[var(--text-muted)] transition-colors flex items-center gap-1">
+                      <span className="text-[12px] text-[var(--text-faint)] group-hover:text-[var(--text-muted)] transition-colors flex items-center gap-1">
                         <Clock size={10} />
                         {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Just now'}
                       </span>

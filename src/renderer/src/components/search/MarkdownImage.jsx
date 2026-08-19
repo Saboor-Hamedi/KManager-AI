@@ -56,7 +56,7 @@ const MarkdownImage = ({ src, alt, ...props }) => {
     return (
       <div className="my-6 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5 p-4 flex flex-col items-center justify-center gap-2">
         <ImageIcon size={20} className="text-white/20" />
-        <span className="text-[11px] text-white/40">{alt || src || 'Failed to load image'}</span>
+        <span className="text-[12px] text-white/40">{alt || src || 'Failed to load image'}</span>
       </div>
     )
   }
@@ -65,7 +65,7 @@ const MarkdownImage = ({ src, alt, ...props }) => {
     <>
       <div className="my-6 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
         <div className="flex items-center justify-between px-1.5 py-0.5 bg-transparent select-none">
-          <div className="text-[9px] font-semibold text-white/30 uppercase tracking-widest pl-1 truncate max-w-[50%] flex items-center gap-1.5">
+          <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1 truncate max-w-[50%] flex items-center gap-1.5">
             <ImageIcon size={9} className="opacity-70" />
             {alt || 'Image'}
           </div>

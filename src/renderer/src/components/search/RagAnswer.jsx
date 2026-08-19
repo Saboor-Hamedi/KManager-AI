@@ -74,13 +74,13 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
                     setEditValue(msg.ragAnswer || '')
                     setIsEditing(false)
                   }}
-                  className="px-3 py-1.5 text-[11px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
+                  className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-3 py-1.5 text-[11px] font-medium bg-[var(--text-accent)] text-white rounded-[4px] hover:opacity-90 transition-opacity"
+                  className="px-3 py-1.5 text-[12px] font-medium bg-[var(--text-accent)] text-white rounded-[4px] hover:opacity-90 transition-opacity"
                 >
                   Update Answer
                 </button>
@@ -145,7 +145,7 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
                 <button
                   onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
                   disabled={savedResponses[msg.id] === 'saving' || savedResponses[msg.id] === 'saved'}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all shadow-none border-0 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-semibold transition-all shadow-none border-0 ${
                     savedResponses[msg.id] === 'saved'
                       ? 'text-green-400 cursor-default bg-transparent'
                       : savedResponses[msg.id] === 'saving'

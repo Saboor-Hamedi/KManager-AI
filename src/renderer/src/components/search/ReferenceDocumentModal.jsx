@@ -51,7 +51,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
         <div className="h-[26px] bg-[#0e1117] border-b border-white/[0.08] flex items-center justify-between shrink-0 select-none">
           <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
             <FileText size={13} className="text-[var(--text-accent)] shrink-0" />
-            <span className="text-[11px] font-semibold text-[var(--text-main)] truncate tracking-tight">{selectedPdf.title}</span>
+            <span className="text-[12px] font-semibold text-[var(--text-main)] truncate tracking-tight">{selectedPdf.title}</span>
             {selectedPdf.category && (
               <span className="px-1 py-0.5 rounded-[3px] text-[9.5px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
                 {selectedPdf.category}
@@ -87,7 +87,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
             /* ── PDF but file missing: fallback to stored text ── */
             <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify cursor-default">
               <div className="max-w-3xl mx-auto">
-                <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-medium">
+                <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[12px] font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
                 {isReady && selectedPdf.content ? (
@@ -98,7 +98,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
                     className="text-[13.5px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible text-justify"
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-[11px]">No archived content available.</div>
+                  <div className="text-[var(--text-faint)] text-[12px]">No archived content available.</div>
                 )}
               </div>
             </div>
@@ -121,7 +121,7 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
                     className="text-[13.5px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible text-justify"
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-[11px]">No content available for this file.</div>
+                  <div className="text-[var(--text-faint)] text-[12px]">No content available for this file.</div>
                 )}
               </div>
             </div>

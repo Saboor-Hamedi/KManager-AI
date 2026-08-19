@@ -291,21 +291,21 @@ const PDFUploadZone = ({ onIngestComplete }) => {
           setIsExpanded(next)
           userClosedRef.current = !next
         }}
-        className="w-full h-9 flex items-center justify-between px-4 border-0 text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
+        className="w-full h-9 flex items-center justify-between px-4 border-0 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
       >
         <div className="flex items-center space-x-2.5 overflow-hidden">
           <Database size={13} className="text-[var(--text-accent)] shrink-0" />
           <span className="font-semibold tracking-tight truncate">My Library</span>
           
           {isBusy && (
-            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[10px] animate-pulse shrink-0 border-0">
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[12px] animate-pulse shrink-0 border-0">
               <Loader2 size={10} className="animate-spin" />
               <span>{isReembedActive ? `Re-reading (${overallPercent}%)` : `Adding (${overallPercent}%)`}</span>
             </span>
           )}
 
           {!isBusy && totalFiles > 0 && (
-            <span className="inline-flex items-center space-x-1 text-[10px] shrink-0 font-semibold bg-white/[0.04] px-2 py-0.5 rounded-[4px] text-[var(--text-main)]">
+            <span className="inline-flex items-center space-x-1 text-[12px] shrink-0 font-semibold bg-white/[0.04] px-2 py-0.5 rounded-[4px] text-[var(--text-main)]">
               <span>{totalFiles} {totalFiles === 1 ? 'file' : 'files'} in queue</span>
             </span>
           )}
@@ -317,7 +317,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               e.stopPropagation()
               handleSelectFolder()
             }}
-            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[11px] flex items-center space-x-1 transition-all border-0"
+            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
             title="Index all PDFs/docs in a local directory"
           >
             <FolderPlus size={12} className="text-[var(--text-accent)]" />
@@ -329,7 +329,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               e.stopPropagation()
               fileInputRef.current?.click()
             }}
-            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[11px] flex items-center space-x-1 transition-all border-0"
+            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
             title="Upload specific files"
           >
             <FilePlus size={12} />
@@ -365,7 +365,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                   {isReembedActive ? 'Re-reading Library Documents...' : isBusy ? 'Adding Files to Library...' : totalFiles > 0 ? 'Library Update Status' : 'My Library Dropzone'}
                 </h4>
               </div>
-              <span className="px-2 py-0.5 rounded-[4px] bg-white/[0.05] text-[11px] font-semibold text-[var(--text-main)]">
+              <span className="px-2 py-0.5 rounded-[4px] bg-white/[0.05] text-[12px] font-semibold text-[var(--text-main)]">
                 Total Files: {totalFiles}
               </span>
             </div>
@@ -373,27 +373,27 @@ const PDFUploadZone = ({ onIngestComplete }) => {
             {/* Exact Statistics Row */}
             <div className="grid grid-cols-5 gap-2 text-center py-2 px-2 rounded-[5px] bg-[var(--bg-panel)]/60">
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Inserted / Done</span>
+                <span className="text-[12px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Inserted / Done</span>
                 <span className="text-sm font-extrabold text-emerald-400">{completedCount}</span>
               </div>
               <div className="flex flex-col border-x border-white/[0.05]">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Remain</span>
+                <span className="text-[12px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Remain</span>
                 <span className="text-sm font-extrabold text-[var(--text-accent)]">{remainCount}</span>
               </div>
               <div className="flex flex-col border-r border-white/[0.05]">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Progress</span>
+                <span className="text-[12px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Progress</span>
                 <span className="text-sm font-extrabold text-[var(--text-accent)]">
                   {stats.isReembedActive && stats.totalFiles > 0 ? `${stats.completedCount}/${stats.totalFiles}` : '--'}
                 </span>
               </div>
               <div className="flex flex-col border-r border-white/[0.05]">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Time Left</span>
+                <span className="text-[12px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Time Left</span>
                 <span className="text-sm font-extrabold text-[var(--text-muted)]">
                   {eta !== null && eta > 0 ? formatEta(eta) : '--'}
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Errors</span>
+                <span className="text-[12px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Errors</span>
                 <span className={`text-sm font-extrabold ${errorCount > 0 ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>{errorCount}</span>
               </div>
             </div>
@@ -401,7 +401,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
             {/* Active Progress Bar & Current File Status */}
             {(isBusy || progress.status !== 'idle') && (
               <div className="space-y-1.5 pt-0.5">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-[12px]">
                   <span className="font-semibold text-[var(--text-main)] truncate max-w-[600px]">
                     {progress.message ? progress.message.replace(/\s*\(\d+\/\d+\)/, '') : (processingItem ? `Processing: ${processingItem.name}` : 'Preparing files...')}
                   </span>
@@ -435,7 +435,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                 <UploadCloud size={18} className={`transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} />
                 <span className="text-xs font-semibold text-[var(--text-main)]">Drag & drop files or folders here to index</span>
               </div>
-              <span className="text-[10px] text-[var(--text-muted)] mt-1">Supports PDF, Word (.docx), Excel, CSV, Markdown, and Code</span>
+              <span className="text-[12px] text-[var(--text-muted)] mt-1">Supports PDF, Word (.docx), Excel, CSV, Markdown, and Code</span>
             </div>
 
             {/* Scrollable Queue & Indexed Documents List */}
@@ -444,7 +444,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                 {/* Active/Recent Queue Section */}
                 {queue.length > 0 && (
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] px-1 uppercase tracking-wider">
+                    <div className="flex items-center justify-between text-[12px] font-bold text-[var(--text-muted)] px-1 uppercase tracking-wider">
                       <span>Active File Queue ({queue.length})</span>
                       <span>Status / Progress</span>
                     </div>
@@ -460,7 +460,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                         return (
                           <div 
                             key={`q-${item.id || item.path || item.name}`}
-                            className={`flex items-center justify-between text-[11px] px-2.5 py-2 rounded-[5px] border-0 transition-colors ${
+                            className={`flex items-center justify-between text-[12px] px-2.5 py-2 rounded-[5px] border-0 transition-colors ${
                               isItemProcessing ? 'bg-[var(--text-accent)]/10 font-semibold' : 'bg-[var(--bg-app)]/80 hover:bg-[var(--bg-app)]'
                             }`}
                           >
@@ -476,7 +476,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                             </div>
 
                             <div className="flex items-center space-x-2 shrink-0 ml-2">
-                              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-[3px] ${
+                              <span className={`text-[12px] font-mono px-1.5 py-0.5 rounded-[3px] ${
                                 isItemProcessing ? 'bg-[var(--text-accent)]/20 text-[var(--text-accent)] font-bold' :
                                 isItemDone ? 'text-emerald-400 font-semibold' :
                                 isItemError ? 'text-red-400 font-semibold' : 'text-[var(--text-muted)]'
@@ -494,7 +494,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                 {/* Indexed Documents in Database Section */}
                 {indexedDocs.length > 0 && (
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] px-1 pt-1 uppercase tracking-wider border-t border-white/[0.04]">
+                    <div className="flex items-center justify-between text-[12px] font-bold text-[var(--text-muted)] px-1 pt-1 uppercase tracking-wider border-t border-white/[0.04]">
                       <span>Indexed Database Documents ({indexedDocs.length})</span>
                       <span>Vector Chunks</span>
                     </div>
@@ -505,7 +505,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                       renderItem={(doc) => (
                         <div 
                           key={`db-${doc.id || doc.file_name}`}
-                          className="flex items-center justify-between text-[11px] px-2.5 py-2 rounded-[5px] bg-[var(--bg-app)]/60 hover:bg-[var(--bg-app)] transition-colors border-0"
+                          className="flex items-center justify-between text-[12px] px-2.5 py-2 rounded-[5px] bg-[var(--bg-app)]/60 hover:bg-[var(--bg-app)] transition-colors border-0"
                         >
                           <div className="flex items-center space-x-2 overflow-hidden">
                             <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
@@ -515,7 +515,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                           </div>
 
                           <div className="flex items-center space-x-2 shrink-0 ml-2">
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-[3px] bg-emerald-500/10 text-emerald-400 font-semibold">
+                            <span className="text-[12px] font-mono px-1.5 py-0.5 rounded-[3px] bg-emerald-500/10 text-emerald-400 font-semibold">
                               {doc.chunk_count > 0 ? `${doc.chunk_count} vectors` : doc.file_type?.toUpperCase() || 'INDEXED'}
                             </span>
                           </div>
@@ -534,7 +534,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
 
           {/* 3. FOOTER: Action Bar & Summary */}
           <div className="px-3.5 py-2.5 bg-[var(--bg-app)]/90 border-t border-white/[0.05] flex items-center justify-between text-xs">
-            <div className="text-[11px] text-[var(--text-muted)] flex items-center space-x-1.5">
+            <div className="text-[12px] text-[var(--text-muted)] flex items-center space-x-1.5">
               <span>Vector DB:</span>
               <span className="font-mono text-[var(--text-main)]">PostgreSQL (pgvector)</span>
             </div>
@@ -543,7 +543,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               {isBusy && (
                 <button 
                   onClick={() => window.api.db.cancelQueue()}
-                  className="px-2.5 py-1 rounded-[4px] bg-red-500/15 text-red-400 hover:bg-red-500/25 font-semibold text-[11px] transition-all border-0"
+                  className="px-2.5 py-1 rounded-[4px] bg-red-500/15 text-red-400 hover:bg-red-500/25 font-semibold text-[12px] transition-all border-0"
                 >
                   Cancel Ingestion
                 </button>
@@ -551,7 +551,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               {completedCount > 0 && (
                 <button 
                   onClick={() => window.api.db.clearQueue()}
-                  className="px-2.5 py-1 rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-[var(--text-main)] font-medium text-[11px] flex items-center space-x-1 transition-all border-0"
+                  className="px-2.5 py-1 rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
                   title="Clear completed files from the view"
                 >
                   <Trash2 size={12} />
@@ -560,7 +560,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               )}
               <button 
                 onClick={() => setIsExpanded(false)}
-                className="px-3 py-1 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] hover:bg-[var(--text-accent)]/25 font-bold text-[11px] transition-all border-0"
+                className="px-3 py-1 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] hover:bg-[var(--text-accent)]/25 font-bold text-[12px] transition-all border-0"
               >
                 Close
               </button>

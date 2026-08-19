@@ -56,7 +56,7 @@ const PipelineUsageFigure = memo(({ data }) => {
         <h2 className="text-xs font-semibold text-[var(--text-main)]">
           Pipeline Routing
         </h2>
-        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
           Proportion of queries sent to the Hybrid LLM vs Base Engine
         </p>
       </div>

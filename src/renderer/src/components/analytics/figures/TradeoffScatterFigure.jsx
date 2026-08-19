@@ -66,7 +66,7 @@ const TradeoffScatterFigure = memo(({ data }) => {
           <h2 className="text-xs font-semibold text-[var(--text-main)]">
             Accuracy vs. Latency Trade-Off ({rawQueries.length} records)
           </h2>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+          <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
             Pareto frontier of execution speed against answer factuality
           </p>
         </div>

@@ -112,7 +112,7 @@ const SettingUpdate = () => {
           <Package size={16} className="text-[var(--text-accent)]" />
           <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">Application Update</h3>
         </div>
-        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
+        <p className="text-[12px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
           Check for new versions, download updates, and restart to apply them.
         </p>
       </div>
@@ -120,13 +120,13 @@ const SettingUpdate = () => {
       {/* Current Version */}
       <div className="bg-white/[0.01] rounded-[6px] px-4 py-3 flex items-center justify-between border border-white/[0.04]">
         <div>
-          <p className="text-[11px] font-medium text-[var(--text-muted)]">Current Version</p>
+          <p className="text-[12px] font-medium text-[var(--text-muted)]">Current Version</p>
           <p className="text-sm font-bold text-[var(--text-main)] mt-0.5">v{currentVersion || '—'}</p>
         </div>
         <button
           onClick={handleCheck}
           disabled={status === 'checking' || status === 'downloading'}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-[var(--bg-active)] hover:bg-white/[0.06] text-[11px] text-[var(--text-main)] transition-colors disabled:opacity-50 border-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-[var(--bg-active)] hover:bg-white/[0.06] text-[12px] text-[var(--text-main)] transition-colors disabled:opacity-50 border-0"
         >
           <RotateCw size={13} className={status === 'checking' ? 'animate-spin' : ''} />
           <span>{status === 'checking' ? 'Checking...' : 'Check for Updates'}</span>
@@ -158,13 +158,13 @@ const SettingUpdate = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-[var(--text-accent)]">Update v{version} available</p>
-              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
                 {currentVersion && version ? `v${currentVersion} → v${version}` : 'A new version is ready to download.'}
               </p>
             </div>
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-[var(--text-accent)] hover:opacity-90 text-white text-[11px] transition-all animate-pulse border-0 shadow-none"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-[var(--text-accent)] hover:opacity-90 text-white text-[12px] transition-all animate-pulse border-0 shadow-none"
             >
               <Download size={13} />
               <span>Download</span>
@@ -195,11 +195,11 @@ const SettingUpdate = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-emerald-400">Update ready to install</p>
-              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Restart the application to apply the update.</p>
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Restart the application to apply the update.</p>
             </div>
             <button
               onClick={handleInstall}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] transition-all animate-pulse shadow-none border-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] transition-all animate-pulse shadow-none border-0"
             >
               <RefreshCcw size={13} />
               <span>Restart</span>
@@ -212,12 +212,12 @@ const SettingUpdate = () => {
       {status === 'error' && (
         <div className="bg-red-500/10 rounded-[6px] px-4 py-3 border border-red-500/10">
           <p className="text-xs font-semibold text-red-400">Update check failed</p>
-          <p className="text-[10px] text-red-400/80 mt-0.5">
+          <p className="text-[12px] text-red-400/80 mt-0.5">
             {error || 'Could not reach update server. Check your internet connection.'}
           </p>
           <button
             onClick={handleCheck}
-            className="mt-2 flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 transition-colors border-0 bg-transparent"
+            className="mt-2 flex items-center gap-1 text-[12px] text-red-400 hover:text-red-300 transition-colors border-0 bg-transparent"
           >
             <RotateCw size={10} />
             <span>Try again</span>
@@ -231,14 +231,14 @@ const SettingUpdate = () => {
           <Settings2 size={16} className="text-[var(--text-accent)]" />
           <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">System Configuration</h3>
         </div>
-        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
+        <p className="text-[12px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
           Core system limits and baseline parameters.
         </p>
 
         <div className="flex items-center justify-between p-3.5 rounded-[6px] border border-white/[0.04] bg-white/[0.01]">
           <div>
-            <h4 className="text-[11px] font-bold text-[var(--text-main)] tracking-tight">Context Responses Limit</h4>
-            <p className="text-[10px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
+            <h4 className="text-[12px] font-bold text-[var(--text-main)] tracking-tight">Context Responses Limit</h4>
+            <p className="text-[12px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
               The exact number of source documents synthesized for AI responses (1-10 max).
             </p>
           </div>

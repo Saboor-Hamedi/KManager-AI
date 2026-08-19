@@ -54,7 +54,7 @@ const LatencyComparisonFigure = memo(({ data }) => {
           <h2 className="text-xs font-semibold text-[var(--text-main)]">
             End-to-End Latency Comparison (ms)
           </h2>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+          <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
             Standard RAG vs Intent-Aware Hybrid Routing across {visibleData.length} queries
           </p>
         </div>

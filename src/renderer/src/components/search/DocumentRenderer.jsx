@@ -321,10 +321,10 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
     <div className="my-4 -mx-4 rounded-[8px] overflow-hidden bg-[#1e1e1e] shadow-sm ring-1 ring-white/5 relative group/code">
       {/* Persistent Small Header - Ultra Subtle */}
       <div className="flex items-center justify-between px-6 py-1.5 bg-black/20 select-none border-b border-white/[0.04]">
-        <div className="text-[10px] font-semibold text-white/40 uppercase tracking-widest pl-1">
+        <div className="text-[12px] font-semibold text-white/40 uppercase tracking-widest pl-1">
           {title || language || 'code'}
         </div>
-        <div className="flex items-center opacity-0 group-hover/code:opacity-100 transition-opacity">
+        <div className="flex items-center transition-opacity">
           <CodeCopyButton code={code} />
         </div>
       </div>
@@ -361,8 +361,8 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
 
 // Pill tag for [[wikilinks]] — renders the page name without the brackets
 const WikiTag = ({ label }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 my-0.5 rounded-[5px] bg-[var(--bg-panel)] border-0 text-[var(--text-accent)] text-[11px] font-medium font-sans leading-none hover:bg-[var(--bg-active)] transition-colors cursor-default whitespace-nowrap">
-    <span className="opacity-40 text-[9px]">◈</span>
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 my-0.5 rounded-[5px] bg-[var(--bg-panel)] border-0 text-[var(--text-accent)] text-[12px] font-medium font-sans leading-none hover:bg-[var(--bg-active)] transition-colors cursor-default whitespace-nowrap">
+    <span className="opacity-40 text-[12px]">◈</span>
     {label}
   </span>
 )
@@ -387,7 +387,7 @@ const renderCalloutOrParagraph = (children, props) => {
   if (/^\[!TIP\]/i.test(rawText)) {
     return (
       <div className="my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-emerald-500 border-0 bg-[var(--bg-panel)] text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm">
-        <div className="font-semibold tracking-wider text-[11px] text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1.5">
+        <div className="font-semibold tracking-wider text-[12px] text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1.5">
           💡 TIP
         </div>
         <div className="text-[var(--text-main)]">{cleanCalloutChildren(children, /^\[!TIP\]\s*/i)}</div>
@@ -397,7 +397,7 @@ const renderCalloutOrParagraph = (children, props) => {
   if (/^\[!NOTE\]/i.test(rawText)) {
     return (
       <div className="my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-blue-500 border-0 bg-[var(--bg-panel)] text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm">
-        <div className="font-semibold tracking-wider text-[11px] text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1.5">
+        <div className="font-semibold tracking-wider text-[12px] text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1.5">
           ℹ️ NOTE
         </div>
         <div className="text-[var(--text-main)]">{cleanCalloutChildren(children, /^\[!NOTE\]\s*/i)}</div>
@@ -407,7 +407,7 @@ const renderCalloutOrParagraph = (children, props) => {
   if (/^\[!(IMPORTANT|WARNING|CAUTION)\]/i.test(rawText)) {
     return (
       <div className="my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-amber-500 border-0 bg-[var(--bg-panel)] text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm">
-        <div className="font-semibold tracking-wider text-[11px] text-amber-600 dark:text-amber-400 uppercase flex items-center gap-1.5">
+        <div className="font-semibold tracking-wider text-[12px] text-amber-600 dark:text-amber-400 uppercase flex items-center gap-1.5">
           ⚠️ ATTENTION
         </div>
         <div className="text-[var(--text-main)]">{cleanCalloutChildren(children, /^\[!(IMPORTANT|WARNING|CAUTION)\]\s*/i)}</div>
@@ -549,7 +549,7 @@ const cleanMarkdownComponents = {
   ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
   li: ({node, ...props}) => <li className="mb-2 leading-relaxed" {...props} />,
   img: ({node, src, alt, ...props}) => (
-    <Suspense fallback={<div className="w-full h-[200px] my-6 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[10px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
+    <Suspense fallback={<div className="w-full h-[200px] my-6 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[12px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
       <MarkdownImage src={src} alt={alt} {...props} />
     </Suspense>
   ),

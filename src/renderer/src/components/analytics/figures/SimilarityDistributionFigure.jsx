@@ -65,7 +65,7 @@ const SimilarityDistributionFigure = memo(({ data }) => {
         <h2 className="text-xs font-semibold text-[var(--text-main)]">
           Routing & Relevance
         </h2>
-        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
           Distribution of Pipeline Usage and Semantic Scores
         </p>
       </div>

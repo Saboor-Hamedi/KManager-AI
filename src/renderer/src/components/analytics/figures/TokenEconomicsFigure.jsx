@@ -43,7 +43,7 @@ const TokenEconomicsFigure = memo(({ data }) => {
         <h2 className="text-xs font-semibold text-[var(--text-main)]">
           Token Economics
         </h2>
-        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
           Estimated tokens sent to LLM vs avoided via Standard local routing
         </p>
       </div>

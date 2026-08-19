@@ -96,7 +96,7 @@ const HoverWikilink = ({ item, setShowWikiHover, onSelect, anchorRef }) => {
       <div className="h-[26px] bg-transparent border-b border-white/[0.05] flex items-center justify-between shrink-0 select-none">
         <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
           <FileText size={13} className="text-[var(--text-accent)] shrink-0" />
-          <span className="text-[11px] font-semibold text-[var(--text-main)] truncate tracking-tight">{item.title}</span>
+          <span className="text-[12px] font-semibold text-[var(--text-main)] truncate tracking-tight">{item.title}</span>
           {item.category && (
             <span className="px-1 py-0.5 rounded-[3px] text-[9.5px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
               {item.category}

@@ -36,7 +36,7 @@ const ConfirmModal = React.memo(({
             </div>
             <div className="flex-1 pt-0.5">
               <h3 className="text-[13px] font-semibold text-white/90 tracking-wide mb-1">{title}</h3>
-              <p className="text-[11px] text-white/50 leading-relaxed font-medium">
+              <p className="text-[12px] text-white/50 leading-relaxed font-medium">
                 {message}
               </p>
             </div>

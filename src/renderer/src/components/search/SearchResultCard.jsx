@@ -36,12 +36,13 @@ const HighlightedText = memo(({ text, query, disabled }) => {
   if (words.length === 0) return <>{text}</>
 
   const pattern = new RegExp(`(${words.join('|')})`, 'gi')
+  const matchPattern = new RegExp(`^(${words.join('|')})$`, 'i')
   const parts = text.split(pattern)
 
   return (
     <>
       {parts.map((part, i) =>
-        pattern.test(part) ? (
+        matchPattern.test(part) ? (
           <span key={i} className="text-[var(--text-accent)] font-semibold">
             {part}
           </span>
@@ -290,7 +291,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
 
       {/* Created At timestamp */}
       {createdLabel && (
-        <div className="mb-2 text-[10px] text-[var(--text-faint)] tracking-wide">
+        <div className="mb-2 text-[12px] text-[var(--text-faint)] tracking-wide">
           {createdLabel}
         </div>
       )}
@@ -317,14 +318,14 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
                   setIsEditing(false)
                 }}
                 disabled={isSaving}
-                className="px-3 py-1 text-[11px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
+                className="px-3 py-1 text-[12px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSaveEdit}
                 disabled={isSaving}
-                className="px-3 py-1 text-[11px] font-medium bg-[var(--text-accent)] text-white rounded-[4px] hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="px-3 py-1 text-[12px] font-medium bg-[var(--text-accent)] text-white rounded-[4px] hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Update'}
               </button>

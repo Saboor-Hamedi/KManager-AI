@@ -27,7 +27,7 @@ const ChatCodeBlock = memo(({ lang, codeString }) => {
     <div className="my-4 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
       {/* Persistent Small Header - Ultra Subtle */}
       <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
-        <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest pl-1">
+        <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1">
           {lang || 'Code'}
         </div>
         <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity">
@@ -153,7 +153,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 return <li {...props}>{children}</li>
               },
               img: ({node, src, alt, ...props}) => (
-                <React.Suspense fallback={<div className="w-full h-[200px] my-4 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[10px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
+                <React.Suspense fallback={<div className="w-full h-[200px] my-4 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[12px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
                   <MarkdownImage src={src} alt={alt} {...props} />
                 </React.Suspense>
               ),
@@ -568,7 +568,7 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
             <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04] relative z-40">
               <div className="flex items-center gap-1.5 px-2.5 h-full">
                 <Bot size={13} className="text-[var(--text-accent)] shrink-0" />
-                <h3 className="text-[11px] font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
+                <h3 className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
               </div>
               <div className="flex h-full items-center">
                 {messages.length > 0 && (
@@ -700,7 +700,7 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
                       >
                         <Paperclip size={14} />
                       </button>
-                      <span className="text-[11px] text-[var(--text-faint)] hidden sm:block">
+                      <span className="text-[12px] text-[var(--text-faint)] hidden sm:block">
                         Press Enter to send • Drag & drop to attach files
                       </span>
                     </div>

@@ -138,7 +138,7 @@ const SettingDBPanel = memo(() => {
           <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">PostgreSQL Connection</h3>
         </div>
         <span className={cn(
-          "flex items-center gap-1.5 text-[9px] font-bold tracking-wider px-2 py-1 rounded border",
+          "flex items-center gap-1.5 text-[12px] font-bold tracking-wider px-2 py-1 rounded border",
           connected
             ? "text-[var(--icon-secondary)] border-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
             : "text-[var(--text-muted)] border-[var(--border-dim)] bg-[var(--bg-active)]"
@@ -151,7 +151,7 @@ const SettingDBPanel = memo(() => {
       <div className="space-y-3">
         {fields.map(({ key, label, icon: Icon, placeholder, type }) => (
           <div key={key}>
-            <label className="block text-[10px] font-bold text-[var(--text-muted)] tracking-wider mb-1.5">
+            <label className="block text-[12px] font-bold text-[var(--text-muted)] tracking-wider mb-1.5">
               {label}
             </label>
             <div className="relative">
@@ -211,7 +211,7 @@ const SettingDBPanel = memo(() => {
 
       {status && (
         <div className={cn(
-          "text-[10px] font-bold px-3 py-2 rounded-md",
+          "text-[12px] font-bold px-3 py-2 rounded-md",
           status.success
             ? "text-[var(--icon-secondary)] bg-[var(--icon-secondary)]/10"
             : "text-[var(--icon-danger)] bg-[var(--icon-danger)]/10"

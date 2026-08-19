@@ -382,9 +382,19 @@ app.whenReady().then(() => {
     db = new Database(config)
     const result = await db.connect()
     if (result.success) {
-      // Silently patch the DB for fuzzy/typo-tolerant search on every connect
+      // Auto-initialize schema idempotently on connect
       ;(async () => {
         try {
+          const isProd = app.isPackaged
+          let finalPath = isProd 
+            ? path.join(process.resourcesPath, 'schema.sql')
+            : path.join(app.getAppPath(), 'schema.sql')
+          
+          if (fs.existsSync(finalPath)) {
+            const sql = fs.readFileSync(finalPath, 'utf8')
+            await db.query(sql)
+          }
+
           await db.query(`
             CREATE TABLE IF NOT EXISTS search_logs (
               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

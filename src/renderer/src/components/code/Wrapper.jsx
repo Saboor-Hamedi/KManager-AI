@@ -47,7 +47,7 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
               e.stopPropagation()
               setExpanded(!expanded)
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-[var(--text-main)] bg-[var(--bg-panel)]/80 hover:bg-[var(--bg-active)] border border-white/[0.05] hover:border-white/[0.1] backdrop-blur-md shadow-sm transition-all cursor-pointer opacity-90 hover:opacity-100"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold text-[var(--text-main)] bg-[var(--bg-panel)]/80 hover:bg-[var(--bg-active)] border border-white/[0.05] hover:border-white/[0.1] backdrop-blur-md shadow-sm transition-all cursor-pointer opacity-90 hover:opacity-100"
           >
             {expanded ? (
               <>

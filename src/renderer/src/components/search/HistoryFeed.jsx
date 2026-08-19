@@ -44,10 +44,37 @@ const HistoryFeed = ({
   savedResponses,
   setQuery,
   textareaRef,
-  onUpdateAnswer
+  onUpdateAnswer,
+  dbConnected = true
 }) => {
   const memoizedHistoryFeed = useMemo(() => {
     if (history.length === 0) {
+      if (!dbConnected) {
+        return (
+          <div className="h-full flex flex-col items-center justify-center gap-6 select-none px-6">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="w-12 h-12 rounded-xl bg-[var(--bg-panel)] border border-[var(--icon-danger)] flex items-center justify-center text-[var(--icon-danger)] shadow-[0_0_15px_rgba(248,113,113,0.15)]">
+                <span className="text-[12px] font-black tracking-tighter">!</span>
+              </div>
+              <div>
+                <h2 className="text-[16px] font-bold text-[var(--text-main)] tracking-tight">
+                  Library Disconnected
+                </h2>
+                <p className="text-[12px] text-[var(--text-muted)] mt-1.5 font-normal max-w-[280px] leading-relaxed">
+                  Connect your PostgreSQL database in settings to begin searching and managing your documents.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-settings'))}
+              className="px-5 py-2.5 bg-[var(--text-accent)] text-[var(--bg-app)] rounded-[6px] text-[13px] font-bold hover:brightness-110 transition-all shadow-md flex items-center gap-2"
+            >
+              Open Settings
+            </button>
+          </div>
+        )
+      }
+
       return (
           <div className="h-full flex flex-col items-center justify-center gap-5 select-none px-6">
             <div className="flex flex-col items-center text-center gap-2">
@@ -73,7 +100,7 @@ const HistoryFeed = ({
                 <button
                   key={suggestion}
                   onClick={() => setQuery(suggestion)}
-                  className="px-3 py-1.5 rounded-[5px] border-0 bg-white/[0.03] text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.06] transition-colors font-normal"
+                  className="px-3 py-1.5 rounded-[5px] border-0 bg-white/[0.03] text-[12px] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.06] transition-colors font-normal"
                 >
                   {suggestion}
                 </button>
@@ -110,7 +137,7 @@ const HistoryFeed = ({
                     {msg.error.toLowerCase().includes('database') || msg.error.toLowerCase().includes('connect') ? (
                       <button 
                         onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'database' } }))}
-                        className="px-3 py-1.5 rounded-md text-[11px] font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all flex-shrink-0 ml-4"
+                        className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all flex-shrink-0 ml-4"
                       >
                         Connect Database
                       </button>
@@ -124,21 +151,21 @@ const HistoryFeed = ({
                       <>
                         {msg.isFallback && (
                           <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
+                            <span className="text-[12px] font-medium text-[var(--text-muted)] italic">
                               No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
                             </span>
                           </div>
                         )}
                         {msg.queryRefined && msg.refinedQuery && (
                           <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="text-[10px] font-medium text-[var(--text-muted)] italic">
+                            <span className="text-[12px] font-medium text-[var(--text-muted)] italic">
                               Searched with refined terms: <span className="text-[var(--text-main)] font-mono not-italic">"{msg.refinedQuery}"</span>
                             </span>
                           </div>
                         )}
                         {msg.lowInfoQuery && (
                           <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
-                            <span className="text-[10px] font-medium text-amber-300">
+                            <span className="text-[12px] font-medium text-amber-300">
                               Try using more specific keywords for better results
                             </span>
                           </div>
@@ -194,7 +221,7 @@ const HistoryFeed = ({
               </div>
             </div>
           ))
-  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, setQuery, textareaRef, setActiveReplyId, setCollapsedReplies, submitFollowUp, handleSaveResponse, onUpdateAnswer])
+  }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, setQuery, textareaRef, setActiveReplyId, setCollapsedReplies, submitFollowUp, handleSaveResponse, onUpdateAnswer, dbConnected])
 
   return <>{memoizedHistoryFeed}</>
 }

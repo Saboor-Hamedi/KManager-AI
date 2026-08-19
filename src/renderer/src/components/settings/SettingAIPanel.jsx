@@ -104,7 +104,7 @@ const SettingAIPanel = memo(() => {
           <Cpu size={16} className="text-[var(--text-accent)]" />
           <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">Active AI Provider</h3>
         </div>
-        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
+        <p className="text-[12px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
           Select which cloud LLM will power the chat and RAG synthesis.
         </p>
         <div className="relative w-full">
@@ -143,13 +143,13 @@ const SettingAIPanel = memo(() => {
           <Key size={16} className="text-[var(--text-accent)]" />
           <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">{currentProviderObj.name} API Key</h3>
           {saved && (
-            <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold animate-in fade-in duration-150">
+            <span className="flex items-center gap-1 text-[12px] text-emerald-400 font-semibold animate-in fade-in duration-150">
               <ShieldCheck size={12} />
               Saved
             </span>
           )}
         </div>
-        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
+        <p className="text-[12px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
           Your API key is stored locally and only sent directly to the provider's API.
         </p>
         <div className="relative w-full">
@@ -169,7 +169,7 @@ const SettingAIPanel = memo(() => {
           <Key size={16} className="text-[var(--text-accent)]" />
           <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">Reading Engine</h3>
         </div>
-        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
+        <p className="text-[12px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
           The background engine used to read and understand your files.
         </p>
         <div className="relative w-full">
@@ -186,8 +186,8 @@ const SettingAIPanel = memo(() => {
       {/* RAG Toggle */}
       <div className="flex items-center justify-between p-3.5 rounded-[6px] border border-[var(--border-subtle)] bg-white/[0.02]">
         <div>
-          <h4 className="text-[11px] font-bold text-[var(--text-main)] tracking-tight">Enable Smart Chat Answers</h4>
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
+          <h4 className="text-[12px] font-bold text-[var(--text-main)] tracking-tight">Enable Smart Chat Answers</h4>
+          <p className="text-[12px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
             When enabled, KManager AI provides a direct chat answer using your files as context.
           </p>
         </div>

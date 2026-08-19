@@ -39,7 +39,7 @@ const SearchesOverTimeFigure = memo(({ data }) => {
         <h2 className="text-xs font-semibold text-[var(--text-main)]">
           Search Volume (Last 7 Days)
         </h2>
-        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
           Daily count of queries processed by the semantic engine
         </p>
       </div>

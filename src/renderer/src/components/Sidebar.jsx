@@ -23,7 +23,7 @@ const SidebarItem = memo(({ icon: Icon, label, shortcut, active, collapsed, onCl
       <>
         <span className="ml-3.5 text-[12px] font-medium tracking-tight truncate">{label}</span>
         {shortcut && (
-          <kbd className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] border border-white/[0.05] text-[var(--text-faint)] opacity-0 group-hover:opacity-100 transition-opacity">{shortcut}</kbd>
+          <kbd className="ml-auto text-[12px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] border border-white/[0.05] text-[var(--text-faint)] transition-opacity">{shortcut}</kbd>
         )}
       </>
     )}

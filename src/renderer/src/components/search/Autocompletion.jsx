@@ -121,7 +121,7 @@ const Autocompletion = ({ results, visible, query, onSelect, selectedIndex, onCl
               <div className="flex items-center gap-2 overflow-hidden w-full text-[13px]">
                 <span className="text-[var(--text-main)] truncate max-w-[70%]">{highlightedSnippet}</span>
                 <span className="text-[var(--text-muted)] opacity-40 shrink-0">•</span>
-                <span className="text-[var(--text-muted)] text-[11px] truncate shrink-0 max-w-[30%]">{res.file_name}</span>
+                <span className="text-[var(--text-muted)] text-[12px] truncate shrink-0 max-w-[30%]">{res.file_name}</span>
               </div>
             </div>
           )

@@ -45,7 +45,7 @@ class GlobalError extends React.Component {
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Error Details</label>
+                <label className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Error Details</label>
                 <textarea
                   readOnly
                   className="w-full h-48 bg-[#0d1117] text-red-400 text-xs p-3 rounded-md font-mono border border-[var(--border-subtle)] focus:outline-none focus:border-[var(--border-main)] resize-none custom-scrollbar cursor-text"

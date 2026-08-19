@@ -21,7 +21,7 @@ const InlineChat = ({
       {/* Threaded Replies */}
       {replies.length > 0 && (
         <div className="mt-3 flex flex-col gap-2">
-          <div className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+          <div className="flex items-center gap-2 cursor-pointer select-none text-[12px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                 onClick={() => setCollapsedReplies(prev => ({ ...prev, [compositeId]: !prev[compositeId] }))}
           >
             {collapsedReplies[compositeId] ? <ChevronDown size={12} /> : <ChevronUp size={12} />}

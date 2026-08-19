@@ -77,7 +77,7 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
               {previewItem.title || 'Preview'}
             </span>
             {previewItem.category && (
-              <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] border-0 shrink-0">
+              <span className="px-1.5 py-0.5 rounded-[5px] text-[12px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] border-0 shrink-0">
                 {previewItem.category}
               </span>
             )}
@@ -136,9 +136,9 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
             </div>
           ) : showFullContext && fullContextText ? (
             <div className="flex flex-col gap-3">
-              <div className="text-[11px] font-semibold text-[var(--text-accent)] pb-1 border-0 flex items-center justify-between select-none">
+              <div className="text-[12px] font-semibold text-[var(--text-accent)] pb-1 border-0 flex items-center justify-between select-none">
                 <span>Complete Document Context</span>
-                <span className="font-mono text-[10px] text-[var(--text-muted)]">{fullContextText.length.toLocaleString()} chars</span>
+                <span className="font-mono text-[12px] text-[var(--text-muted)]">{fullContextText.length.toLocaleString()} chars</span>
               </div>
               <div className="text-[14px] leading-relaxed text-justify">
                 <DocumentRenderer
@@ -150,10 +150,10 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <div className="text-[11px] font-semibold text-[var(--text-muted)] pb-1 border-0 flex items-center justify-between select-none">
+              <div className="text-[12px] font-semibold text-[var(--text-muted)] pb-1 border-0 flex items-center justify-between select-none">
                 <span>Retrieved Excerpt</span>
                 {previewItem.created_at && (
-                  <span className="font-normal text-[10px] text-[var(--text-faint)]">
+                  <span className="font-normal text-[12px] text-[var(--text-faint)]">
                     Indexed {new Date(previewItem.created_at).toLocaleDateString()}
                   </span>
                 )}
