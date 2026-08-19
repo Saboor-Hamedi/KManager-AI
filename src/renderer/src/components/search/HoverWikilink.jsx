@@ -90,10 +90,10 @@ const HoverWikilink = ({ item, setShowWikiHover, onSelect, anchorRef }) => {
         opacity: 1, 
         backdropFilter: 'none' 
       }}
-      className="z-[999999] w-[460px] max-w-[95vw] rounded-[5px] border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden text-left select-text"
+      className="z-[999999] w-[460px] max-w-[95vw] rounded-[5px] bg-[#141822] ring-1 ring-white/5 shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden text-left select-text"
     >
       {/* Compact GlobalTitleBar-Styled Header without blur */}
-      <div className="h-[26px] bg-[#0e1117] border-b border-white/[0.08] flex items-center justify-between shrink-0 select-none">
+      <div className="h-[26px] bg-transparent border-b border-white/[0.05] flex items-center justify-between shrink-0 select-none">
         <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
           <FileText size={13} className="text-[var(--text-accent)] shrink-0" />
           <span className="text-[11px] font-semibold text-[var(--text-main)] truncate tracking-tight">{item.title}</span>
@@ -116,12 +116,27 @@ const HoverWikilink = ({ item, setShowWikiHover, onSelect, anchorRef }) => {
 
       {/* Solid Body Content */}
       <div className="max-h-[350px] overflow-y-auto custom-scrollbar p-3.5 text-[13px] text-[var(--text-main)] leading-relaxed font-sans break-words bg-[#141822]">
-        <DocumentRenderer 
-          className="text-[var(--text-main)] text-[13px] leading-relaxed max-w-full overflow-visible" 
-          content={cleanPreviewText(item.content || 'Preview content not available.')} 
-          category={item.category || 'TEXT'}
-          fileTitle={item.title}
-        />
+        {(() => {
+          const isJsonOrCode = ['JSON', 'CODE', 'TS', 'JS', 'PY', 'SQL', 'HTML', 'CSS', 'SH', 'BASH', 'JAVA', 'CPP', 'C', 'RUST', 'GO'].includes(item.category?.toUpperCase() || '') || (item.title && ['json', 'py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(item.title.split('.').pop().toLowerCase()));
+          
+          let displayContent = isJsonOrCode 
+            ? item.content 
+            : cleanPreviewText(item.content || 'Preview content not available.');
+
+          if (typeof displayContent === 'string' && displayContent.length > 600) {
+            displayContent = displayContent.slice(0, 600) + '\n\n... [Content truncated for preview]';
+          }
+
+          return (
+            <DocumentRenderer 
+              className="text-[var(--text-main)] text-[13px] leading-relaxed max-w-full overflow-visible" 
+              content={displayContent} 
+              category={item.category || 'TEXT'}
+              fileTitle={item.title}
+              maxLength={isJsonOrCode ? 500 : undefined}
+            />
+          )
+        })()}
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ import 'katex/dist/katex.min.css'
 import './horizontal.css'
 const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
 const HoverWikilink = lazy(() => import('./HoverWikilink'))
+const MarkdownImage = lazy(() => import('./MarkdownImage'))
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
@@ -38,6 +39,12 @@ const formatMarkdownText = (text) => {
     .replace(/\|\s*\|\s*(?=[A-Za-z0-9*_`\[|])/g, '|\n| ')
     .replace(/\|\s+\|/g, '|\n|')
 
+  // 0. Remove completely hallucinated ```markdown fences around the whole document
+  result = result.replace(/^```(markdown|md|text)?\n([\s\S]*?)\n```$/gm, '$2')
+  
+  // 0.5 Remove 4-space indentations that cause accidental code blocks (except for lists)
+  result = result.replace(/^( {4}|\t)(?!\s*[-*+]\s|\s*\d+\.\s)/gm, '')
+
   // Decode literal hex escape sequences (e.g. \xf4, $'\xf4') into actual characters
   result = result.replace(/(?:\$')?\\x([0-9a-fA-F]{2})'?/g, (match, hex) => {
     try {
@@ -47,6 +54,12 @@ const formatMarkdownText = (text) => {
       // Fallback to basic char code
       return String.fromCharCode(parseInt(hex, 16))
     }
+  })
+
+  // Auto-convert raw online image URLs into markdown image syntax
+  // Looks for http/https URLs ending in common image extensions that aren't already wrapped in markdown links/images or HTML tags
+  result = result.replace(/(?<!\]\()(?<!src=["'])(https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\s"'<>]*)?)/gi, (match) => {
+    return `![Image](${match})`
   })
 
   // Detect lines that are ONLY a pipe-separated list of [[wikilinks]] (common in Obsidian
@@ -95,27 +108,52 @@ const formatMarkdownText = (text) => {
     return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
   })
 
-  // Clean up and normalize Markdown tables across chunks so they always render properly
+  // Clean up and normalize Markdown tables across chunks so they always render properly inside unified wrappers
   const lines = result.split('\n')
   const formattedLines = []
   let inTable = false
   let tableRowCount = 0
 
   for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim()
-    const isTableRow = trimmed.startsWith('|') && trimmed.endsWith('|')
+    let trimmed = lines[i].trim()
+
+    // Smart table row detection: recover table headers or rows where leading/trailing pipe (|) was omitted or stripped
+    // e.g., "Retrieval latency | Index performance |" right before a table separator or row
+    const pipeCount = (trimmed.match(/\|/g) || []).length
+    const isSeparatorLine = pipeCount >= 1 && (
+      /^\s*\|?\s*[-:]+\s*\|\s*[-:]+/.test(trimmed) ||
+      /\|\s*[-:]+\s*\|/.test(trimmed)
+    )
+
+    if (!trimmed.startsWith('|') && pipeCount >= 1) {
+      const nextTrimmed = (i + 1 < lines.length) ? lines[i + 1].trim() : ''
+      const prevTrimmed = (i - 1 >= 0) ? lines[i - 1].trim() : ''
+      const nextPipeCount = (nextTrimmed.match(/\|/g) || []).length
+      const nextIsSep = nextPipeCount >= 1 && (/^\s*\|?\s*[-:]+\s*\|\s*[-:]+/.test(nextTrimmed) || /\|\s*[-:]+\s*\|/.test(nextTrimmed))
+      const prevPipeCount = (prevTrimmed.match(/\|/g) || []).length
+      const prevIsSepOrRow = prevTrimmed.startsWith('|') || (prevPipeCount >= 1 && (/^\s*\|?\s*[-:]+\s*\|\s*[-:]+/.test(prevTrimmed) || /\|\s*[-:]+\s*\|/.test(prevTrimmed)))
+      
+      // If this row is right above a table separator, right below a table row/separator, or ends with '|' with multiple columns
+      if (nextIsSep || nextTrimmed.startsWith('|') || prevIsSepOrRow || (trimmed.endsWith('|') && pipeCount >= 1)) {
+        trimmed = '| ' + trimmed
+      }
+    }
+
+    const isTableRow = isSeparatorLine || (trimmed.startsWith('|') && (trimmed.endsWith('|') || pipeCount >= 1))
 
     if (isTableRow) {
+      if (!trimmed.endsWith('|')) {
+        trimmed = trimmed + ' |'
+      }
       if (!inTable) {
         inTable = true
         tableRowCount = 0
       }
       
-      const isSeparatorLine = trimmed.includes('---') || trimmed.match(/^\|\s*[-:]+\s*(\|\s*[-:]+\s*)+\|?$/)
       const colCount = Math.max(1, (trimmed.match(/\|/g) || []).length - 1)
 
       if (tableRowCount === 0 && isSeparatorLine) {
-        // If a chunked table starts with just the separator line (`| --- | --- |`), prepend a clean header so react-markdown can render it
+        // If a chunked table starts with just the separator line (`| --- | --- |`), prepend a clean header
         const headerRow = '| ' + Array(colCount).fill(0).map((_, idx) => `Col ${idx + 1}`).join(' | ') + ' |'
         formattedLines.push(headerRow)
         const cleanSeparator = '| ' + Array(colCount).fill('---').join(' | ') + ' |'
@@ -129,12 +167,13 @@ const formatMarkdownText = (text) => {
         const cleanSeparator = '| ' + Array(colCount).fill('---').join(' | ') + ' |'
         formattedLines.push(cleanSeparator)
       } else {
-        formattedLines.push(lines[i])
+        formattedLines.push(trimmed)
         // If this was row 0 (the header) and the next line is NOT a separator line, insert a clean separator right after row 0
         if (tableRowCount === 0 && i + 1 < lines.length) {
           const nextTrimmed = lines[i + 1].trim()
-          const nextIsSeparator = nextTrimmed.includes('---') || nextTrimmed.match(/^\|\s*[-:]+\s*(\|\s*[-:]+\s*)+\|?$/)
-          if (nextTrimmed.startsWith('|') && !nextIsSeparator) {
+          const nextPipeCount = (nextTrimmed.match(/\|/g) || []).length
+          const nextIsSeparator = nextPipeCount >= 1 && (/^\s*\|?\s*[-:]+\s*\|\s*[-:]+/.test(nextTrimmed) || /\|\s*[-:]+\s*\|/.test(nextTrimmed))
+          if ((nextTrimmed.startsWith('|') || nextPipeCount >= 1) && !nextIsSeparator && !nextTrimmed.includes('---')) {
             formattedLines.push('| ' + Array(colCount).fill('---').join(' | ') + ' |')
           }
         }
@@ -166,7 +205,7 @@ const formatMarkdownText = (text) => {
 
   // Ensure any heading (#, ##, ###) is strictly preceded and followed by blank lines so react-markdown always renders an actual heading tag
   finalResult = finalResult.replace(/([^\n])\s*\n*(#{1,6}\s+[^\n]+)/g, '$1\n\n$2')
-  finalResult = finalResult.replace(/(#{1,6}\s+[^\n]+)\n*([^\n#])/g, '$1\n\n$2')
+  finalResult = finalResult.replace(/(#{1,6}\s+[^\n]+)\n+([^\n#])/g, '$1\n\n$2')
 
   // Break right after introductory colons when immediately followed by a list item (`The following is the process:\n\n1. ...`)
   finalResult = finalResult.replace(/:\s+(\d{1,2}[\.\)])\s+/g, ':\n\n$1 ')
@@ -249,56 +288,72 @@ const CodeCopyButton = ({ code }) => {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors text-[10.5px] font-medium border border-[var(--border-subtle)] h-5"
+      className="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
       title="Copy to clipboard"
     >
-      {copied ? (
-        <>
-          <Check size={11} className="text-emerald-500" />
-          <span className="text-emerald-500">Copied</span>
-        </>
-      ) : (
-        <>
-          <Copy size={11} />
-          <span>Copy</span>
-        </>
-      )}
+      {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
     </button>
   )
 }
 
+const fastJsonHighlight = (jsonString) => {
+  if (typeof jsonString !== 'string') return ''
+  // Escape HTML characters safely before highlighting
+  const escaped = jsonString
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  return escaped.replace(
+    /("(?:\\\\|\\"|[^"])*")(\s*:)?|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+    (match, str, colon, kw, num) => {
+      if (colon) return `<span style="color: #9cdcfe">${str}</span>${colon}`;
+      if (str) return `<span style="color: #ce9178">${str}</span>`;
+      if (kw) return `<span style="color: #569cd6">${kw}</span>`;
+      if (num) return `<span style="color: #b5cea8">${num}</span>`;
+      return match;
+    }
+  );
+};
+
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
-    <div className="my-3 rounded-[5px] overflow-hidden border border-[var(--border-main)] bg-[var(--bg-card)] max-w-full">
-      {/* Unified DashboardSearch-Styled Header */}
-      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between select-none h-8">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)]" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-accent)]">
-            {title || language || 'Code'}
-          </span>
+    <div className="my-4 -mx-4 rounded-[8px] overflow-hidden bg-[#1e1e1e] shadow-sm ring-1 ring-white/5 relative group/code">
+      {/* Persistent Small Header - Ultra Subtle */}
+      <div className="flex items-center justify-between px-6 py-1.5 bg-black/20 select-none border-b border-white/[0.04]">
+        <div className="text-[10px] font-semibold text-white/40 uppercase tracking-widest pl-1">
+          {title || language || 'code'}
         </div>
-        <CodeCopyButton code={code} />
+        <div className="flex items-center opacity-0 group-hover/code:opacity-100 transition-opacity">
+          <CodeCopyButton code={code} />
+        </div>
       </div>
-      <div className="overflow-x-auto custom-scrollbar">
-        <SyntaxHighlighter
-          children={code}
-          style={vscDarkPlus}
-          language={language || 'text'}
-          showLineNumbers={showLineNumbers}
-          PreTag="div"
-          customStyle={{
-            margin: 0,
-            background: 'transparent',
-            color: '#d4d4d4',
-            fontSize: '12px',
-            padding: '1.25rem',
-            overflowX: 'auto',
-            lineHeight: '1.6'
-          }}
-          wrapLines={true}
-          wrapLongLines={false}
-        />
+      <div className="overflow-x-auto bg-transparent custom-scrollbar pb-2">
+        {language === 'json' ? (
+          <pre 
+            className="m-0 bg-transparent text-[#d4d4d4] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
+            dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
+          />
+        ) : (
+          <SyntaxHighlighter
+            children={code}
+            style={vscDarkPlus}
+            language={language || 'text'}
+            showLineNumbers={showLineNumbers}
+            PreTag="div"
+            customStyle={{
+              margin: 0,
+              background: 'transparent',
+              color: '#d4d4d4',
+              fontSize: '12.5px',
+              padding: '1rem 1.75rem',
+              overflowX: 'auto',
+              lineHeight: '1.6'
+            }}
+            wrapLines={true}
+            wrapLongLines={false}
+          />
+        )}
       </div>
     </div>
   )
@@ -378,7 +433,7 @@ const renderCalloutOrParagraph = (children, props) => {
   }
 
   return (
-    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-normal text-justify" {...props}>
+    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-normal text-left" {...props}>
       {children}
     </div>
   )
@@ -492,7 +547,12 @@ const cleanMarkdownComponents = {
   p: ({node, children, ...props}) => renderCalloutOrParagraph(children, props),
   ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
   ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
-  li: ({node, ...props}) => <li className="pl-1 font-normal break-words text-justify" {...props} />,
+  li: ({node, ...props}) => <li className="mb-2 leading-relaxed" {...props} />,
+  img: ({node, src, alt, ...props}) => (
+    <Suspense fallback={<div className="w-full h-[200px] my-6 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[10px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
+      <MarkdownImage src={src} alt={alt} {...props} />
+    </Suspense>
+  ),
   strong: ({node, ...props}) => <strong className="font-semibold text-[var(--text-main)]" {...props} />,
   code: ({node, inline, className, children, ...props}) => {
     const match = /language-(\w+)/.exec(className || '')
@@ -540,53 +600,84 @@ const cleanMarkdownComponents = {
     const isBlock = !inline && (isMultiLine || (Boolean(lang) && codeString.length > 40))
 
     if (isBlock) {
+      if (!lang) {
+        return (
+          <pre className="bg-transparent border border-white/5 p-3.5 rounded-[6px] my-4 overflow-x-auto text-[13px] text-[var(--text-main)] font-mono leading-relaxed whitespace-pre-wrap custom-scrollbar">
+            {codeString.trim()}
+          </pre>
+        )
+      }
       return (
         <AdaptiveCodeBlock code={codeString.trim()} language={lang || 'text'} title={lang || 'CODE'} />
       )
     }
 
     return (
-      <code className="bg-[var(--bg-panel)] border-0 px-1.5 py-0.5 rounded-[5px] text-[13px] text-[var(--text-main)] font-mono break-words whitespace-pre-wrap" {...props}>
+      <code className="bg-[var(--bg-active)] px-1.5 py-0.5 rounded-[4px] text-[13px] text-[var(--text-accent)] font-mono break-words whitespace-pre-wrap border-0" {...props}>
         {children}
       </code>
     )
   },
   blockquote: ({node, ...props}) => (
-    <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-[var(--bg-panel)]/80 rounded-[5px] px-4 py-3 text-[var(--text-main)] italic my-4 border-0 shadow-sm break-words" {...props} />
+    <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-transparent pl-4 py-1 text-[var(--text-muted)] italic my-4 break-words" {...props} />
   ),
   a: ({node, ...props}) => <a className="text-[var(--text-accent)] hover:underline font-medium break-words" target="_blank" rel="noopener noreferrer" {...props} />,
   hr: ({node, ...props}) => <div className="horizontal-divider my-6" {...props} />,
   table: ({node, ...props}) => (
-    <div className="my-4 rounded-[5px] overflow-hidden border border-[var(--border-main)] bg-[var(--bg-card)] max-w-full">
-      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between select-none h-8">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)]" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-accent)]">Table Data</span>
-        </div>
-      </div>
-      <div className="overflow-x-auto p-4 custom-scrollbar">
-        <table className="w-full text-left border-collapse text-[13.5px] text-[var(--text-main)]" {...props} />
-      </div>
+    <div className="my-3 w-full overflow-x-auto bg-transparent border-0 shadow-none">
+      <table className="w-full text-left border-collapse text-xs text-[var(--text-main)]" {...props} />
     </div>
   ),
-  thead: ({node, ...props}) => <thead className="bg-transparent border-b border-white/15 dark:border-[var(--border-subtle)]/60 font-bold text-[var(--text-main)]" {...props} />,
-  tbody: ({node, ...props}) => <tbody className="divide-y divide-white/10 dark:divide-[var(--border-subtle)]/30" {...props} />,
-  tr: ({node, ...props}) => <tr className="bg-transparent transition-none" {...props} />,
-  th: ({node, ...props}) => <th className="py-3.5 pr-8 pl-0 first:pl-0 font-semibold text-[var(--text-main)] text-[14px] normal-case tracking-normal whitespace-nowrap" {...props} />,
-  td: ({node, ...props}) => <td className="py-3.5 pr-8 pl-0 first:pl-0 text-[var(--text-main)]/90 leading-relaxed break-words" {...props} />,
+  thead: ({node, ...props}) => <thead className="bg-transparent border-b border-white/10 dark:border-white/[0.06] text-left" {...props} />,
+  tbody: ({node, ...props}) => <tbody className="divide-y divide-white/5 dark:divide-white/[0.04]" {...props} />,
+  tr: ({node, ...props}) => <tr className="bg-transparent transition-none border-0" {...props} />,
+  th: ({node, ...props}) => <th className="py-2 px-3 text-xs font-semibold text-[var(--text-main)] whitespace-nowrap select-text bg-transparent border-0" {...props} />,
+  td: ({node, ...props}) => <td className="py-2 px-3 text-xs text-[var(--text-main)]/90 leading-relaxed break-words select-text border-0" {...props} />,
   em: ({node, ...props}) => <em className="italic text-[var(--text-accent)] font-normal" {...props} />
 }
 
-const formatJsonContent = (content) => {
-  if (!content || typeof content !== 'string') return content || ''
+const formatJsonContent = (content, maxLength = 150000) => {
+  if (!content) return ''
+  
+  if (typeof content === 'object') {
+    try {
+      const stringified = JSON.stringify(content, null, 2)
+      return stringified.length > maxLength 
+        ? stringified.slice(0, maxLength) + '\n\n... [Content truncated for performance]' 
+        : stringified
+    } catch (e) {
+      return String(content).slice(0, maxLength)
+    }
+  }
+  
+  if (typeof content !== 'string') return String(content).slice(0, maxLength)
+  
   try {
-    return JSON.stringify(JSON.parse(content), null, 2)
+    const parsed = JSON.parse(content)
+    const stringified = JSON.stringify(parsed, null, 2)
+    return stringified.length > maxLength 
+      ? stringified.slice(0, maxLength) + '\n\n... [Content truncated for performance]' 
+      : stringified
   } catch (e) {
-    return content
+    // If it's completely missing JSON brackets, it's probably pure extracted text from the DB.
+    // Return null so the renderer can fall back to standard text/markdown.
+    if (!content.includes('{') && !content.includes('[')) {
+      return null
+    }
+
+    let displayStr = content
+    if (!displayStr.includes('\n') && displayStr.includes('":"')) {
+      displayStr = displayStr
+        .replace(/","/g, '",\n  "')
+        .replace(/\{"/g, '{\n  "')
+        .replace(/"\}/g, '"\n}')
+    }
+    
+    return displayStr.slice(0, maxLength) + (displayStr.length > maxLength ? '\n\n... [Content truncated]' : '')
   }
 }
 
-const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', results = null, className }) => {
+const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', results = null, className, maxLength = 150000 }) => {
   React.useEffect(() => {
     if (results && Array.isArray(results) && results.length > 0) {
       window.__currentSearchMappedResults = results
@@ -594,40 +685,30 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', resu
   }, [results])
 
   if (!content) return null
-
+  const safeContent = typeof content !== 'string' && category !== 'JSON' ? String(content) : content
   const ext = fileTitle ? fileTitle.split('.').pop().toLowerCase() : ''
   const isCodeFile = ['py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext)
 
   if (category === 'JSON' || ext === 'json') {
-    const formattedJson = formatJsonContent(content)
-    if (content.length > 100000) {
+    const formattedJson = formatJsonContent(safeContent, maxLength)
+    if (formattedJson !== null) {
       return (
-        <div className="bg-[#1e1e1e] rounded-[5px] border-0 p-4 overflow-auto text-gray-300 text-[13px] font-mono leading-relaxed custom-scrollbar shadow-sm">
-          <div className="mb-2 text-[#858585] text-xs font-sans border-b border-[#2e2e2e] pb-2">File too large for syntax highlighting. Showing formatted raw text.</div>
-          <pre>{formattedJson}</pre>
-        </div>
+        <AdaptiveCodeBlock code={formattedJson} language="json" title="JSON Data" showLineNumbers={true} />
       )
     }
-    return (
-      <AdaptiveCodeBlock code={formattedJson} language="json" title="JSON Data" showLineNumbers={true} />
-    )
   }
 
   if (isCodeFile) {
-    if (content.length > 100000) {
-      return (
-        <div className="bg-[#1e1e1e] rounded-[5px] border-0 p-4 overflow-auto text-gray-300 text-[13px] font-mono leading-relaxed custom-scrollbar shadow-sm">
-          <div className="mb-2 text-[#858585] text-xs font-sans">File too large for syntax highlighting. Showing raw text.</div>
-          <pre>{content}</pre>
-        </div>
-      )
-    }
+    const codeContent = safeContent.length > maxLength 
+      ? safeContent.slice(0, maxLength) + '\n\n... [Content truncated for performance]'
+      : safeContent
+      
     return (
-      <AdaptiveCodeBlock code={content.trim()} language={ext || 'text'} title={`${ext} Source File`} showLineNumbers={true} />
+      <AdaptiveCodeBlock code={codeContent.trim()} language={ext || 'text'} title={`${ext} Source File`} showLineNumbers={true} />
     )
   }
 
-  const formattedContent = formatMarkdownText(content)
+  const formattedContent = formatMarkdownText(safeContent)
 
   return (
     <div className={className || "text-[var(--text-main)] text-[14.5px] leading-relaxed max-w-full overflow-visible"}>

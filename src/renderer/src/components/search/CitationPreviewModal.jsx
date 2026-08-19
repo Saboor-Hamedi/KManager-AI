@@ -81,11 +81,6 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
                 {previewItem.category}
               </span>
             )}
-            {simPercent !== null && (
-              <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-mono text-[var(--text-accent)] bg-[var(--text-accent)]/15 font-semibold shrink-0">
-                {simPercent}% match
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">

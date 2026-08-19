@@ -205,8 +205,10 @@ export class PDFIngestionService {
     const getOverlapTail = (str) => {
       if (str.length <= overlap) return str
       const slice = str.slice(-overlap)
-      const firstSpace = slice.indexOf(' ')
-      return firstSpace > 0 && firstSpace < overlap / 2 ? slice.slice(firstSpace + 1) : slice
+      const firstBreak = slice.search(/[\s\n]/)
+      if (firstBreak >= 0) return slice.slice(firstBreak + 1).trim()
+      const nextBreak = str.indexOf(' ', str.length - overlap)
+      return nextBreak > 0 ? str.slice(nextBreak + 1).trim() : slice.trim()
     }
 
     const chunks = []
@@ -260,8 +262,10 @@ export class PDFIngestionService {
     const getOverlapTail = (str) => {
       if (str.length <= overlap) return str
       const slice = str.slice(-overlap)
-      const firstSpace = slice.indexOf(' ')
-      return firstSpace > 0 && firstSpace < overlap / 2 ? slice.slice(firstSpace + 1) : slice
+      const firstBreak = slice.search(/[\s\n]/)
+      if (firstBreak >= 0) return slice.slice(firstBreak + 1).trim()
+      const nextBreak = str.indexOf(' ', str.length - overlap)
+      return nextBreak > 0 ? str.slice(nextBreak + 1).trim() : slice.trim()
     }
 
     for (const s of sentences) {
@@ -304,8 +308,10 @@ export class PDFIngestionService {
     const getOverlapTail = (str) => {
       if (str.length <= overlap) return str
       const slice = str.slice(-overlap)
-      const firstSpace = slice.indexOf(' ')
-      return firstSpace > 0 && firstSpace < overlap / 2 ? slice.slice(firstSpace + 1) : slice
+      const firstBreak = slice.search(/[\s\n]/)
+      if (firstBreak >= 0) return slice.slice(firstBreak + 1).trim()
+      const nextBreak = str.indexOf(' ', str.length - overlap)
+      return nextBreak > 0 ? str.slice(nextBreak + 1).trim() : slice.trim()
     }
 
     for (let i = 0; i < paragraphs.length; i++) {

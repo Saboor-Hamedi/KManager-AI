@@ -167,10 +167,10 @@ const SettingAIPanel = memo(() => {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Key size={16} className="text-[var(--text-accent)]" />
-          <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">Embedding Model</h3>
+          <h3 className="text-xs font-bold text-[var(--text-main)] tracking-wider">Reading Engine</h3>
         </div>
         <p className="text-[10px] text-[var(--text-muted)] leading-relaxed font-bold mb-3">
-          The Transformers.js model used for generating vector embeddings locally.
+          The background engine used to read and understand your files.
         </p>
         <div className="relative w-full">
           <input
@@ -186,9 +186,9 @@ const SettingAIPanel = memo(() => {
       {/* RAG Toggle */}
       <div className="flex items-center justify-between p-3.5 rounded-[6px] border border-[var(--border-subtle)] bg-white/[0.02]">
         <div>
-          <h4 className="text-[11px] font-bold text-[var(--text-main)] tracking-tight">Enable RAG Answer Synthesis</h4>
+          <h4 className="text-[11px] font-bold text-[var(--text-main)] tracking-tight">Enable Smart Chat Answers</h4>
           <p className="text-[10px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
-            When enabled, KManager AI synthesizes a direct answer below retrieved search sources using the active LLM.
+            When enabled, KManager AI provides a direct chat answer using your files as context.
           </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">

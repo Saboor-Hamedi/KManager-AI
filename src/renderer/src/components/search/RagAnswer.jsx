@@ -3,6 +3,7 @@ import { Plus, Copy, ThumbsUp, ThumbsDown, Check, Edit as EditIcon } from 'lucid
 import DocumentRenderer from './DocumentRenderer'
 import SuggestedPrompts from './SuggestedPrompts'
 import InlineChat from './InlineChat'
+import AutoResizeTextarea from './AutoResizeTextarea'
 import './horizontal.css'
 
 const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp, onUpdateAnswer }) => {
@@ -17,13 +18,6 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
       setEditValue(msg?.ragAnswer || '')
     }
   }, [msg?.ragAnswer, isEditing])
-
-  useEffect(() => {
-    if (isEditing && editRef.current) {
-      editRef.current.style.height = 'auto'
-      editRef.current.style.height = `${editRef.current.scrollHeight}px`
-    }
-  }, [isEditing, editValue])
 
   if (!msg.ragStatus || msg.ragStatus === 'disabled') return null
 
@@ -52,7 +46,10 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
   }
 
   return (
-    <div className="w-full">
+    <div 
+      className="w-full"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px' }}
+    >
       {msg.ragStatus === 'generating' && !msg.ragAnswer && (
         <div className="flex items-center gap-2 py-2 text-xs text-[var(--text-muted)]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)] animate-pulse" />
@@ -64,11 +61,12 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
         <div className="flex flex-col">
           {isEditing ? (
             <div className="flex flex-col gap-2.5 mt-2">
-              <textarea
+              <AutoResizeTextarea
                 ref={editRef}
-                className="w-full p-3.5 text-[13px] font-mono bg-[var(--bg-active)] border border-[var(--border-subtle)] rounded-[6px] text-[var(--text-main)] focus:outline-none focus:border-[var(--text-accent)] focus:shadow-[0_0_0_2px_rgba(var(--text-accent-rgb,64,186,250),0.15)] resize-none leading-relaxed min-h-[120px]"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
+                minHeight="120px"
+                maxHeight="400px"
               />
               <div className="flex justify-end gap-1.5">
                 <button
@@ -89,8 +87,12 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
               </div>
             </div>
           ) : (
-            <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none text-justify">
-              <DocumentRenderer content={msg.ragAnswer} category="DOCUMENT" results={msg.results} />
+            <div className="text-[14px] leading-relaxed text-[var(--text-main)] max-w-none text-left">
+              <DocumentRenderer 
+                content={msg.ragAnswer} 
+                category="DOCUMENT" 
+                results={msg.results} 
+              />
               {msg.ragStatus === 'generating' && (
                 <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
               )}
@@ -102,11 +104,11 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
               <div className="horizontal-divider my-5" />
               <div className="flex items-center justify-between flex-wrap gap-3 mt-1">
                 {/* Action Bar (Like, Dislike, Copy, Edit) */}
-                <div className="flex items-center bg-[var(--bg-panel)]/80 border-0 rounded-[5px] overflow-hidden h-7 shrink-0 select-none">
+                <div className="flex items-center gap-1 shrink-0 select-none">
                   <button 
                     onClick={() => handleFeedback('helpful')}
-                    className={`h-full px-2.5 transition-colors flex items-center justify-center border-0 ${
-                      feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                    className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
+                      feedback === 'helpful' ? 'text-[#a855f7] bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
                     }`}
                     title="Helpful AI response"
                   >
@@ -114,8 +116,8 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
                   </button>
                   <button 
                     onClick={() => handleFeedback('unhelpful')}
-                    className={`h-full px-2.5 transition-colors flex items-center justify-center border-0 ${
-                      feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                    className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
+                      feedback === 'unhelpful' ? 'text-red-400 bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
                     }`}
                     title="Not helpful"
                   >
@@ -123,14 +125,14 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
                   </button>
                   <button 
                     onClick={handleCopy}
-                    className="h-full px-2.5 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+                    className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
                     title="Copy AI answer"
                   >
                     {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
                   </button>
                   <button
                     onClick={() => setIsEditing(prev => !prev)}
-                    className={`h-full px-2.5 hover:bg-[var(--bg-active)] transition-colors flex items-center justify-center border-0 ${
+                    className={`p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] transition-colors flex items-center justify-center border-0 ${
                       isEditing ? 'bg-[var(--bg-active)] text-[var(--text-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                     }`}
                     title="Edit answer text"
@@ -143,17 +145,17 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
                 <button
                   onClick={() => handleSaveResponse(msg.id, msg.query, msg.ragAnswer)}
                   disabled={savedResponses[msg.id] === 'saving' || savedResponses[msg.id] === 'saved'}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all shadow-none border-0 ${
                     savedResponses[msg.id] === 'saved'
-                      ? 'bg-green-500/10 text-green-400 cursor-default'
+                      ? 'text-green-400 cursor-default bg-transparent'
                       : savedResponses[msg.id] === 'saving'
-                        ? 'bg-[var(--bg-panel)]/50 text-[var(--text-muted)] cursor-wait opacity-70'
-                        : 'bg-[var(--bg-panel)]/40 hover:bg-[#394b5e]/40 text-[var(--text-muted)] hover:text-gray-300 shadow-sm'
+                        ? 'text-[var(--text-muted)] cursor-wait opacity-70 bg-transparent'
+                        : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
                   }`}
                 >
                   {savedResponses[msg.id] === 'saved' ? (
                     <>
-                      <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-500/20 text-green-400">
+                      <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-green-400">
                         <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="2.5 6 5 8.5 9.5 3.5"></polyline>
                         </svg>

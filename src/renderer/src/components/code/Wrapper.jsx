@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const Wrapper = ({ children, maxHeight = 300 }) => {
   const [expanded, setExpanded] = useState(false)
@@ -20,21 +21,25 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
   }, [children, maxHeight])
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full group -mx-4 px-4">
       <div 
         ref={contentRef} 
-        className="transition-all duration-300 ease-in-out overflow-hidden" 
+        className={`transition-all duration-300 ease-in-out overflow-hidden`}
         style={{ 
-          maxHeight: expanded ? `${contentRef.current?.scrollHeight + 50}px` : (isOverflowing ? `${maxHeight}px` : 'none') 
+          maxHeight: expanded ? 'none' : (isOverflowing ? `${maxHeight}px` : 'none') 
         }}
       >
         {children}
       </div>
+      
+      {/* Gradient Fade (Only when overflowing and collapsed) */}
       {isOverflowing && !expanded && (
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--bg-app)] to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[var(--bg-app)] to-transparent pointer-events-none" />
       )}
+
+      {/* Expand / Collapse Button */}
       {isOverflowing && (
-        <div className="mt-2 flex justify-start">
+        <div className={`flex justify-center mt-2 ${!expanded && 'absolute bottom-2 left-0 right-0 z-10'}`}>
           <button
             type="button"
             onClick={(e) => {
@@ -42,9 +47,19 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
               e.stopPropagation()
               setExpanded(!expanded)
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[6px] text-[12px] font-semibold text-[var(--text-accent)] bg-[var(--bg-panel)] border border-[var(--border-subtle)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-none"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-[var(--text-main)] bg-[var(--bg-panel)]/80 hover:bg-[var(--bg-active)] border border-white/[0.05] hover:border-white/[0.1] backdrop-blur-md shadow-sm transition-all cursor-pointer opacity-90 hover:opacity-100"
           >
-            <span>{expanded ? 'Show Less ↑' : 'See More ↓'}</span>
+            {expanded ? (
+              <>
+                <span>Show less</span>
+                <ChevronUp size={12} />
+              </>
+            ) : (
+              <>
+                <span>See more</span>
+                <ChevronDown size={12} />
+              </>
+            )}
           </button>
         </div>
       )}

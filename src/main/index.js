@@ -36,6 +36,35 @@ pdfServer.listen(0, '127.0.0.1', () => {
 
 let mainWindow = null
 
+function safeSendToWindow(channel, ...args) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send(channel, ...args)
+    }
+  } catch (err) {
+    // Ignore destroyed object errors when app closes
+  }
+}
+
+function safeSenderSend(sender, channel, ...args) {
+  try {
+    if (sender && !sender.isDestroyed()) {
+      sender.send(channel, ...args)
+    } else {
+      safeSendToWindow(channel, ...args)
+    }
+  } catch (err) {
+    safeSendToWindow(channel, ...args)
+  }
+  try {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed() && mainWindow.webContents !== sender) {
+      mainWindow.webContents.send(channel, ...args)
+    }
+  } catch (err) {
+    // Ignore destroyed window errors
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
@@ -124,6 +153,22 @@ app.whenReady().then(() => {
     window.autoHideMenuBar = true
     window.setMenuBarVisibility(false)
     optimizer.watchWindowShortcuts(window)
+
+    // Add shortcuts for DevTools and Reload
+    window.webContents.on('before-input-event', (event, input) => {
+      if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+        window.webContents.toggleDevTools()
+        event.preventDefault()
+      }
+      if (input.key === 'F12') {
+        window.webContents.toggleDevTools()
+        event.preventDefault()
+      }
+      if (input.control && input.key.toLowerCase() === 'r') {
+        window.reload()
+        event.preventDefault()
+      }
+    })
   })
 
   // Config Manager
@@ -173,7 +218,7 @@ app.whenReady().then(() => {
       
       const item = ingestionQueue[index]
       item.status = 'processing'
-      mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+      safeSendToWindow('db:queue-updated', ingestionQueue)
       
       try {
         const fileStart = Date.now()
@@ -183,15 +228,15 @@ app.whenReady().then(() => {
           // Only send update if complete/error, or if 150ms has passed since last update
           if (progressUpdate.status === 'complete' || progressUpdate.status === 'error' || now - lastProgressTime > 150) {
             lastProgressTime = now
-            mainWindow?.webContents.send('db:ingest-progress', { ...progressUpdate, fileName: item.name })
+            safeSendToWindow('db:ingest-progress', { ...progressUpdate, fileName: item.name })
           }
-        }, () => cancelIngestionFlag)
+        }, () => cancelIngestionFlag || !mainWindow || mainWindow.isDestroyed())
         
         const ms = Date.now() - fileStart
         item.timing = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
         
         if (result?.success) {
-          ingestionQueue.splice(index, 1) // Remove on success
+          item.status = 'completed'
         } else {
           item.status = 'error'
           item.timing = result?.message || 'Failed'
@@ -201,18 +246,21 @@ app.whenReady().then(() => {
         item.timing = 'Failed'
       }
       
-      mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+      safeSendToWindow('db:queue-updated', ingestionQueue)
       await new Promise(r => setTimeout(r, 50)) // Prevent blocking
     }
     
     isIngesting = false
-    mainWindow?.webContents.send('db:ingest-progress', { status: 'idle' })
+    safeSendToWindow('db:ingest-progress', { status: 'idle' })
     if (cancelIngestionFlag) {
-      mainWindow?.webContents.send('db:ingest-progress', { status: 'idle' })
+      safeSendToWindow('db:ingest-progress', { status: 'idle' })
     }
   }
 
   ipcMain.handle('db:queue-files', async (event, filePaths) => {
+    // Clear out previously finished items so the UI queue starts fresh for the new batch
+    ingestionQueue = ingestionQueue.filter(q => q.status === 'pending' || q.status === 'processing')
+    
     const newItems = filePaths.map(p => ({
       id: `${p}-${Date.now()}-${Math.random()}`,
       path: p,
@@ -221,7 +269,7 @@ app.whenReady().then(() => {
       timing: null
     }))
     ingestionQueue.push(...newItems)
-    mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+    safeSendToWindow('db:queue-updated', ingestionQueue)
     
     if (!isIngesting) {
       processQueue()
@@ -236,14 +284,14 @@ app.whenReady().then(() => {
   ipcMain.handle('db:cancel-queue', () => {
     cancelIngestionFlag = true
     ingestionQueue = ingestionQueue.filter(q => q.status !== 'pending')
-    mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+    safeSendToWindow('db:queue-updated', ingestionQueue)
     return { success: true }
   })
 
   ipcMain.handle('db:clear-queue', () => {
     // Keep pending/processing, drop errors
     ingestionQueue = ingestionQueue.filter(q => q.status === 'processing' || q.status === 'pending')
-    mainWindow?.webContents.send('db:queue-updated', ingestionQueue)
+    safeSendToWindow('db:queue-updated', ingestionQueue)
     return { success: true }
   })
 
@@ -251,7 +299,7 @@ app.whenReady().then(() => {
     if (!db || !db.isConnected()) return { success: false, message: 'Database not connected' }
     try {
       const res = await ingestionService.ingestText(title, text, db)
-      mainWindow?.webContents.send('db:stats-updated') // If applicable, notify frontend
+      safeSendToWindow('db:stats-updated') // If applicable, notify frontend
       return res
     } catch (err) {
       console.error('db:ingest-text error:', err)
@@ -297,7 +345,9 @@ app.whenReady().then(() => {
             WHERE similarity(dc.content, query_text) > 0.08
             ORDER BY similarity(dc.content, query_text) DESC LIMIT 100
           )
-          SELECT dc.id, dc.document_id, dc.chunk_index, dc.content, d.vault_path, d.file_name, d.file_type, d.created_at,
+          SELECT dc.id, dc.document_id, dc.chunk_index, 
+            (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
+            d.vault_path, d.file_name, d.file_type, d.created_at,
             (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
              COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
              COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity,
@@ -359,11 +409,14 @@ app.whenReady().then(() => {
           await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
           // Replace search_chunks with the full 3-leg hybrid: semantic + FTS + trigram fuzzy
           await db.query(`DROP FUNCTION IF EXISTS search_chunks(text, vector, integer)`)
+          await db.query(`DROP FUNCTION IF EXISTS search_chunks(text, vector, integer, text, integer)`)
           await db.query(`
             CREATE OR REPLACE FUNCTION search_chunks(
               query_text TEXT,
               query_embedding VECTOR(384),
-              result_limit INT DEFAULT 10
+              result_limit INT DEFAULT 10,
+              p_file_type TEXT DEFAULT NULL,
+              p_year INT DEFAULT NULL
             )
             RETURNS TABLE (
               id UUID, document_id UUID, chunk_index INT, content TEXT,
@@ -372,10 +425,16 @@ app.whenReady().then(() => {
             LANGUAGE plpgsql AS $func$
             BEGIN
               RETURN QUERY
-              WITH semantic_search AS (
+              WITH filtered_docs AS (
+                SELECT d.id FROM documents d
+                WHERE (p_file_type IS NULL OR d.file_type = p_file_type)
+                  AND (p_year IS NULL OR EXTRACT(YEAR FROM d.created_at) = p_year)
+              ),
+              semantic_search AS (
                 SELECT dc.id,
                   RANK() OVER (ORDER BY dc.embedding <=> query_embedding) AS semantic_rank
                 FROM embedding_documents dc
+                JOIN filtered_docs fd ON fd.id = dc.document_id
                 WHERE dc.embedding IS NOT NULL
                 ORDER BY dc.embedding <=> query_embedding LIMIT 100
               ),
@@ -383,6 +442,7 @@ app.whenReady().then(() => {
                 SELECT dc.id,
                   RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC) AS keyword_rank
                 FROM embedding_documents dc
+                JOIN filtered_docs fd ON fd.id = dc.document_id
                 WHERE dc.fts_vector @@ websearch_to_tsquery('simple', query_text)
                 ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC LIMIT 100
               ),
@@ -390,10 +450,12 @@ app.whenReady().then(() => {
                 SELECT dc.id,
                   RANK() OVER (ORDER BY word_similarity(query_text, dc.content) DESC) AS fuzzy_rank
                 FROM embedding_documents dc
+                JOIN filtered_docs fd ON fd.id = dc.document_id
                 WHERE word_similarity(query_text, dc.content) > 0.12
                 ORDER BY word_similarity(query_text, dc.content) DESC LIMIT 100
               )
-              SELECT dc.id, dc.document_id, dc.chunk_index, dc.content,
+              SELECT dc.id, dc.document_id, dc.chunk_index,
+                (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
                 d.vault_path, d.file_name, d.file_type, d.created_at,
                 (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
                  COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
@@ -643,8 +705,8 @@ app.whenReady().then(() => {
     }
     try {
       const result = await ingestionService.ingestFile(filePath, db, (progressUpdate) => {
-        event.sender.send('db:ingest-progress', progressUpdate)
-      })
+        safeSenderSend(event.sender, 'db:ingest-progress', progressUpdate)
+      }, () => !mainWindow || mainWindow.isDestroyed() || event?.sender?.isDestroyed())
       return result
     } catch (err) {
       console.error('db:ingest-file error:', err)
@@ -727,10 +789,18 @@ app.whenReady().then(() => {
       return { success: false, message: 'Database not connected' }
     }
     try {
+      let lastSent = 0
       return await ingestionService.reembedAll(db, (progressUpdate) => {
-        event.sender.send('db:ingest-progress', { ...progressUpdate, type: 'reembed' })
-      })
+        const now = Date.now()
+        if (progressUpdate.status === 'complete' || progressUpdate.status === 'error' || now - lastSent > 40) {
+          lastSent = now
+          safeSenderSend(event.sender, 'db:ingest-progress', { ...progressUpdate, type: 'reembed' })
+        }
+      }, () => !mainWindow || mainWindow.isDestroyed() || event?.sender?.isDestroyed())
     } catch (err) {
+      if (err.message === 'Cancelled by user' || err.message.includes('destroyed')) {
+        return { success: false, message: 'Cancelled due to window close' }
+      }
       console.error('db:reembed-all error:', err)
       return { success: false, message: err.message }
     }
@@ -1003,7 +1073,7 @@ ipcMain.handle('update:download', () => {
 })
 
 ipcMain.handle('update:install', () => {
-  autoUpdater.quitAndInstall(false, true)
+  autoUpdater.quitAndInstall(true, true)
 })
 
 // Renderer version-comparison fallback — reads latest.yml from GitHub

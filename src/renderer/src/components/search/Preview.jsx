@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { FileText, X } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 
-const Preview = ({ selectedPdf, onClose, fileExists }) => {
+const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
 
   // Global ESC handler — works even when <webview> has stolen focus
@@ -85,10 +85,17 @@ const Preview = ({ selectedPdf, onClose, fileExists }) => {
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
-                {isReady && selectedPdf.content ? (
+                {loadingText || !isReady ? (
+                  <div className="flex flex-col gap-4 animate-pulse py-6">
+                    <div className="h-5 w-1/3 rounded bg-[var(--border-subtle)]/70" />
+                    <div className="h-4 w-full rounded bg-[var(--border-subtle)]/50" />
+                    <div className="h-4 w-5/6 rounded bg-[var(--border-subtle)]/40" />
+                    <div className="h-4 w-2/3 rounded bg-[var(--border-subtle)]/30" />
+                  </div>
+                ) : fullText || selectedPdf.content ? (
                   <DocumentRenderer
-                    className="text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify"
-                    content={selectedPdf.content}
+                    className={`text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
+                    content={fullText || selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
                   />
@@ -101,17 +108,17 @@ const Preview = ({ selectedPdf, onClose, fileExists }) => {
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
             <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify">
               <div className="max-w-3xl mx-auto">
-                {!isReady ? (
+                {loadingText || !isReady ? (
                   <div className="flex flex-col gap-4 animate-pulse py-6">
                     <div className="h-5 w-1/3 rounded bg-[var(--border-subtle)]/70" />
                     <div className="h-4 w-full rounded bg-[var(--border-subtle)]/50" />
                     <div className="h-4 w-5/6 rounded bg-[var(--border-subtle)]/40" />
                     <div className="h-4 w-2/3 rounded bg-[var(--border-subtle)]/30" />
                   </div>
-                ) : selectedPdf.content ? (
+                ) : fullText || selectedPdf.content ? (
                   <DocumentRenderer
-                    className="text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify"
-                    content={selectedPdf.content}
+                    className={`text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
+                    content={fullText || selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
                   />

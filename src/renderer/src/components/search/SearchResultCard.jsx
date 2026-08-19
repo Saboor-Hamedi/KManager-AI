@@ -4,6 +4,7 @@ import HoverWikilink from './HoverWikilink'
 import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
 import Wrapper from '../code/Wrapper'
+import AutoResizeTextarea from './AutoResizeTextarea'
 import './horizontal.css'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
@@ -82,36 +83,36 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
   }
 
   return (
-    <div className="flex items-center bg-[var(--bg-panel)]/80 border-0 rounded-[5px] overflow-hidden h-6 shrink-0 select-none">
+    <div className="flex items-center gap-1 shrink-0 select-none">
       {/* Like */}
       <button 
         onClick={() => handleFeedback('helpful')}
-        className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
-          feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+        className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
+          feedback === 'helpful' ? 'text-[#a855f7] bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
         }`}
         title="Helpful result"
       >
-        <ThumbsUp size={12} />
+        <ThumbsUp size={13} />
       </button>
 
       {/* Dislike */}
       <button 
         onClick={() => handleFeedback('unhelpful')}
-        className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
-          feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+        className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
+          feedback === 'unhelpful' ? 'text-red-400 bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
         }`}
         title="Not helpful"
       >
-        <ThumbsDown size={12} />
+        <ThumbsDown size={13} />
       </button>
 
       {/* Copy */}
       <button 
         onClick={handleCopy}
-        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+        className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
         title="Copy section text"
       >
-        {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+        {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
       </button>
 
       {/* Preview */}
@@ -124,20 +125,20 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
             handleSelect(item)
           }
         }}
-        className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+        className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
         title="Open citation preview drawer"
       >
-        <Eye size={12} />
+        <Eye size={13} />
       </button>
 
       {/* Edit */}
       {onEdit && (
         <button
           onClick={onEdit}
-          className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+          className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
           title="Edit chunk content"
         >
-          <Edit size={12} />
+          <Edit size={13} />
         </button>
       )}
 
@@ -149,14 +150,14 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
             e.preventDefault()
             onReply()
           }}
-          className={`h-full px-2 flex items-center justify-center border-0 transition-colors ${
+          className={`p-1.5 rounded-[4px] flex items-center justify-center border-0 transition-colors ${
             isActiveReply
               ? 'bg-[var(--bg-active)] text-[var(--text-main)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
           }`}
           title={isActiveReply ? 'Close chat' : 'Reply'}
         >
-          {isActiveReply ? <X size={12} strokeWidth={2.5} /> : <MessageSquarePlus size={12} />}
+          {isActiveReply ? <X size={13} strokeWidth={2.5} /> : <MessageSquarePlus size={13} />}
         </button>
       )}
     </div>
@@ -194,14 +195,6 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
     setLocalContent(item.content)
     setEditValue(item.content)
   }, [item.content])
-
-  // Auto-resize textarea to prevent height jumping
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
-    }
-  }, [isEditing, editValue])
 
   const handleSaveEdit = async () => {
     // Add two trailing spaces to every line to force Markdown line breaks (<br>)
@@ -268,7 +261,11 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   const createdLabel = formatDate(item.created_at)
 
   return (
-    <div onClick={handleCardClick} className="group relative transition-all duration-200 overflow-visible py-4 shadow-none bg-transparent border-0">
+    <div 
+      onClick={handleCardClick} 
+      className="group relative transition-all duration-200 overflow-visible py-4 shadow-none bg-transparent border-0"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
+    >
       {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
@@ -281,9 +278,6 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           <h4 className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
             {item.title}
           </h4>
-          <span className="text-[11px] font-mono text-[var(--text-muted)] shrink-0">
-            {simPercent}%
-          </span>
 
           {/* NotebookLM-Style Wiki Hover Popover */}
           {showWikiHover && (
@@ -302,16 +296,19 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
       )}
 
       {/* Content Chunk Body */}
-      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full overflow-hidden text-justify">
+      <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full text-left">
         {isEditing ? (
           <div className="flex flex-col gap-2 mt-2">
-            <textarea
+            <AutoResizeTextarea
               ref={textareaRef}
-              className="w-full p-3 text-[13px] font-mono bg-[var(--bg-input,var(--bg-active))] border border-[var(--border-subtle)] rounded-[5px] text-[var(--text-main)] focus:outline-none focus:border-[var(--text-accent)] focus:shadow-[0_0_0_2px_rgba(var(--text-accent-rgb,64,186,250),0.15)] overflow-hidden resize-none leading-relaxed"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               disabled={isSaving}
-              style={{ minHeight: '80px' }}
+              readOnly={true}
+              minHeight="80px"
+              maxHeight="400px"
+              padding="p-3"
+              rounded="rounded-[5px]"
             />
             <div className="flex justify-end gap-1.5 mt-2">
               <button
@@ -388,7 +385,6 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           handleSelect={onSelect}
           onReply={onReply}
           isActiveReply={isActiveReply}
-          onEdit={() => setIsEditing(prev => !prev)}
         />
       </div>
 

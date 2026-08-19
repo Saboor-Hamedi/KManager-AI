@@ -3,6 +3,34 @@
  * Combines dense vector embeddings (`pgvector` / semantic similarity) with sparse exact-keyword matching (`BM25`)
  * using Reciprocal Rank Fusion (RRF) to guarantee 100% recall for both conceptual queries and exact terminology.
  */
+import rerankerService from '../db/reranker.js'
+
+/**
+ * Extract metadata filters (file type, year) from the query and return a cleaned query.
+ */
+function extractFilters(query) {
+  let fileType = null;
+  let year = null;
+  let cleanedQuery = query;
+
+  const typeMatch = cleanedQuery.match(/\b(?:in\s)?(pdf|txt|md|csv|json)(?:\sfiles?)?\b/i);
+  if (typeMatch) {
+    fileType = typeMatch[1].toLowerCase();
+    cleanedQuery = cleanedQuery.replace(typeMatch[0], '');
+  }
+
+  const yearMatch = cleanedQuery.match(/\b(?:in\s)?(19\d{2}|20\d{2})\b/i);
+  if (yearMatch) {
+    year = parseInt(yearMatch[1], 10);
+    cleanedQuery = cleanedQuery.replace(yearMatch[0], '');
+  }
+
+  return {
+    cleanedQuery: trimWhitespace(cleanedQuery) || query,
+    fileType,
+    year
+  };
+}
 
 /**
  * Expand a short or potentially typo'd query into a richer search phrase.
@@ -25,6 +53,9 @@ export function expandQuery(queryText) {
       const corePhrase = meaningful.join(' ')
       return `${q} | ${corePhrase} (definition overview mechanism process analysis summary)`
     }
+  } else if (isLowInformationQuery(q)) {
+    // Expand generic / low-information queries like "Hello world" to boost semantic similarity
+    return `${q} (overview concept introduction example basic tutorial)`
   }
 
   return q
@@ -187,11 +218,11 @@ export function computeReciprocalRankFusion(rows, k = 60) {
   // Sort descending by combinedScore
   const sorted = rows.sort((a, b) => b.combinedScore - a.combinedScore)
 
-  // Filter out low-relevance noise (< 0.32 similarity if no keyword match exists)
+  // Filter out low-relevance noise (< 0.15 similarity if no keyword match exists)
   return sorted.filter(r => {
     const cosSim = r.cosine_similarity !== undefined ? r.cosine_similarity : (r.similarity || 0)
     if (r.bm25Score > 0 || (r.keyword_rank && r.keyword_rank <= 50)) return true
-    return cosSim >= 0.32
+    return cosSim >= 0.15
   })
 }
 
@@ -206,7 +237,8 @@ export async function performHybridSearchService(db, embeddingService, queryText
     return { rows: [], isFallback: false }
   }
 
-  const originalQuery = trimWhitespace(queryText)
+  const { cleanedQuery, fileType, year } = extractFilters(trimWhitespace(queryText))
+  const originalQuery = cleanedQuery
   const expandedQuery = expandQuery(originalQuery)
 
   // Embed the expanded query
@@ -214,16 +246,20 @@ export async function performHybridSearchService(db, embeddingService, queryText
   const vectorString = '[' + vectorArray.join(',') + ']'
 
   // 1. Attempt full 3-leg SQL hybrid query (semantic + FTS + fuzzy)
+  // We pass fileType and year as the 4th and 5th parameters to search_chunks
   const res = await db.query(
-    'SELECT * FROM search_chunks($1, $2::vector, $3)',
-    [originalQuery, vectorString, limit * 3]
+    'SELECT * FROM search_chunks($1, $2::vector, $3, $4, $5)',
+    [originalQuery, vectorString, limit * 3, fileType, year]
   )
 
   if (res && res.rows && res.rows.length > 0) {
     const bm25Rows = computeBM25Scores(originalQuery, res.rows)
     const fusedRows = computeReciprocalRankFusion(bm25Rows)
     if (fusedRows.length > 0) {
-      return { rows: fusedRows.slice(0, limit), isFallback: false }
+      // Re-rank top 20 results using local cross-encoder for max precision
+      const candidates = fusedRows.slice(0, 20)
+      const reranked = await rerankerService.rerank(originalQuery, candidates)
+      return { rows: reranked.slice(0, limit), isFallback: false }
     }
   }
 
@@ -246,7 +282,9 @@ export async function performHybridSearchService(db, embeddingService, queryText
   const fallbackFused = computeReciprocalRankFusion(fallbackBm25)
 
   if (fallbackFused.length > 0) {
-    return { rows: fallbackFused.slice(0, limit), isFallback: true }
+    const candidates = fallbackFused.slice(0, 20)
+    const reranked = await rerankerService.rerank(originalQuery, candidates)
+    return { rows: reranked.slice(0, limit), isFallback: true }
   }
 
   // 3. LOW-INFORMATION QUERY HANDLING

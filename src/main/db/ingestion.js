@@ -177,32 +177,52 @@ class IngestionService {
   /**
    * Deletes existing embeddings for a document, re-chunks, generates embeddings, and bulk-inserts.
    */
-  async chunkAndEmbedDocument(client, documentId, rawText, progressCallback = () => {}, isCancelled = () => false) {
+  async chunkAndEmbedDocument(client, documentId, rawText, progressCallback = () => {}, isCancelled = () => false, options = {}) {
     await client.query('DELETE FROM embedding_documents WHERE document_id = $1', [documentId])
 
     const chunks     = this.chunkText(rawText)
     const totalChunks = chunks.length
-    const BATCH_SIZE  = 2 // very low batch size to maximize UI responsiveness during heavy ONNX inference
+    const BATCH_SIZE  = 8 // Optimized batch size for massive C++/ONNX throughput with zero UI lag
 
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       if (isCancelled()) {
         throw new Error('Cancelled by user')
       }
 
-      // Yield to Electron event loop so UI stays responsive
-      await new Promise(resolve => setTimeout(resolve, 30))
+      // Quick 3ms yield so Electron UI event loop processes hovers/clicks smoothly
+      await new Promise(resolve => setTimeout(resolve, 3))
 
       const batchChunks = chunks.slice(i, i + BATCH_SIZE)
+      const chunkRatio  = i / Math.max(1, chunks.length)
+      let currentProgress
+      let currentMsg
+
+      if (options?.isReembed) {
+        const docBase  = (options.docIndex / options.totalDocs) * 100
+        const docSlice = (1 / options.totalDocs) * 100
+        currentProgress = Math.min(99, Math.floor(docBase + (chunkRatio * docSlice)))
+        currentMsg = `🔄 Re-embedding (${options.docIndex + 1}/${options.totalDocs}): ${options.fileName} — Chunk ${i + 1}–${Math.min(i + BATCH_SIZE, totalChunks)} of ${totalChunks}...`
+      } else {
+        currentProgress = 40 + Math.floor(chunkRatio * 55)
+        currentMsg = `🔢 Embedding chunk ${i + 1}–${Math.min(i + BATCH_SIZE, totalChunks)} of ${totalChunks}...`
+      }
+
       progressCallback({
         status: 'embedding',
-        progress: 40 + Math.floor((i / chunks.length) * 55),
-        message: `🔢 Embedding chunk ${i + 1}–${Math.min(i + BATCH_SIZE, totalChunks)} of ${totalChunks}...`
+        progress: currentProgress,
+        message: currentMsg,
+        ...(options?.isReembed ? {
+          type: 'reembed',
+          docIndex: options.docIndex,
+          totalDocs: options.totalDocs,
+          docName: options.fileName
+        } : {})
       })
 
       const batchVectors = await embeddingService.embedQuery(batchChunks)
 
-      // Brief pause after heavy ONNX inference to allow UI interactions (clicks/hovers) to process
-      await new Promise(resolve => setTimeout(resolve, 30))
+      // Brief 2ms yield before batch insert
+      await new Promise(resolve => setTimeout(resolve, 2))
 
       const values     = []
       const flatParams = []
@@ -212,7 +232,6 @@ class IngestionService {
         const content    = batchChunks[j]
         const vectorStr  = '[' + batchVectors[j].join(',') + ']'
         const tokenCount = content.split(/\s+/).length
-        // Extract section heading from chunk content if prefixed with ##
         const sectionMatch = content.match(/^##\s+(.+?)\n\n/)
         const section = sectionMatch ? sectionMatch[1].trim() : null
         const cleanContent = sectionMatch ? content.slice(sectionMatch[0].length) : content
@@ -239,7 +258,8 @@ class IngestionService {
   async reembedAll(db, progressCallback = () => {}, isCancelled = () => false) {
     if (!db || !db.isConnected()) throw new Error('Database not connected')
 
-    const docsRes = await db.query('SELECT id, file_name, content FROM documents')
+    // Query only ID and file_name upfront to keep V8 memory/heap near zero during 1000+ files re-embedding
+    const docsRes = await db.query('SELECT id, file_name FROM documents ORDER BY id ASC')
     const docs    = docsRes.rows
     let totalChunksProcessed = 0
     const globalStart = startTimer()
@@ -248,35 +268,69 @@ class IngestionService {
       if (isCancelled()) {
         throw new Error('Cancelled by user')
       }
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 5))
 
-      const doc    = docs[idx]
+      const docMeta  = docs[idx]
       const docStart = startTimer()
 
       progressCallback({
+        type: 'reembed',
         status: 'embedding',
         progress: Math.floor((idx / docs.length) * 100),
-        message: `🔄 Re-embedding (${idx + 1}/${docs.length}): ${doc.file_name}...`
+        message: `🔄 Re-embedding (${idx + 1}/${docs.length}): ${docMeta.file_name}...`,
+        docIndex: idx,
+        totalDocs: docs.length,
+        docName: docMeta.file_name
       })
 
-      await db.transaction(async (client) => {
-        const processed = await this.chunkAndEmbedDocument(client, doc.id, doc.content, progressCallback, isCancelled)
-        totalChunksProcessed += processed
-      })
+      try {
+        // Fetch only the single document content needed right before processing
+        const contentRes = await db.query('SELECT content FROM documents WHERE id = $1', [docMeta.id])
+        if (!contentRes.rows.length || !contentRes.rows[0].content) continue
+        const content = contentRes.rows[0].content
 
-      const docTime = elapsed(docStart)
-      progressCallback({
-        status: 'embedding',
-        progress: Math.floor(((idx + 1) / docs.length) * 100),
-        message: `✅ ${doc.file_name} done in ${docTime} (${idx + 1}/${docs.length})`
-      })
+        await db.transaction(async (client) => {
+          const processed = await this.chunkAndEmbedDocument(client, docMeta.id, content, progressCallback, isCancelled, {
+            isReembed: true,
+            docIndex: idx,
+            totalDocs: docs.length,
+            fileName: docMeta.file_name
+          })
+          totalChunksProcessed += processed
+        })
+
+        const docTime = elapsed(docStart)
+        progressCallback({
+          type: 'reembed',
+          status: 'embedding',
+          progress: Math.floor(((idx + 1) / docs.length) * 100),
+          message: `✅ ${docMeta.file_name} done in ${docTime} (${idx + 1}/${docs.length})`,
+          docIndex: idx + 1,
+          totalDocs: docs.length,
+          docName: docMeta.file_name
+        })
+      } catch (err) {
+        if (isCancelled()) throw err
+        console.error(`Error re-embedding document ${docMeta.file_name} (ID: ${docMeta.id}):`, err)
+        progressCallback({
+          type: 'reembed',
+          status: 'embedding',
+          progress: Math.floor(((idx + 1) / docs.length) * 100),
+          message: `⚠️ Skipped ${docMeta.file_name} due to error: ${err.message || 'unknown error'} (${idx + 1}/${docs.length})`,
+          docIndex: idx + 1,
+          totalDocs: docs.length,
+          docName: docMeta.file_name
+        })
+      }
     }
 
     const totalTime = elapsed(globalStart)
     progressCallback({
+      type: 'reembed',
       status: 'complete',
       progress: 100,
-      message: `🎉 Re-embedded ${docs.length} documents / ${totalChunksProcessed} chunks in ${totalTime}`
+      message: `🎉 Re-embedded ${docs.length} documents / ${totalChunksProcessed} chunks in ${totalTime}`,
+      totalDocs: docs.length
     })
 
     return { success: true, documentsProcessed: docs.length, chunksProcessed: totalChunksProcessed, totalTime }

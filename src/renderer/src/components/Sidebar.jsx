@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 import { cn } from '../lib/utils'
-import { LayoutDashboard, Users, Search } from 'lucide-react'
+import { LayoutDashboard, Users, Search, PlusCircle } from 'lucide-react'
 import SidebarHeader from './SidebarHeader'
 import SidebarFooter from './SidebarFooter'
 
@@ -47,6 +47,21 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
       <SidebarHeader collapsed={collapsed} toggleCollapsed={toggleCollapsed} />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* Special New Session Action */}
+        <SidebarItem
+          icon={PlusCircle}
+          label="New Session"
+          shortcut="Ctrl+N"
+          active={false}
+          collapsed={collapsed}
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('new-session'))
+            if (activeTab !== 'search') setActiveTab('search')
+          }}
+        />
+        
+        <div className="my-2 border-t border-[var(--border-dim)] mx-4 opacity-50" />
+
         {items.map((item) => (
           <SidebarItem
             key={item.id}

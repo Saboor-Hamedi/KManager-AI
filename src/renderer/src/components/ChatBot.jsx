@@ -11,6 +11,9 @@ import { getSetting } from '../lib/settings'
 import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
 
+const MermaidDiagram = React.lazy(() => import('./search/MermaidDiagram'))
+const MarkdownImage = React.lazy(() => import('./search/MarkdownImage'))
+
 const ChatCodeBlock = memo(({ lang, codeString }) => {
   const [copied, setCopied] = useState(false)
 
@@ -21,26 +24,21 @@ const ChatCodeBlock = memo(({ lang, codeString }) => {
   }
 
   return (
-    <div className="relative group my-4 rounded-lg overflow-hidden border border-[var(--border-subtle)] shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-[#1e1e1e]">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#161b22] border-b border-white/[0.05]">
-        <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">{lang || 'Code'}</span>
-        <button 
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-white/40 hover:text-white hover:bg-white/10 transition-colors border-0"
-          title="Copy to clipboard"
-        >
-          {copied ? (
-            <>
-              <Check size={11} className="text-emerald-400" />
-              <span className="text-[10px] font-medium text-emerald-400">Copied</span>
-            </>
-          ) : (
-            <>
-              <Copy size={11} />
-              <span className="text-[10px] font-medium">Copy</span>
-            </>
-          )}
-        </button>
+    <div className="my-4 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
+      {/* Persistent Small Header - Ultra Subtle */}
+      <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
+        <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest pl-1">
+          {lang || 'Code'}
+        </div>
+        <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity">
+          <button 
+            onClick={handleCopy}
+            className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors border-0"
+            title="Copy to clipboard"
+          >
+            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+          </button>
+        </div>
       </div>
       <SyntaxHighlighter
         children={codeString}
@@ -87,7 +85,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
   return (
     <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
       <div className="flex flex-col w-full">
-        <div className="py-2 text-xs leading-relaxed text-justify bg-transparent text-[var(--text-main)] shadow-none border-0" style={{ overflowWrap: 'break-word' }}>
+        <div className="py-2 text-xs leading-relaxed text-left bg-transparent text-[var(--text-main)] shadow-none border-0" style={{ overflowWrap: 'break-word' }}>
           <div style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
               p: ({node, children, ...props}) => {
@@ -118,7 +116,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                       </div>
                    )
                 }
-                return <p className="mb-2 last:mb-0 text-justify" {...props}>{children}</p>
+                return <p className="mb-2 last:mb-0 text-left" {...props}>{children}</p>
               },
               strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
               em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
@@ -154,14 +152,31 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 }
                 return <li {...props}>{children}</li>
               },
-              code: ({node, inline, className, children, ...props}) => {
-                if (inline) {
-                  return <code className="bg-[var(--bg-active)] text-[var(--text-accent)] px-1.5 py-0.5 rounded-[4px] font-mono text-[11.5px]" {...props}>{children}</code>
-                }
+              img: ({node, src, alt, ...props}) => (
+                <React.Suspense fallback={<div className="w-full h-[200px] my-4 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[10px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
+                  <MarkdownImage src={src} alt={alt} {...props} />
+                </React.Suspense>
+              ),
+              code: ({node, className, children, ...props}) => {
                 const match = /language-(\w+)/.exec(className || '')
                 const lang = match ? match[1] : ''
                 const codeString = String(children).replace(/\n$/, '')
                 
+                const isMultiLine = codeString.includes('\n')
+                const isBlock = isMultiLine || Boolean(lang)
+
+                if (!isBlock) {
+                  return <code className="bg-[var(--bg-active)] px-1.5 py-0.5 rounded-[4px] text-[11.5px] text-[var(--text-accent)] font-mono break-words whitespace-pre-wrap border-0" {...props}>{children}</code>
+                }
+                
+                if (lang.toLowerCase() === 'mermaid') {
+                  return (
+                    <React.Suspense fallback={<div className="p-4 text-[12px] text-center text-[var(--text-muted)] animate-pulse">Loading diagram renderer...</div>}>
+                      <MermaidDiagram chart={codeString} />
+                    </React.Suspense>
+                  )
+                }
+
                 return <ChatCodeBlock lang={lang} codeString={codeString} />
               },
               a: ({node, href, children, ...props}) => {
@@ -183,10 +198,10 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                     </button>
                   )
                 }
-                return <a href={href} className="text-[var(--text-accent)] hover:underline" {...props}>{children}</a>
+                return <a href={href} className="text-[var(--text-accent)] hover:underline" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>
               },
               table: ({node, ...props}) => (
-                <div className="w-full overflow-x-auto my-4 bg-transparent border-0 shadow-none custom-scrollbar">
+                <div className="w-full overflow-x-auto my-4 bg-transparent border-0 shadow-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <table className="w-full text-left border-collapse text-[12px] text-[var(--text-main)]" {...props} />
                 </div>
               ),
@@ -202,53 +217,53 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
         </div>
         {idx > 0 && (
           <div className="flex flex-col gap-2 mt-1.5 w-full">
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center bg-[var(--bg-panel)]/80 rounded-[5px] overflow-hidden h-6 shrink-0 select-none">
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className="flex items-center gap-1 shrink-0 select-none">
                 <button
                   onClick={() => handleFeedback('helpful')}
-                  className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
-                    feedback === 'helpful' ? 'text-[#a855f7]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                  className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
+                    feedback === 'helpful' ? 'text-[#a855f7] bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
                   }`}
                   title="Helpful response"
                 >
-                  <ThumbsUp size={12} />
+                  <ThumbsUp size={13} />
                 </button>
                 <button
                   onClick={() => handleFeedback('unhelpful')}
-                  className={`h-full px-2 transition-colors flex items-center justify-center border-0 ${
-                    feedback === 'unhelpful' ? 'text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                  className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
+                    feedback === 'unhelpful' ? 'text-red-400 bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
                   }`}
                   title="Not helpful"
                 >
-                  <ThumbsDown size={12} />
+                  <ThumbsDown size={13} />
                 </button>
                 <button
                   onClick={handleCopy}
-                  className="h-full px-2 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+                  className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
                   title="Copy response text"
                 >
-                  {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                  {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
                 </button>
               </div>
 
               <button
                 onClick={() => onSave(idx, text)}
                 disabled={savedState === 'saving' || savedState === 'saved'}
-                className={`flex items-center justify-center h-6 px-2.5 rounded-[5px] transition-all border-0 ${
+                className={`flex items-center justify-center p-1.5 rounded-[4px] transition-all border-0 shadow-none ${
                   savedState === 'saved'
-                    ? 'bg-green-500/10 text-green-400 cursor-default'
+                    ? 'text-green-400 cursor-default bg-transparent'
                     : savedState === 'saving'
-                      ? 'bg-[var(--bg-active)] text-[var(--text-muted)] opacity-70 cursor-wait'
-                      : 'bg-[var(--bg-panel)]/80 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+                      ? 'text-[var(--text-muted)] opacity-70 cursor-wait bg-transparent'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] bg-transparent'
                 }`}
                 title={savedState === 'saved' ? 'Saved' : 'Save to Knowledge Base'}
               >
                 {savedState === 'saved' ? (
-                  <Check size={12} className="text-green-400" />
+                  <Check size={13} className="text-green-400" />
                 ) : savedState === 'saving' ? (
-                  <span className="w-2.5 h-2.5 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
+                  <span className="w-3 h-3 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Check size={12} />
+                  <Check size={13} />
                 )}
               </button>
             </div>
@@ -482,9 +497,20 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
     }
   }, [messages])
 
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [])
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping, isOpen])
+    scrollToBottom()
+    const timer = setTimeout(scrollToBottom, 150)
+    return () => clearTimeout(timer)
+  }, [messages, isTyping, isOpen, scrollToBottom])
 
   const handleSend = async (e) => {
     e.preventDefault()
@@ -557,7 +583,7 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
             </div>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
-              <div className="max-w-3xl mx-auto flex flex-col gap-3 h-full pb-16">
+              <div className="max-w-3xl mx-auto flex flex-col gap-3 min-h-full pb-16">
                 {messages.length === 0 && !isTyping && (
                   <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
                     <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">

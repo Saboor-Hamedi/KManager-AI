@@ -158,7 +158,9 @@ DROP FUNCTION IF EXISTS search_chunks(text, vector, integer);
 CREATE OR REPLACE FUNCTION search_chunks(
   query_text TEXT,
   query_embedding VECTOR(384),
-  result_limit INT DEFAULT 10
+  result_limit INT DEFAULT 10,
+  p_file_type TEXT DEFAULT NULL,
+  p_year INT DEFAULT NULL
 )
 RETURNS TABLE (
   id            UUID,
@@ -176,11 +178,17 @@ LANGUAGE plpgsql
 AS $func$
 BEGIN
   RETURN QUERY
-  WITH semantic_search AS (
+  WITH filtered_docs AS (
+    SELECT d.id FROM documents d
+    WHERE (p_file_type IS NULL OR d.file_type = p_file_type)
+      AND (p_year IS NULL OR EXTRACT(YEAR FROM d.created_at) = p_year)
+  ),
+  semantic_search AS (
     SELECT
       dc.id,
       RANK() OVER (ORDER BY dc.embedding <=> query_embedding) AS semantic_rank
     FROM embedding_documents dc
+    JOIN filtered_docs fd ON fd.id = dc.document_id
     WHERE dc.embedding IS NOT NULL
     ORDER BY dc.embedding <=> query_embedding
     LIMIT 100
@@ -190,17 +198,17 @@ BEGIN
       dc.id,
       RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC) AS keyword_rank
     FROM embedding_documents dc
+    JOIN filtered_docs fd ON fd.id = dc.document_id
     WHERE dc.fts_vector @@ websearch_to_tsquery('simple', query_text)
     ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC
     LIMIT 100
   ),
-  -- word_similarity catches partial/prefix matches and typos better than similarity()
-  -- e.g. "rus" scores 0.75 against "Rust" because "rus" is a word-boundary prefix
   fuzzy_search AS (
     SELECT
       dc.id,
       RANK() OVER (ORDER BY word_similarity(query_text, dc.content) DESC) AS fuzzy_rank
     FROM embedding_documents dc
+    JOIN filtered_docs fd ON fd.id = dc.document_id
     WHERE word_similarity(query_text, dc.content) > 0.12
     ORDER BY word_similarity(query_text, dc.content) DESC
     LIMIT 100
@@ -209,7 +217,7 @@ BEGIN
     dc.id,
     dc.document_id,
     dc.chunk_index,
-    dc.content,
+    (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
     d.vault_path,
     d.file_name,
     d.file_type,

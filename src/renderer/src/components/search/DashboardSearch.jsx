@@ -58,6 +58,7 @@ const DashboardSearch = () => {
   const [previewItem, setPreviewItem] = useState(null)
   const [activeReplyId, setActiveReplyId] = useState(null)
   const [collapsedReplies, setCollapsedReplies] = useState({})
+  const [isSearching, setIsSearching] = useState(false)
 
   const handleSaveResponse = async (msgId, query, answer) => {
     setSavedResponses(prev => ({ ...prev, [msgId]: 'saving' }))
@@ -93,6 +94,8 @@ const DashboardSearch = () => {
   const autocompleteTimeoutRef = useRef(null)
   const isSearchingRef = useRef(false)
   const textareaRef = useRef(null)
+
+  const isSystemBusy = history.some(msg => msg.isLoading || msg.ragStatus === 'generating') || isSearching
 
 
 
@@ -288,6 +291,7 @@ const DashboardSearch = () => {
     setShowAutocomplete(false)
     setAutocompleteResults([])
     isSearchingRef.current = true
+    setIsSearching(true)
 
     if (selectedPdf) setSelectedPdf(null)
 
@@ -308,7 +312,7 @@ const DashboardSearch = () => {
       const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
       const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
 
-      const isCasual = isCasualGreeting(searchQuery) || await checkIsConversational(searchQuery, provider, apiKey)
+      const isCasual = enableRag && (isCasualGreeting(searchQuery) || await checkIsConversational(searchQuery, provider, apiKey))
       if (isCasual) {
         window.__currentSearchMappedResults = []
         setHistory(prev => prev.map(msg => 
@@ -409,6 +413,7 @@ const DashboardSearch = () => {
     } finally {
       debounceTimeoutRef.current = setTimeout(() => {
         isSearchingRef.current = false
+        setIsSearching(false)
       }, 300)
     }
   }
@@ -640,6 +645,11 @@ const DashboardSearch = () => {
     }
   }
 
+  useEffect(() => {
+    window.addEventListener('new-session', handleNewSession)
+    return () => window.removeEventListener('new-session', handleNewSession)
+  }, [])
+
   const memoizedHistoryFeed = useMemo(() => {
     if (history.length === 0) {
       return (
@@ -741,8 +751,9 @@ const DashboardSearch = () => {
               onChange={handleInput}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything across your knowledge base..."
-              className="w-full bg-transparent border-none outline-none text-[13px] font-normal text-[var(--text-main)] py-2.5 px-3.5 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
+              placeholder={isSystemBusy ? "Thinking..." : "Ask anything across your knowledge base..."}
+              disabled={isSystemBusy}
+              className="w-full bg-transparent border-none outline-none text-[13px] font-normal text-[var(--text-main)] py-2.5 px-3.5 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40 disabled:opacity-50"
               autoComplete="off"
               spellCheck="false"
             />
@@ -758,17 +769,7 @@ const DashboardSearch = () => {
                 >
                   <Plus size={14} />
                 </button>
-                {history.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleNewSession}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors animate-in fade-in duration-200 border-0"
-                    title="Clear chat history and start a new session"
-                  >
-                    <RotateCcw size={12} />
-                    <span>New session</span>
-                  </button>
-                )}
+
                 <button
                   type="button"
                   onClick={toggleRag}
@@ -777,10 +778,10 @@ const DashboardSearch = () => {
                       ? 'bg-[var(--text-accent)]/15 text-[var(--text-accent)] hover:bg-[var(--text-accent)]/25'
                       : 'hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
                   }`}
-                  title={enableRag ? 'RAG Synthesis Enabled (Click to toggle)' : 'RAG Synthesis Disabled (Click to toggle)'}
+                  title={enableRag ? 'Smart Chat Enabled (Click to toggle)' : 'Smart Chat Disabled (Click to toggle)'}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${enableRag ? 'bg-[var(--text-accent)]' : 'bg-[var(--text-muted)] opacity-50'}`} />
-                  <span>RAG: {enableRag ? 'ON' : 'OFF'}</span>
+                  <span>Smart Chat: {enableRag ? 'ON' : 'OFF'}</span>
                 </button>
               </div>
 
@@ -812,6 +813,8 @@ const DashboardSearch = () => {
       <div className="w-1/2 h-full flex flex-col bg-[var(--bg-app)] border-l border-[var(--border-subtle)] overflow-hidden animate-in slide-in-from-right duration-200">
           <Preview
             selectedPdf={selectedPdf}
+            fullText={fullText}
+            loadingText={loadingText}
             onClose={handleCloseModal}
             fileExists={fileExists}
           />

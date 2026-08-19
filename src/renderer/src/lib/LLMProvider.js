@@ -35,7 +35,7 @@ You have access to information about the user's database:
 - Recent Searches: ${appState?.recentSearches || 0}
 - Last Activity: ${appState?.lastActivity || 'N/A'}
 - File Breakdown: ${appState?.filesByType?.map(f => `${f.file_type}: ${f.count}`).join(', ') || 'N/A'}
-- Recent Files: ${appState?.recentFiles?.map(f => f.file_name).join(', ') || 'N/A'}
+- Recent Files (last 15): ${appState?.recentFiles?.map(f => `${f.file_name} (inserted: ${new Date(f.created_at).toLocaleString()})`).join(', ') || 'N/A'}
 
 ### STRICT FORMATTING INSTRUCTIONS ###
 1. Be concise - limit responses to 2-3 short paragraphs
@@ -45,7 +45,8 @@ You have access to information about the user's database:
 5. NEVER end your response with follow-up questions, suggestions, or offers to help. Just answer the question and stop.
 6. If the user asks about features, explain them naturally.
 7. Do not mention the database, vault, documents, or sources in your answer unless specifically asked.
-8. If the user asks you to write, generate, or formulate a search query or question, format EACH suggested query EXACTLY like this on its own line: [Your suggested query here](#search). Do not add quotes around the text.`;
+8. If the user asks you to write, generate, or formulate a search query or question, format EACH suggested query EXACTLY like this on its own line: [Your suggested query here](#search). Do not add quotes around the text.
+9. If the user asks you to generate, create, find, or show an image/picture, you MUST respond by returning a Markdown Image block using a service like loremflickr (e.g. \`![Image](https://loremflickr.com/800/600/keyword)\`). DO NOT apologize or say you cannot generate images. Just provide the Markdown Image block directly!`;
 
   const apiMessages = [
     { role: 'system', content: systemPrompt },
@@ -187,7 +188,8 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
 5. **Handling Missing or Unrelated Context**: If the retrieved documents do NOT contain exact details regarding the user's query or are clearly unrelated (for example, if you retrieve a Table of Contents or a Vim guide when asked about English material), DO NOT cite those sources ([Source #1], etc.) and DO NOT attempt to force false connections to unrelated text. Do NOT write repetitive robotic disclaimers analyzing what the unrelated documents are about. Instead, smoothly and naturally note: "I don't see exact details in your stored documents, but here is the comprehensive answer based on domain expertise..." and immediately deliver a world-class, definitive answer!
 6. **Pure Casual Small Talk Only**: ONLY if the user's prompt is strictly a casual greeting (like "hello", "hi", "how are you") with zero topic keywords, reply warmly and naturally without mentioning sources.
 7. **Clean Markdown & Editable Structure**: Format your response with polished, highly structured Markdown using clear section headers (###), bulleted breakdowns, and crisp paragraphs or code blocks so the user can review, copy, modify, and save them. ALWAYS place a clean blank line right before any section header (like ### Header) so it renders as a proper heading tag.
-8. **No Trailing Questions**: Never end your turn with generic follow-up prompts like "Would you like to know more?". Deliver a complete, authoritative answer.`;
+8. **No Trailing Questions**: Never end your turn with generic follow-up prompts like "Would you like to know more?". Deliver a complete, authoritative answer.
+9. **Generating Images**: If the user asks you to generate, create, find, or show an image or picture, you MUST respond by returning a Markdown Image block using a service like loremflickr (e.g. \`![Image](https://loremflickr.com/800/600/keyword)\`). DO NOT apologize or say you cannot generate images. Just provide the Markdown Image block directly in your response!`;
 
   const formattedHistory = (history || [])
     .filter(m => m && m.content && typeof m.content === 'string' && m.content.trim() !== '')

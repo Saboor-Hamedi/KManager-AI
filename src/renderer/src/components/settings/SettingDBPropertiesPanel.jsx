@@ -39,11 +39,11 @@ const SettingDBPropertiesPanel = () => {
         window.dispatchEvent(new Event('db-stats-updated'))
       }
       setActionState(prev => {
-        if (prev?.status === 'progress' || update.status === 'embedding') {
+        if (prev?.status === 'progress' || update.type === 'reembed' || update.message?.includes('Re-embedding') || update.status === 'embedding') {
           return {
             type: 'reembed',
             status: update.status === 'complete' ? 'success' : 'progress',
-            progress: update.progress || 50,
+            progress: typeof update.progress === 'number' ? update.progress : prev?.progress || 50,
             message: update.message || 'Processing vector chunks...'
           }
         }
@@ -59,7 +59,7 @@ const SettingDBPropertiesPanel = () => {
   const handleReembedAll = () => {
     setConfirmReembed(false)
     setTimeout(async () => {
-      setActionState({ type: 'reembed', status: 'progress', progress: 5, message: 'Starting knowledge base re-embedding...' })
+      setActionState({ type: 'reembed', status: 'progress', progress: 5, message: 'Starting full library scan...' })
       try {
         const res = await window.api.db.reembedAll()
         if (res && res.success) {
@@ -67,7 +67,7 @@ const SettingDBPropertiesPanel = () => {
             type: 'reembed',
             status: 'success',
             progress: 100,
-            message: `Successfully re-embedded ${res.documentsProcessed || 0} documents (${res.chunksProcessed || 0} vector chunks).`
+            message: `Successfully re-scanned ${res.documentsProcessed || 0} documents.`
           })
           loadStats()
           window.dispatchEvent(new Event('db-stats-updated'))
@@ -77,7 +77,7 @@ const SettingDBPropertiesPanel = () => {
             type: 'reembed',
             status: 'error',
             progress: 0,
-            message: res?.message || 'Re-embedding failed.'
+            message: res?.message || 'Library scan failed.'
           })
         }
       } catch (err) {

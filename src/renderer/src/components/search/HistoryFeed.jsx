@@ -84,7 +84,11 @@ const HistoryFeed = ({
     }
 
     return history.map(msg => (
-      <div key={msg.id} className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300">
+      <div 
+        key={msg.id} 
+        className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-in fade-in duration-300"
+        style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 500px' }}
+      >
               
               {/* User Prompt Text without background, aligned flush with response boundary */}
               <div className="flex justify-end w-full py-1">

@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef, memo, Suspense, lazy } from 'react'
+import React, { useEffect, useState, useRef, memo } from 'react'
 import mermaid from 'mermaid'
-import { Copy, Check, Code, Eye } from 'lucide-react'
+import { Copy, Check, ZoomIn, ZoomOut, Maximize, Download, X } from 'lucide-react'
 
 // Initialize Mermaid once with a premium dark theme matching the app's palette
 mermaid.initialize({
@@ -126,7 +126,39 @@ const MermaidDiagram = memo(({ chart }) => {
   const [error, setError] = useState(null)
   const [showRaw, setShowRaw] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [zoom, setZoom] = useState(1)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const isDragging = useRef(false)
+  const lastPan = useRef({ x: 0, y: 0 })
   const idRef = useRef('mermaid-' + Math.random().toString(36).substring(2, 9))
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false)
+        setZoom(1)
+        setPan({ x: 0, y: 0 })
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isModalOpen])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handleWheel = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.deltaY < 0) setZoom(z => Math.min(z + 0.1, 6))
+      else setZoom(z => Math.max(z - 0.1, 0.25))
+    }
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [svgContent])
 
   useEffect(() => {
     let isMounted = true
@@ -137,10 +169,9 @@ const MermaidDiagram = memo(({ chart }) => {
       setError(null)
       setSvgContent('')
       try {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light'
         mermaid.initialize({
           startOnLoad: false,
-          theme: 'base',
+          theme: 'dark',
           securityLevel: 'loose',
           fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
           fontSize: 13,
@@ -151,46 +182,6 @@ const MermaidDiagram = memo(({ chart }) => {
           sequence: {
             useMaxWidth: true,
             showSequenceNumbers: false
-          },
-          themeVariables: {
-            background: isLight ? '#ffffff' : '#0e0e10',
-            mainBkg: isLight ? '#f4f4f5' : '#18181b',
-            nodeBorder: isLight ? '#d4d4d8' : '#3f3f46',
-            clusterBkg: isLight ? '#f4f4f5' : '#111113',
-            clusterBorder: isLight ? '#d4d4d8' : '#3f3f46',
-            primaryTextColor: isLight ? '#18181b' : '#e4e4e7',
-            secondaryTextColor: isLight ? '#52525b' : '#a1a1aa',
-            tertiaryTextColor: isLight ? '#71717a' : '#71717a',
-            lineColor: isLight ? '#a1a1aa' : '#52525b',
-            primaryBorderColor: isLight ? '#a1a1aa' : '#4a4a52',
-            secondaryBorderColor: isLight ? '#d4d4d8' : '#3f3f46',
-            primaryColor: isLight ? '#e4e4e7' : '#1c1c22',
-            secondaryColor: isLight ? '#f4f4f5' : '#1a1a20',
-            tertiaryColor: isLight ? '#f4f4f5' : '#16161c',
-            signalColor: '#a78bfa',
-            signalTextColor: isLight ? '#18181b' : '#e4e4e7',
-            actorBkg: isLight ? '#f4f4f5' : '#18181b',
-            actorBorder: isLight ? '#a1a1aa' : '#52525b',
-            actorTextColor: isLight ? '#18181b' : '#e4e4e7',
-            noteBkgColor: isLight ? '#f5f3ff' : '#1a1a22',
-            noteBorderColor: isLight ? '#ddd6fe' : '#4a4a52',
-            noteTextColor: isLight ? '#5b21b6' : '#c4b5fd',
-            activationBorderColor: '#7c3aed',
-            activationBkgColor: isLight ? '#ede9fe' : '#1e1b2e',
-            taskBkgColor: isLight ? '#e4e4e7' : '#1c1c22',
-            taskBorderColor: isLight ? '#a1a1aa' : '#52525b',
-            taskTextColor: isLight ? '#18181b' : '#e4e4e7',
-            doneTaskBkgColor: isLight ? '#dcfce7' : '#14532d',
-            doneTaskBorderColor: isLight ? '#22c55e' : '#16a34a',
-            critBkgColor: isLight ? '#fee2e2' : '#450a0a',
-            critBorderColor: isLight ? '#ef4444' : '#dc2626',
-            todayLineColor: '#7c3aed',
-            gridColor: isLight ? '#e4e4e7' : '#27272a',
-            pie1: '#7c3aed', pie2: '#6d28d9', pie3: '#5b21b6',
-            pie4: '#4c1d95', pie5: '#8b5cf6', pie6: '#a78bfa', pie7: '#c4b5fd',
-            git0: '#7c3aed', git1: '#0ea5e9', git2: '#16a34a',
-            git3: '#d97706', git4: '#dc2626', git5: '#6366f1',
-            git6: '#ec4899', git7: '#14b8a6',
           }
         })
         // Generate a unique ID every render to prevent Mermaid v10/11 "Element with id already exists" crashes
@@ -198,8 +189,23 @@ const MermaidDiagram = memo(({ chart }) => {
         const existingNode = document.getElementById(renderId)
         if (existingNode) existingNode.remove()
 
-        const { svg } = await mermaid.render(renderId, chart.trim())
-        if (isMounted) setSvgContent(svg)
+        // Fix common AI capitalization typos for the root diagram type
+        let sanitizedChart = chart.trim()
+        sanitizedChart = sanitizedChart.replace(/^(Graph|Flowchart|SequenceDiagram|ClassDiagram|StateDiagram|ErDiagram|Gantt|Pie|GitGraph)/i, (match) => {
+          const m = match.toLowerCase()
+          if (m === 'sequencediagram') return 'sequenceDiagram'
+          if (m === 'classdiagram') return 'classDiagram'
+          if (m === 'statediagram') return 'stateDiagram'
+          if (m === 'erdiagram') return 'erDiagram'
+          if (m === 'gitgraph') return 'gitGraph'
+          return m // graph, flowchart, gantt, pie
+        })
+
+        const { svg } = await mermaid.render(renderId, sanitizedChart)
+        if (isMounted) {
+          setError(null)
+          setSvgContent(svg)
+        }
       } catch (err) {
         console.warn('[MermaidDiagram] render error:', err)
         if (isMounted) setError(err?.message || 'Failed to render diagram')
@@ -222,70 +228,137 @@ const MermaidDiagram = memo(({ chart }) => {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleDownload = () => {
+    if (!svgContent) return
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mermaid-diagram-${Date.now()}.svg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   return (
-    <div className="my-3 rounded-[5px] overflow-hidden border border-[var(--border-main)] bg-[var(--bg-card)] max-w-full">
-      {/* Header */}
-      <div className="bg-[var(--bg-panel)] px-3.5 py-1.5 border-b border-[var(--border-subtle)] flex items-center justify-between select-none h-8">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)]" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-accent)]">Mermaid</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setShowRaw(!showRaw)}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors text-[10.5px] font-medium border border-[var(--border-subtle)] h-5"
-            title={showRaw ? 'Show rendered diagram' : 'Show source code'}
-          >
-            {showRaw ? <Eye size={11} /> : <Code size={11} />}
-            <span>{showRaw ? 'Diagram' : 'Source'}</span>
-          </button>
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors text-[10.5px] font-medium border border-[var(--border-subtle)] h-5"
-          >
-            {copied ? (
+    <>
+      <div className="my-6 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
+        {/* Persistent Small Header - Ultra Subtle */}
+        <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
+          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest pl-1">
+            Mermaid
+          </div>
+          <div className="flex items-center gap-0.5 opacity-80 hover:opacity-100 transition-opacity">
+            {!showRaw && !error && (
               <>
-                <Check size={11} className="text-emerald-500" />
-                <span className="text-emerald-500">Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy size={11} />
-                <span>Copy</span>
+                <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Zoom In"><ZoomIn size={12} /></button>
+                <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Zoom Out"><ZoomOut size={12} /></button>
+                <button onClick={() => { setIsModalOpen(true); setPan({x:0, y:0}); setZoom(1); }} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Expand to fullscreen"><Maximize size={12} /></button>
+                <button onClick={handleDownload} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Download SVG"><Download size={12} /></button>
+                <div className="w-px h-3 bg-white/10 mx-1" />
               </>
             )}
-          </button>
+            <button onClick={handleCopy} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Copy raw source">
+              {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+            </button>
+            <button
+              onClick={() => setShowRaw(!showRaw)}
+              className="px-2 py-1 ml-1 text-[9px] font-bold tracking-wider uppercase rounded text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
+            >
+              {showRaw ? 'Preview' : 'Code'}
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="relative min-h-[160px] w-full overflow-hidden flex items-center justify-center bg-transparent">
+          {showRaw || error ? (
+            <div className="w-full p-4 overflow-auto max-h-[500px] bg-transparent [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {error && (
+                <div className="mb-3 text-[10.5px] text-red-400/60 font-medium flex items-center gap-1.5 select-none">
+                  <span className="w-1 h-1 rounded-full bg-red-400/50" />
+                  Diagram syntax issue (falling back to raw view)
+                </div>
+              )}
+              <pre className="text-[var(--text-main)] opacity-80 font-mono text-[12px] whitespace-pre-wrap break-words m-0 leading-relaxed">
+                <code>{chart.trim()}</code>
+              </pre>
+            </div>
+          ) : svgContent ? (
+            <div 
+              ref={containerRef}
+              className="w-full h-full min-h-[200px] flex justify-center items-center relative cursor-move"
+              onMouseDown={(e) => {
+                if (e.target.closest('button')) return
+                isDragging.current = true
+                lastPan.current = { x: e.clientX, y: e.clientY }
+              }}
+              onMouseMove={(e) => {
+                if (!isDragging.current) return
+                const dx = e.clientX - lastPan.current.x
+                const dy = e.clientY - lastPan.current.y
+                setPan(p => ({ x: p.x + dx, y: p.y + dy }))
+                lastPan.current = { x: e.clientX, y: e.clientY }
+              }}
+              onMouseUp={() => isDragging.current = false}
+              onMouseLeave={() => isDragging.current = false}
+            >
+              <div
+                className="transition-none [&_svg]:max-w-none [&_svg]:!bg-transparent [&_svg_rect]:!stroke-transparent [&>svg>rect]:!fill-transparent"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
+                dangerouslySetInnerHTML={{ __html: svgContent }}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-[var(--text-muted)] text-[12px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-accent)] animate-pulse" />
+              Rendering diagram...
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Diagram / Raw area */}
-      <div className="overflow-x-auto custom-scrollbar">
-        {showRaw || error ? (
-          <div className="p-5">
-            {error && (
-              <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-mono leading-relaxed">
-                ⚠ Render error — showing raw source
-              </div>
-            )}
-            <pre className="text-[#c4b5fd] font-mono text-[12.5px] whitespace-pre-wrap break-words m-0 leading-relaxed">
-              <code>{chart.trim()}</code>
-            </pre>
+      {/* Modal Overlay */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="absolute top-4 right-4 flex items-center gap-0.5 bg-[var(--bg-panel)]/80 backdrop-blur-md p-1 rounded-[5px] border border-white/10 shadow-2xl z-50">
+             <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-[3px] transition-colors"><ZoomIn size={14} /></button>
+             <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-[3px] transition-colors"><ZoomOut size={14} /></button>
+             <button onClick={handleDownload} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-[3px] transition-colors"><Download size={14} /></button>
+             <div className="w-px h-3.5 bg-white/10 mx-0.5" />
+             <button onClick={() => { setIsModalOpen(false); setZoom(1); setPan({x:0, y:0}) }} className="p-1 text-white/50 hover:text-white hover:bg-red-500/20 rounded-[3px] transition-colors"><X size={14} /></button>
           </div>
-        ) : svgContent ? (
-          <div
-            className="p-5 flex justify-center items-start min-h-[120px] [&_svg]:max-w-full [&_svg]:h-auto [&_svg]:!bg-transparent [&_svg_rect]:!stroke-transparent [&>svg>rect]:!fill-transparent"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-          />
-        ) : (
-          <div className="p-6 flex items-center justify-center min-h-[120px]">
-            <div className="flex items-center gap-2 text-gray-500 text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-pulse" />
-              Rendering diagram...
-            </div>
+          <div 
+            className="w-full h-full overflow-hidden flex items-center justify-center relative cursor-move" 
+            onWheel={(e) => {
+              if (e.deltaY < 0) setZoom(z => Math.min(z + 0.1, 6))
+              else setZoom(z => Math.max(z - 0.1, 0.25))
+            }}
+            onMouseDown={(e) => {
+              if (e.target.closest('button')) return
+              isDragging.current = true
+              lastPan.current = { x: e.clientX, y: e.clientY }
+            }}
+            onMouseMove={(e) => {
+              if (!isDragging.current) return
+              const dx = e.clientX - lastPan.current.x
+              const dy = e.clientY - lastPan.current.y
+              setPan(p => ({ x: p.x + dx, y: p.y + dy }))
+              lastPan.current = { x: e.clientX, y: e.clientY }
+            }}
+            onMouseUp={() => isDragging.current = false}
+            onMouseLeave={() => isDragging.current = false}
+          >
+             <div
+                className="bg-[var(--bg-card)] p-6 rounded-[5px] ring-1 ring-white/5 shadow-2xl transition-none [&_svg]:max-w-none [&_svg]:!bg-transparent [&_svg_rect]:!stroke-transparent [&>svg>rect]:!fill-transparent"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
+                dangerouslySetInnerHTML={{ __html: svgContent }}
+              />
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   )
 })
 
