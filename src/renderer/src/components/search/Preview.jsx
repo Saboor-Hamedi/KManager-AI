@@ -72,7 +72,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
           
           {/* Shared Loader Overlay (Visible while loadingText or !isReady is true) */}
           {(loadingText || !isReady) && (
@@ -90,14 +90,14 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
             />
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify">
-              <div className="max-w-3xl mx-auto">
+            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
+              <div className="max-w-3xl mx-auto pb-32">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
                 {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
                   <DocumentRenderer
-                    className={`text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
+                    className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
                     content={fullText || selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
@@ -109,17 +109,23 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
             </div>
           ) : (
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify">
-              <div className="max-w-3xl mx-auto">
+            <div
+              className="w-full h-full overflow-y-auto p-6 lg:p-10 custom-scrollbar bg-[var(--bg-app)] text-justify select-text"
+              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+            >
+              <div className="max-w-3xl mx-auto pb-40">
                 {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
                   <DocumentRenderer
-                    className={`text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
+                    className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap font-mono text-[13px]' : ''} ${selectedPdf.category === 'JSON' ? 'font-mono text-[13px]' : ''}`}
                     content={fullText || selectedPdf.content}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No content available for this file.</div>
+                  <div className="flex flex-col items-center justify-center mt-20 opacity-50">
+                    <FileText size={48} className="text-[var(--text-muted)] mb-4" />
+                    <div className="text-[var(--text-faint)] text-[13px] font-medium tracking-wide">No content available for this file.</div>
+                  </div>
                 ))}
               </div>
             </div>

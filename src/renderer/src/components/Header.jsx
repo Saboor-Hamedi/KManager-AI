@@ -3,7 +3,7 @@ import PDFUploadZone from './search/PDFUploadZone'
 
 const Header = ({ toggleSidebar, collapsed }) => {
   return (
-    <header className="h-[36px] min-h-[36px] border-b border-white/[0.04] bg-[var(--bg-sidebar)] flex items-stretch shrink-0 z-10 select-none">
+    <header className="h-[36px] min-h-[36px] border-b border-white/[0.04] bg-[var(--bg-sidebar)] flex items-stretch shrink-0 z-50 relative select-none">
       {/* Left: sidebar toggle */}
       <div className="flex items-center px-4 shrink-0">
         <button

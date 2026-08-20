@@ -613,7 +613,25 @@ const cleanMarkdownComponents = {
   blockquote: ({node, ...props}) => (
     <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-transparent pl-4 py-1 text-[var(--text-muted)] italic my-4 break-words" {...props} />
   ),
-  a: ({node, ...props}) => <a className="text-[var(--text-accent)] hover:underline font-medium break-words" target="_blank" rel="noopener noreferrer" {...props} />,
+  a: ({node, href, children, ...props}) => (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault()
+        if (!href) return
+        if (window.api?.system?.openExternal) {
+          window.api.system.openExternal(href)
+        } else {
+          window.open(href, '_blank')
+        }
+      }}
+      className="text-[var(--text-accent)] underline underline-offset-2 hover:opacity-80 cursor-pointer transition-opacity break-words font-medium"
+      title={href}
+      {...props}
+    >
+      {children}
+    </a>
+  ),
   hr: ({node, ...props}) => <div className="horizontal-divider my-6" {...props} />,
   table: ({node, ...props}) => (
     <div className="my-3 w-full overflow-x-auto bg-transparent border-0 shadow-none">
