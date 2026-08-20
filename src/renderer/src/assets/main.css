@@ -59,6 +59,13 @@ body {
   border-radius: 2px;
 }
 
+/* Suppress focus ring on textareas — the parent container handles focus feedback */
+textarea:focus-visible,
+textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* ─── Mermaid SVG isolation ─────────────────────────────────────────────────
    Mermaid injects inline <style> that can bleed borders into surrounding
    elements. Scope those resets strictly inside our wrapper container.

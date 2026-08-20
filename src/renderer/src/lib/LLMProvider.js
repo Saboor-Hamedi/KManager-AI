@@ -120,7 +120,7 @@ export const streamOfflineExtractiveRag = async (query, retrievedChunks, onChunk
 
   const queryTerms = query.toLowerCase().split(/\W+/).filter(t => t.length > 2 && !stopWords.has(t))
   
-  let synthesizedText = `### **Local Research Synthesis**\n\nBased on your stored documents regarding **${query}**, here are the primary technical and conceptual findings extracted from your knowledge base:\n\n#### **Key Insights & Evidence**\n\n`
+  let synthesizedText = `> [!WARNING]\n> **No AI Provider Key Set**\n> You have not configured an API key in the AI Settings. KManager AI is currently running in an offline heuristic extraction mode. Connect a provider (OpenAI, Gemini, Claude, Grok) for full AI chat synthesis.\n\n### **Local Research Synthesis**\n\nBased on your stored documents regarding **${query}**, here are the primary technical and conceptual findings extracted from your knowledge base:\n\n#### **Key Insights & Evidence**\n\n`
   onChunk(synthesizedText)
   await new Promise(resolve => setTimeout(resolve, 20))
 
@@ -151,13 +151,17 @@ export const streamOfflineExtractiveRag = async (query, retrievedChunks, onChunk
       let cleaned = topPoints.join(' ').replace(/\n+/g, ' ').trim()
       if (cleaned.length > 450) cleaned = cleaned.slice(0, 450) + '...'
       
-      const bullet = `- **[Source #${idx}]**: ${cleaned} \`sourcecite:${idx}|${title}\`\n\n`
+      const paragraph = `${cleaned} \`sourcecite:${idx}|${title}\`\n\n`
       
-      const words = bullet.split(' ')
-      for (const word of words) {
-        synthesizedText += word + ' '
-        onChunk(synthesizedText)
-        await new Promise(resolve => setTimeout(resolve, 12))
+      const words = paragraph.split(' ')
+      let batch = ''
+      for (let j = 0; j < words.length; j++) {
+        batch += words[j] + ' '
+        synthesizedText += words[j] + ' '
+        if (j % 5 === 0 || j === words.length - 1) {
+          onChunk(synthesizedText)
+          await new Promise(resolve => setTimeout(resolve, 30))
+        }
       }
     }
   }
@@ -166,7 +170,7 @@ export const streamOfflineExtractiveRag = async (query, retrievedChunks, onChunk
   onChunk(synthesizedText)
 }
 
-export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, onChunk, history = []) => {
+export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, onChunk, history = [], abortSignal) => {
   if (!apiKey || apiKey === 'your_deepseek_api_key_here' || apiKey === 'your_api_key_here') {
     return streamOfflineExtractiveRag(query, retrievedChunks, onChunk);
   }
@@ -178,18 +182,18 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
     return `[Source #${sourceNum} | Document Title: ${chunkTitle}]\n${chunk.content || ''}`;
   }).join('\n\n---\n\n') : '';
 
-  const systemPrompt = `You are KManager AI, an advanced, intellectually brilliant AI research assistant modeled after ChatGPT and NotebookLM. Your tone is articulate, deeply analytical, authoritative, and profoundly knowledgeable across all technical and domain areas.
+  const systemPrompt = `You are KManager AI, a focused knowledge assistant. Your job is to help users find and understand what's in their documents.
 
-### YOUR CORE INTELLECTUAL RULES:
-1. **Deep Cross-Document Synthesis & Multi-Hop Reasoning**: When document context IS provided and directly or partially relevant to the user's query, do not merely summarize single chunks in isolation. Synthesize, compare, and contrast information across ALL provided sources. Identify hidden connections, architectural patterns, or data trends, and cite facts precisely using numeric markers like [Source #1], [Source #2], etc., corresponding directly to the [Source #1], [Source #2] headers in the context.
-2. **Exact Data & Spreadsheet Extraction**: When analyzing spreadsheets (.xlsx, .csv), numeric records, or structured tables, perform rigorous, exact data extraction. Present clean comparative Markdown tables, step-by-step calculations, or exact metrics without skipping details or making vague approximations.
-3. **Conversational Continuity & Context Awareness**: You are participating in an ongoing dialogue. Always incorporate the prior messages and follow-up history provided in the chat. If the user asks "what about X?" or asks for a comparison based on your previous turn, build directly upon your past responses and the newly retrieved sources.
-4. **Masterful Domain Elaboration**: After synthesizing what the sources say, transition seamlessly into a rich, intellectually rewarding elaboration using your vast general intelligence. Provide architectural insights, industry best practices, concrete examples, or fully functioning code solutions when appropriate.
-5. **Handling Missing or Unrelated Context**: If the retrieved documents do NOT contain exact details regarding the user's query or are clearly unrelated (for example, if you retrieve a Table of Contents or a Vim guide when asked about English material), DO NOT cite those sources ([Source #1], etc.) and DO NOT attempt to force false connections to unrelated text. Do NOT write repetitive robotic disclaimers analyzing what the unrelated documents are about. Instead, smoothly and naturally note: "I don't see exact details in your stored documents, but here is the comprehensive answer based on domain expertise..." and immediately deliver a world-class, definitive answer!
-6. **Pure Casual Small Talk Only**: ONLY if the user's prompt is strictly a casual greeting (like "hello", "hi", "how are you") with zero topic keywords, reply warmly and naturally without mentioning sources.
-7. **Clean Markdown & Editable Structure**: Format your response with polished, highly structured Markdown using clear section headers (###), bulleted breakdowns, and crisp paragraphs or code blocks so the user can review, copy, modify, and save them. ALWAYS place a clean blank line right before any section header (like ### Header) so it renders as a proper heading tag.
-8. **No Trailing Questions**: Never end your turn with generic follow-up prompts like "Would you like to know more?". Deliver a complete, authoritative answer.
-9. **Generating Images**: If the user asks you to generate, create, find, or show an image or picture, you MUST respond by returning a Markdown Image block using a service like loremflickr (e.g. \`![Image](https://loremflickr.com/800/600/keyword)\`). DO NOT apologize or say you cannot generate images. Just provide the Markdown Image block directly in your response!`;
+### RULES:
+1. **Documents first**: Your primary job is to answer using the provided document context. Cite sources inline as [Source #1], [Source #2], etc. wherever you reference them.
+2. **Be concise**: Do not write lengthy elaborations from general knowledge unless the user specifically asks for more. Answer what was asked, nothing more.
+3. **No disclaimers**: NEVER say "I don't see exact details in your stored documents". If the documents are not relevant, just answer the question directly and briefly without mentioning the documents at all.
+4. **No padding**: Do not write lengthy intros like "Great question!" or "Here is a masterclass on...". Start directly with the answer.
+5. **Inline citations only**: Cite sources inline in the sentence where you use them, like: "According to your notes [Source #1], ...". Do not list sources at the end.
+6. **Conversational continuity**: Build on prior messages in the conversation naturally.
+7. **Casual greetings**: If the user sends only a greeting (hi, hello, how are you) with no topic, reply briefly and warmly.
+8. **Images**: If asked to generate an image, return a Markdown image using loremflickr, e.g. \`![Image](https://loremflickr.com/800/600/keyword)\`.
+9. **Formatting**: Use Markdown headers and lists only when the answer genuinely benefits from structure. For simple questions, plain prose is fine.`;
 
   const formattedHistory = (history || [])
     .filter(m => m && m.content && typeof m.content === 'string' && m.content.trim() !== '')
@@ -199,8 +203,8 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
     }));
 
   const userContent = hasContext
-    ? `CONTEXT FROM USER DOCUMENTS & EMBEDDED KNOWLEDGE BASE:\n---\n${contextText}\n---\n\nUSER QUESTION/TOPIC:\n${query}\n\n(IMPORTANT INSTRUCTION: If the above CONTEXT SOURCES directly relate to "${query}", synthesize across them using exact numeric citations ([Source #1], [Source #2], etc.). However, if the sources are unrelated to "${query}" (such as an unrelated guide or Table of Contents), DO NOT cite them or force false connections. Instead, note "I don't see exact details in your stored documents, but here is the comprehensive answer..." and immediately provide a masterful, full answer based on domain expertise. Ensure all headings like ### have blank lines before and after.)`
-    : `USER QUESTION:\n${query}`;
+    ? `DOCUMENTS FROM USER'S KNOWLEDGE BASE:\n---\n${contextText}\n---\n\nUSER QUESTION: ${query}\n\n(Use the documents above to answer if relevant. Cite sources inline as [Source #1], [Source #2], etc. If the documents are not relevant, just answer briefly without mentioning them. Do not add disclaimers about missing documents.)`
+    : `USER QUESTION: ${query}`;
 
   const apiMessages = [
     { role: 'system', content: systemPrompt },
@@ -210,7 +214,7 @@ export const streamRagAnswer = async (query, retrievedChunks, provider, apiKey, 
 
   const client = PROVIDERS[provider] || PROVIDERS.deepseek;
   try {
-    return await client.stream(apiMessages, apiKey, onChunk);
+    return await client.stream(apiMessages, apiKey, onChunk, abortSignal);
   } catch (err) {
     console.warn('Cloud API streaming failed, falling back to offline extractive RAG:', err);
     return streamOfflineExtractiveRag(query, retrievedChunks, onChunk);

@@ -1,10 +1,11 @@
 import { PanelLeft, PanelLeftClose } from 'lucide-react'
+import PDFUploadZone from './search/PDFUploadZone'
 
 const Header = ({ toggleSidebar, collapsed }) => {
   return (
-    <header className="h-[36px] min-h-[36px] border-b border-white/[0.04] bg-[var(--bg-sidebar)] flex items-center justify-between px-4 shrink-0 z-10 select-none">
-      {/* Left: sidebar toggle + breadcrumb */}
-      <div className="flex items-center gap-2.5">
+    <header className="h-[36px] min-h-[36px] border-b border-white/[0.04] bg-[var(--bg-sidebar)] flex items-stretch shrink-0 z-10 select-none">
+      {/* Left: sidebar toggle */}
+      <div className="flex items-center px-4 shrink-0">
         <button
           onClick={toggleSidebar}
           title="Toggle sidebar (Ctrl+B)"
@@ -12,11 +13,11 @@ const Header = ({ toggleSidebar, collapsed }) => {
         >
           {collapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
         </button>
-        <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] font-medium select-none">
-          <span className="text-[var(--text-faint)]">My Files</span>
-          <span className="opacity-40">/</span>
-          <span className="text-[var(--text-main)] font-semibold">Search</span>
-        </div>
+      </div>
+
+      {/* Right: Library Drop Zone inside Header */}
+      <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
+        <PDFUploadZone isHeader={true} />
       </div>
     </header>
   )

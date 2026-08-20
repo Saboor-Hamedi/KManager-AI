@@ -132,9 +132,11 @@ const HistoryFeed = ({
                   <div className="flex items-center justify-between p-5 rounded-xl bg-[#873636]/10 shadow-sm animate-in fade-in duration-200">
                     <div className="flex flex-col gap-1.5">
                       <strong className="text-[13px] font-semibold text-red-400">Search Failed</strong>
-                      <p className="text-[12px] text-red-400/80">{msg.error}</p>
+                      <p className="text-[12px] text-red-400/80">
+                        {msg.error.includes('ECONNREFUSED') ? 'Database is not running on this host/port. Please ensure your database server is started.' : msg.error}
+                      </p>
                     </div>
-                    {msg.error.toLowerCase().includes('database') || msg.error.toLowerCase().includes('connect') ? (
+                    {msg.error.toLowerCase().includes('database') || msg.error.toLowerCase().includes('connect') || msg.error.includes('ECONNREFUSED') ? (
                       <button 
                         onClick={() => window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'database' } }))}
                         className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-[#394b5e] hover:bg-[#4a5d72] border border-[#4e6074] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all flex-shrink-0 ml-4"
@@ -147,75 +149,110 @@ const HistoryFeed = ({
                   <EmptySearchState query={msg.query} />
                 ) : (
                   <div className="flex flex-col w-full">
-                    {(!msg.ragStatus || msg.ragStatus === 'disabled') && (
-                      <>
-                        {msg.isFallback && (
-                          <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="text-[12px] font-medium text-[var(--text-muted)] italic">
-                              No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
-                            </span>
-                          </div>
-                        )}
-                        {msg.queryRefined && msg.refinedQuery && (
-                          <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="text-[12px] font-medium text-[var(--text-muted)] italic">
-                              Searched with refined terms: <span className="text-[var(--text-main)] font-mono not-italic">"{msg.refinedQuery}"</span>
-                            </span>
-                          </div>
-                        )}
-                        {msg.lowInfoQuery && (
-                          <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
-                            <span className="text-[12px] font-medium text-amber-300">
-                              Try using more specific keywords for better results
-                            </span>
-                          </div>
-                        )}
-                        {!msg.isFollowUp && msg.results.map((item, idx) => (
-                          <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
-                            <SearchResultCard
-                              item={item}
-                              query={msg.query}
-                              handleSelect={handleSelect}
-                              onReply={() => {
-                                if (activeReplyId === `${msg.id}-${idx}`) {
-                                  setActiveReplyId(null);
-                                } else {
-                                  setActiveReplyId(`${msg.id}-${idx}`);
-                                }
-                              }}
-                              isActiveReply={activeReplyId === `${msg.id}-${idx}`}
-                              isLast={idx === msg.results.length - 1}
-                            />
-                            <div className="mt-2 mb-4">
-                              <InlineChat 
-                                resultId={`${item.id || 'res'}-${idx}`}
-                                msg={msg}
-                                activeReplyId={activeReplyId}
-                                compositeId={`${msg.id}-${idx}`}
-                                collapsedReplies={collapsedReplies}
-                                setCollapsedReplies={setCollapsedReplies}
-                                submitFollowUp={(val) => submitFollowUp(val, msg, { ...item, uniqueResultId: `${item.id || 'res'}-${idx}` })}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </>
+                    {/* Always show notices */}
+                    {msg.isFallback && (
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className="text-[12px] font-medium text-[var(--text-muted)] italic">
+                          No exact match for <span className="text-[var(--text-main)] font-mono not-italic">"{msg.query}"</span> — showing closest semantic results
+                        </span>
+                      </div>
+                    )}
+                    {msg.queryRefined && msg.refinedQuery && (
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className="text-[12px] font-medium text-[var(--text-muted)] italic">
+                          Searched with refined terms: <span className="text-[var(--text-main)] font-mono not-italic">"{msg.refinedQuery}"</span>
+                        </span>
+                      </div>
+                    )}
+                    {msg.lowInfoQuery && (
+                      <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+                        <span className="text-[12px] font-medium text-amber-300">
+                          Try using more specific keywords for better results
+                        </span>
+                      </div>
                     )}
 
                     {/* RAG Synthesized Answer */}
-                    <RagAnswer 
-                      msg={msg}
-                      handleSaveResponse={handleSaveResponse}
-                      savedResponses={savedResponses}
-                      setQuery={setQuery}
-                      textareaRef={textareaRef}
-                      activeReplyId={activeReplyId}
-                      setActiveReplyId={setActiveReplyId}
-                      collapsedReplies={collapsedReplies}
-                      setCollapsedReplies={setCollapsedReplies}
-                      submitFollowUp={submitFollowUp}
-                      onUpdateAnswer={onUpdateAnswer}
-                    />
+                    {(msg.ragStatus && msg.ragStatus !== 'disabled') && (
+                      <RagAnswer 
+                        msg={msg}
+                        handleSaveResponse={handleSaveResponse}
+                        savedResponses={savedResponses}
+                        setQuery={setQuery}
+                        textareaRef={textareaRef}
+                        activeReplyId={activeReplyId}
+                        setActiveReplyId={setActiveReplyId}
+                        collapsedReplies={collapsedReplies}
+                        setCollapsedReplies={setCollapsedReplies}
+                        submitFollowUp={submitFollowUp}
+                        onUpdateAnswer={onUpdateAnswer}
+                      />
+                    )}
+
+                    {/* Sources List — only shown when RAG is off. When RAG is on, inline superscript citations handle sourcing. */}
+                    {!msg.isFollowUp && msg.results.length > 0 && (!msg.ragStatus || msg.ragStatus === 'disabled') && (
+                      <div>
+                        {msg.ragStatus && msg.ragStatus !== 'disabled' ? (
+                          <details className="group border border-[var(--border-subtle)] rounded-[6px] overflow-hidden bg-[var(--bg-panel)] mb-4">
+                            <summary className="px-4 py-2.5 text-[12px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] cursor-pointer select-none flex items-center justify-between list-none transition-colors outline-none">
+                              <span className="flex items-center gap-2">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                {msg.results.length} Sources
+                              </span>
+                              <svg className="w-4 h-4 transform transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </summary>
+                            <div className="p-4 border-t border-[var(--border-subtle)] bg-transparent">
+                              {msg.results.map((item, idx) => (
+                                <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
+                                  <SearchResultCard
+                                    item={item}
+                                    query={msg.query}
+                                    handleSelect={handleSelect}
+                                    onReply={() => {
+                                      if (activeReplyId === `${msg.id}-${idx}`) setActiveReplyId(null);
+                                      else setActiveReplyId(`${msg.id}-${idx}`);
+                                    }}
+                                    isActiveReply={activeReplyId === `${msg.id}-${idx}`}
+                                    isLast={idx === msg.results.length - 1}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        ) : (
+                          msg.results.map((item, idx) => (
+                            <div key={`${item.id || 'res'}-${idx}`} className="flex flex-col gap-2">
+                              <SearchResultCard
+                                item={item}
+                                query={msg.query}
+                                handleSelect={handleSelect}
+                                onReply={() => {
+                                  if (activeReplyId === `${msg.id}-${idx}`) setActiveReplyId(null);
+                                  else setActiveReplyId(`${msg.id}-${idx}`);
+                                }}
+                                isActiveReply={activeReplyId === `${msg.id}-${idx}`}
+                                isLast={idx === msg.results.length - 1}
+                              />
+                              <div className="mt-2 mb-4">
+                                <InlineChat 
+                                  resultId={`${item.id || 'res'}-${idx}`}
+                                  msg={msg}
+                                  activeReplyId={activeReplyId}
+                                  compositeId={`${msg.id}-${idx}`}
+                                  collapsedReplies={collapsedReplies}
+                                  setCollapsedReplies={setCollapsedReplies}
+                                  submitFollowUp={(val) => submitFollowUp(val, msg, { ...item, uniqueResultId: `${item.id || 'res'}-${idx}` })}
+                                />
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -9,8 +9,9 @@ import InlineChat from './InlineChat'
 import RagAnswer from './RagAnswer'
 import HistoryFeed from './HistoryFeed'
 import { getSetting, saveSetting } from '../../lib/settings'
-import { streamRagAnswer, streamOfflineExtractiveRag, checkIsConversational, isCasualGreeting } from '../../lib/LLMProvider'
+import { streamRagAnswer, streamOfflineExtractiveRag, isCasualGreeting } from '../../lib/LLMProvider'
 import { rerankChunks } from '../../lib/reranker'
+import ConfirmModal from '../layout/ConfirmModal'
 import './horizontal.css'
 
 const SearchLoadingSkeleton = () => (
@@ -57,10 +58,61 @@ const DashboardSearch = () => {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [previewItem, setPreviewItem] = useState(null)
   const [activeReplyId, setActiveReplyId] = useState(null)
-  const [collapsedReplies, setCollapsedReplies] = useState({})
-  const [isTyping, setIsTyping] = useState(false)
+  const [collapsedReplies, setCollapsedReplies] = useState(new Set())
+  const [showConfirmNewSession, setShowConfirmNewSession] = useState(false)
   const [dbConnected, setDbConnected] = useState(true)
+
+  // Resizing logic
+  const [rightPanelWidth, setRightPanelWidth] = useState(50)
+  const [isDragging, setIsDragging] = useState(false)
+  const containerRef = useRef(null)
+
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isDragging) return
+    const handleMouseMove = (e) => {
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const offsetX = e.clientX - rect.left
+      const percentage = (offsetX / rect.width) * 100
+      let newRightWidth = 100 - percentage
+      if (newRightWidth < 20) newRightWidth = 20
+      if (newRightWidth > 80) newRightWidth = 80
+      setRightPanelWidth(newRightWidth)
+    }
+    const handleMouseUp = () => setIsDragging(false)
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isDragging])
+
+  const [isTyping, setIsTyping] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const statsRes = await window.api.db.getStats()
+        if (statsRes.success) {
+          setDbStats(statsRes.stats)
+        }
+      } catch (err) {}
+    }
+    fetchStats()
+  }, [])
 
   useEffect(() => {
     // Initial and periodic check for DB connection to guide users
@@ -111,10 +163,16 @@ const DashboardSearch = () => {
   const autocompleteTimeoutRef = useRef(null)
   const isSearchingRef = useRef(false)
   const textareaRef = useRef(null)
+  const abortControllersRef = useRef({})
 
   const isSystemBusy = history.some(msg => msg.isLoading || msg.ragStatus === 'generating') || isSearching
 
-
+  const handleStopGeneration = (id) => {
+    if (abortControllersRef.current[id]) {
+      abortControllersRef.current[id].abort()
+      setHistory(prev => prev.map(m => m.id === id ? { ...m, ragStatus: 'done' } : m))
+    }
+  }
 
   // Get HTTP PDF viewer port
   useEffect(() => {
@@ -329,7 +387,7 @@ const DashboardSearch = () => {
       const provider = await getSetting('ACTIVE_LLM_PROVIDER', 'deepseek')
       const apiKey = await getSetting(`${provider.toUpperCase()}_API_KEY`, '')
 
-      const isCasual = enableRag && (isCasualGreeting(searchQuery) || await checkIsConversational(searchQuery, provider, apiKey))
+      const isCasual = enableRag && isCasualGreeting(searchQuery)
       if (isCasual) {
         window.__currentSearchMappedResults = []
         setHistory(prev => prev.map(msg => 
@@ -637,7 +695,6 @@ const DashboardSearch = () => {
         setAutocompleteResults([])
         const newQuery = selectedRes.suggestion || extractSuggestion(selectedRes.content, query)
         setQuery(newQuery)
-        setTimeout(() => submitSearch(newQuery), 50)
         return
       }
     }
@@ -662,10 +719,22 @@ const DashboardSearch = () => {
     }
   }
 
+  const handleNewSessionIntent = useCallback(() => {
+    if (history.length > 0 || query.trim() !== '') {
+      setShowConfirmNewSession(true)
+    } else {
+      handleNewSession()
+    }
+  }, [history.length, query])
+
   useEffect(() => {
     window.addEventListener('new-session', handleNewSession)
-    return () => window.removeEventListener('new-session', handleNewSession)
-  }, [])
+    window.addEventListener('new-session-intent', handleNewSessionIntent)
+    return () => {
+      window.removeEventListener('new-session', handleNewSession)
+      window.removeEventListener('new-session-intent', handleNewSessionIntent)
+    }
+  }, [handleNewSessionIntent])
 
   const memoizedHistoryFeed = useMemo(() => {
     if (history.length === 0) {
@@ -719,20 +788,22 @@ const DashboardSearch = () => {
         setQuery={setQuery}
         textareaRef={textareaRef}
         onUpdateAnswer={handleUpdateAnswer}
+        onStopGeneration={handleStopGeneration}
         dbConnected={dbConnected}
       />
     )
   }, [history, savedResponses, handleSelect, enableRag, activeReplyId, collapsedReplies, handleUpdateAnswer, dbConnected])
 
   return (
-    <div className="flex-1 flex flex-row h-full bg-[var(--bg-app)] overflow-hidden relative">
+    <div className="flex-1 flex flex-row h-full bg-[var(--bg-app)] overflow-hidden relative" ref={containerRef}>
       
       {/* Left Area: Chat Feed */}
-      <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ${selectedPdf ? 'w-1/2 border-r border-[var(--border-subtle)]' : 'w-full'}`}>
+      <div 
+        className={`flex flex-col h-full overflow-hidden ${isDragging ? 'transition-none' : 'transition-all duration-300'}`}
+        style={{ width: selectedPdf ? `${100 - rightPanelWidth}%` : '100%' }}
+      >
 
-
-      {/* Smart PDF & Multi-Format Ingestion Bar & Drop Zone */}
-      <PDFUploadZone />
+      {/* Removed PDFUploadZone from here to Header.jsx */}
 
       {/* Chat History Feed */}
       <div 
@@ -756,11 +827,13 @@ const DashboardSearch = () => {
               setShowAutocomplete(false)
               const newQuery = res.suggestion || (res.content ? res.content.substring(0, 50) : '')
               setQuery(newQuery)
-              setTimeout(() => submitSearch(newQuery), 50)
+              if (textareaRef.current) {
+                textareaRef.current.focus()
+              }
             }} 
           />
 
-          <div className={`flex flex-col bg-[var(--bg-panel)] border border-white/[0.05] transition-all duration-200 overflow-hidden shadow-none ${showAutocomplete && autocompleteResults.length > 0 ? 'rounded-b-[6px] rounded-t-none' : 'rounded-[6px]'}`}>
+          <div className={`flex flex-col bg-[var(--bg-panel)] border border-white/[0.05] focus-within:border-white/[0.09] transition-all duration-200 overflow-hidden shadow-none ${showAutocomplete && autocompleteResults.length > 0 ? 'rounded-b-[6px] rounded-t-none' : 'rounded-[6px]'}`}>
             {/* Top Row: Auto-growing Textarea */}
             <textarea 
               ref={textareaRef}
@@ -771,7 +844,7 @@ const DashboardSearch = () => {
               onKeyDown={handleKeyDown}
               placeholder={isSystemBusy ? "Thinking..." : "Ask anything across your knowledge base..."}
               disabled={isSystemBusy}
-              className="w-full bg-transparent border-none outline-none text-[13px] font-normal text-[var(--text-main)] py-2.5 px-3.5 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40 disabled:opacity-50"
+              className="w-full bg-transparent border-none outline-none ring-0 text-[13px] font-normal text-[var(--text-main)] py-2.5 px-3.5 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40 disabled:opacity-50"
               autoComplete="off"
               spellCheck="false"
             />
@@ -821,7 +894,20 @@ const DashboardSearch = () => {
 
     {/* Right Reference Panel */}
     {selectedPdf && (
-      <div className="w-1/2 h-full flex flex-col bg-[var(--bg-app)] border-l border-[var(--border-subtle)] overflow-hidden animate-in slide-in-from-right duration-200">
+      <>
+        {/* Resize Handle */}
+        <div
+          className="w-1 cursor-col-resize hover:bg-[var(--text-accent)] transition-colors relative z-50 flex items-center justify-center shrink-0"
+          onMouseDown={handleMouseDown}
+        >
+          <div className="w-1 h-8 rounded-full bg-[var(--border-subtle)]/70 pointer-events-none" />
+        </div>
+
+        {/* Panel Container */}
+        <div 
+          className={`h-full flex flex-col bg-[var(--bg-app)] overflow-hidden ${isDragging ? 'transition-none' : 'animate-in slide-in-from-right duration-200'}`}
+          style={{ width: `${rightPanelWidth}%` }}
+        >
           <Preview
             selectedPdf={selectedPdf}
             fullText={fullText}
@@ -830,8 +916,19 @@ const DashboardSearch = () => {
             fileExists={fileExists}
           />
         </div>
-      )}
+      </>
+    )}
 
+      <ConfirmModal
+        isOpen={showConfirmNewSession}
+        message="Start a new session? Your current chat will be cleared."
+        onConfirm={() => {
+          setShowConfirmNewSession(false)
+          handleNewSession()
+        }}
+        onCancel={() => setShowConfirmNewSession(false)}
+        confirmText="New Session"
+      />
     </div>
   )
 }

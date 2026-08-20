@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Loader2, RefreshCw, X, LayoutDashboard, BarChart2, List, Activity, Settings2, Database, PanelLeftClose, PanelLeft } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import AnalyticsCards from './AnalyticsCards'
@@ -8,12 +8,28 @@ import AnalyticsActivityFeed from './AnalyticsActivityFeed'
 import AnalyticsDatabase from './AnalyticsDatabase'
 import { processAnalyticsData } from './analyticsDataHelper'
 import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
+import PulseLoader from '../PulseLoader'
 
 const AnalyticsModal = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState(null)
   const [activeSection, setActiveSection] = useState('cards')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
+  const loadingMessages = ['Loading', 'Analysing', 'Connecting to database', 'Building metrics', 'Preparing charts']
+  const loadingIntervalRef = useRef(null)
+
+  useEffect(() => {
+    if (isLoading) {
+      setLoadingMsgIdx(0)
+      loadingIntervalRef.current = setInterval(() => {
+        setLoadingMsgIdx(i => (i + 1) % loadingMessages.length)
+      }, 1400)
+    } else {
+      clearInterval(loadingIntervalRef.current)
+    }
+    return () => clearInterval(loadingIntervalRef.current)
+  }, [isLoading])
 
   const fetchMetrics = useCallback(async () => {
     setIsLoading(true)
@@ -151,12 +167,28 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Main Scrollable Analytics View */}
-          <div className="flex-1 min-w-0 bg-[var(--bg-app)] overflow-y-auto custom-scrollbar p-6 lg:p-8">
-            <div className="max-w-5xl mx-auto space-y-6">
+          <div className="flex-1 min-w-0 bg-[var(--bg-app)] overflow-y-auto custom-scrollbar p-6 lg:p-8 relative">
+            <div className="max-w-5xl mx-auto space-y-6 h-full">
               {isLoading && !data ? (
-                <div className="flex flex-col items-center justify-center h-64 gap-3 animate-pulse">
-                  <div className="w-8 h-8 rounded-full border-2 border-[var(--text-accent)] border-t-transparent animate-spin" />
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Loading metrics from database...</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 select-none pointer-events-none">
+                  {/* Skeleton rows behind */}
+                  <div className="w-full max-w-xl space-y-3 px-4 opacity-30">
+                    {[1, 0.85, 0.65, 0.75, 0.5].map((w, i) => (
+                      <div
+                        key={i}
+                        className="h-3 rounded-full animate-pulse"
+                        style={{
+                          width: `${w * 100}%`,
+                          background: 'var(--border-subtle)',
+                          animationDelay: `${i * 120}ms`
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-8">
+                    <PulseLoader text={`${loadingMessages[loadingMsgIdx]}...`} size="md" />
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-10 animate-in fade-in duration-300">

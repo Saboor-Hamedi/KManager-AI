@@ -132,7 +132,7 @@ const SettingDBPanel = memo(() => {
 
   const getFriendlyError = (msg) => {
     if (!msg) return ''
-    if (msg.includes('ECONNREFUSED')) return 'PostgreSQL is not running on this host/port. Please ensure your database server is started.'
+    if (msg.includes('ECONNREFUSED')) return 'Database is not running on this host/port. Please ensure your database server is started.'
     if (msg.includes('password authentication failed')) return 'Incorrect username or password. Please check your credentials.'
     if (msg.includes('does not exist') && msg.includes('database')) return 'Database not found. Please ensure the database exists.'
     return msg

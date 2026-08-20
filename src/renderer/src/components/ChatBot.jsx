@@ -10,6 +10,7 @@ import { cn } from '../lib/utils'
 import { getSetting } from '../lib/settings'
 import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
+import ConfirmModal from './layout/ConfirmModal'
 
 const MermaidDiagram = React.lazy(() => import('./search/MermaidDiagram'))
 const MarkdownImage = React.lazy(() => import('./search/MarkdownImage'))
@@ -418,10 +419,17 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
     }
   }
 
-  const handleClearChat = () => {
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const handleClearChat = useCallback(() => {
+    setShowConfirm(true)
+  }, [])
+
+  const executeClearChat = () => {
     setMessages([])
     setAttachedFile(null)
     setSavedResponses({})
+    setShowConfirm(false)
   }
 
   useKeyboardShortcuts({
@@ -719,6 +727,14 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        message="Clear current session? Your chat history will be permanently deleted."
+        onConfirm={executeClearChat}
+        onCancel={() => setShowConfirm(false)}
+        confirmText="Clear Session"
+      />
     </>
   )
 }

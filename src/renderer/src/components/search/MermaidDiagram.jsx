@@ -243,24 +243,24 @@ const MermaidDiagram = memo(({ chart }) => {
 
   return (
     <>
-      <div className="my-6 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
+      <div className="my-6 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] shadow-sm max-w-full border border-[var(--border-dim)]">
         {/* Persistent Small Header - Ultra Subtle */}
-        <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
-          <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1">
+        <div className="flex items-center justify-between px-5 py-2.5 bg-black/[0.08] select-none border-b border-[var(--border-subtle)]">
+          <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest pl-1">
             Mermaid
           </div>
-          <div className="flex items-center gap-0.5 opacity-80 hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1.5 transition-opacity">
             {!showRaw && !error && (
               <>
-                <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Zoom In"><ZoomIn size={12} /></button>
-                <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Zoom Out"><ZoomOut size={12} /></button>
-                <button onClick={() => { setIsModalOpen(true); setPan({x:0, y:0}); setZoom(1); }} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Expand to fullscreen"><Maximize size={12} /></button>
-                <button onClick={handleDownload} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Download SVG"><Download size={12} /></button>
-                <div className="w-px h-3 bg-white/10 mx-1" />
+                <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Zoom In"><ZoomIn size={14} /></button>
+                <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Zoom Out"><ZoomOut size={14} /></button>
+                <button onClick={() => { setIsModalOpen(true); setPan({x:0, y:0}); setZoom(1); }} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Expand to fullscreen"><Maximize size={14} /></button>
+                <button onClick={handleDownload} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Download SVG"><Download size={14} /></button>
+                <div className="w-px h-4 bg-white/10 mx-0.5" />
               </>
             )}
-            <button onClick={handleCopy} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors" title="Copy raw source">
-              {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+            <button onClick={handleCopy} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Copy raw source">
+              {copied ? <Check size={14} className="text-[var(--text-accent)]" /> : <Copy size={14} />}
             </button>
             <button
               onClick={() => setShowRaw(!showRaw)}
@@ -322,12 +322,12 @@ const MermaidDiagram = memo(({ chart }) => {
       {/* Modal Overlay */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
-          <div className="absolute top-4 right-4 flex items-center gap-0.5 bg-[var(--bg-panel)]/80 backdrop-blur-md p-1 rounded-[5px] border border-white/10 shadow-2xl z-50">
-             <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-[3px] transition-colors"><ZoomIn size={14} /></button>
-             <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-[3px] transition-colors"><ZoomOut size={14} /></button>
-             <button onClick={handleDownload} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-[3px] transition-colors"><Download size={14} /></button>
-             <div className="w-px h-3.5 bg-white/10 mx-0.5" />
-             <button onClick={() => { setIsModalOpen(false); setZoom(1); setPan({x:0, y:0}) }} className="p-1 text-white/50 hover:text-white hover:bg-red-500/20 rounded-[3px] transition-colors"><X size={14} /></button>
+          <div className="absolute top-4 right-4 flex items-center gap-0.5 bg-[var(--bg-panel)]/80 backdrop-blur-md p-1 rounded-[5px] border border-[var(--border-dim)] shadow-2xl z-50">
+             <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><ZoomIn size={14} /></button>
+             <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><ZoomOut size={14} /></button>
+             <button onClick={handleDownload} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><Download size={14} /></button>
+             <div className="w-px h-4 bg-[var(--border-subtle)] mx-0.5" />
+             <button onClick={() => { setIsModalOpen(false); setZoom(1); setPan({x:0, y:0}) }} className="p-1.5 text-[var(--text-muted)] hover:text-white hover:bg-red-500/80 rounded-[3px] transition-colors"><X size={14} /></button>
           </div>
           <div 
             className="w-full h-full overflow-hidden flex items-center justify-center relative cursor-move" 

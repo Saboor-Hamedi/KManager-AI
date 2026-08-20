@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { UploadCloud, FolderPlus, FilePlus, Loader2, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp, Database, RefreshCw, Trash2, Clock, Check } from 'lucide-react'
 import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
+import ConfirmModal from '../layout/ConfirmModal'
 
 const VirtualScrollList = ({ items, renderItem, rowHeight = 34, containerHeight = 160 }) => {
   const [scrollTop, setScrollTop] = useState(0)
@@ -150,6 +151,16 @@ const PDFUploadZone = ({ onIngestComplete }) => {
     }
   }, [onIngestComplete])
 
+  const [confirmQueue, setConfirmQueue] = useState(null)
+
+  const proceedQueue = async () => {
+    if (!confirmQueue) return
+    userClosedRef.current = false
+    setIsExpanded(true)
+    await window.api.db.queueFiles(confirmQueue)
+    setConfirmQueue(null)
+  }
+
   const resolveAndQueueFiles = async (pathsOrFiles) => {
     const paths = []
     for (const item of pathsOrFiles) {
@@ -167,9 +178,13 @@ const PDFUploadZone = ({ onIngestComplete }) => {
     try {
       const resolved = await window.api.system.resolvePaths(paths)
       if (resolved && resolved.length > 0) {
-        userClosedRef.current = false
-        setIsExpanded(true)
-        await window.api.db.queueFiles(resolved)
+        if (resolved.length > 500) {
+          setConfirmQueue(resolved)
+        } else {
+          userClosedRef.current = false
+          setIsExpanded(true)
+          await window.api.db.queueFiles(resolved)
+        }
       }
     } catch (err) {
       console.error('Failed to resolve paths for indexing:', err)
@@ -268,7 +283,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
       remainCount = pendingCount + processingCount
       errorCount = queue.filter(q => q.status === 'error').length
 
-      completedCount = Math.max(totalDbCount, progress.totalDocs || 0, indexedDocs.length, completedQueue.length)
+      completedCount = completedQueue.length
       totalFiles = completedCount + remainCount
       isBusy = processingItem || progress.status === 'extracting' || progress.status === 'chunking' || progress.status === 'embedding'
 
@@ -283,7 +298,16 @@ const PDFUploadZone = ({ onIngestComplete }) => {
   const { isReembedActive, totalFiles, completedCount, remainCount, errorCount, overallPercent, isBusy, processingItem } = stats
 
   return (
-    <div id="pdf-upload-zone-container" className="w-full relative z-30 transition-all duration-200 border-b border-white/[0.04] bg-[var(--bg-panel)]/40">
+    <>
+      <ConfirmModal
+        isOpen={confirmQueue !== null}
+        title="Large Folder Scan"
+        message={`You are about to add ${confirmQueue?.length} files to your library. Scanning and embedding this many files may take a significant amount of time. Do you want to proceed?`}
+        confirmLabel="Proceed"
+        onConfirm={proceedQueue}
+        onCancel={() => setConfirmQueue(null)}
+      />
+      <div id="pdf-upload-zone-container" className="w-full h-full relative z-30 transition-all duration-200">
       {/* Flat Top Ingestion Bar - Always shows exact counts whether idle or busy */}
       <div 
         onClick={() => {
@@ -291,11 +315,16 @@ const PDFUploadZone = ({ onIngestComplete }) => {
           setIsExpanded(next)
           userClosedRef.current = !next
         }}
-        className="w-full h-9 flex items-center justify-between px-4 border-0 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
+        className="w-full h-full flex items-center justify-between px-2 border-0 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
       >
         <div className="flex items-center space-x-2.5 overflow-hidden">
           <Database size={13} className="text-[var(--text-accent)] shrink-0" />
-          <span className="font-semibold tracking-tight truncate">My Library</span>
+          <div className="font-semibold tracking-tight truncate flex items-center">
+            <span>My Library</span>
+            {totalDbCount > 0 && (
+              <span className="text-[var(--text-muted)] font-normal ml-1">({totalDbCount} indexed)</span>
+            )}
+          </div>
           
           {isBusy && (
             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[12px] animate-pulse shrink-0 border-0">
@@ -312,29 +341,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
         </div>
 
         <div className="flex items-center space-x-1.5 shrink-0 ml-2">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation()
-              handleSelectFolder()
-            }}
-            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
-            title="Index all PDFs/docs in a local directory"
-          >
-            <FolderPlus size={12} className="text-[var(--text-accent)]" />
-            <span>Select Folder</span>
-          </button>
 
-          <button 
-            onClick={(e) => {
-              e.stopPropagation()
-              fileInputRef.current?.click()
-            }}
-            className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
-            title="Upload specific files"
-          >
-            <FilePlus size={12} />
-            <span>Add Files</span>
-          </button>
 
           <div className="text-[var(--text-muted)] pl-0.5">
             {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -354,7 +361,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
 
       {/* Expanded Drop Zone & Queue Drawer - Structured Header/Body/Footer Layout */}
       {isExpanded && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl mt-1.5 rounded-[6px] bg-[var(--bg-card)] border border-white/[0.05] shadow-2xl overflow-hidden animate-in fade-in duration-75">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-full max-w-[700px] mt-1.5 rounded-[6px] bg-[var(--bg-card)] border border-white/[0.05] shadow-2xl overflow-hidden animate-in fade-in duration-75">
           
           {/* 1. HEADER: Progress Overview & File Statistics */}
           <div className="p-3.5 bg-[var(--bg-app)]/90 border-b border-white/[0.05] space-y-2.5">
@@ -365,9 +372,30 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                   {isReembedActive ? 'Re-reading Library Documents...' : isBusy ? 'Adding Files to Library...' : totalFiles > 0 ? 'Library Update Status' : 'My Library Dropzone'}
                 </h4>
               </div>
-              <span className="px-2 py-0.5 rounded-[4px] bg-white/[0.05] text-[12px] font-semibold text-[var(--text-main)]">
-                Total Files: {totalFiles}
-              </span>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSelectFolder()
+                  }}
+                  className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
+                  title="Index all PDFs/docs in a local directory"
+                >
+                  <FolderPlus size={12} className="text-[var(--text-accent)]" />
+                  <span>Select Folder</span>
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    fileInputRef.current?.click()
+                  }}
+                  className="px-2 py-1 rounded-[4px] bg-white/[0.04] hover:bg-white/[0.08] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
+                  title="Upload specific files"
+                >
+                  <FilePlus size={12} />
+                  <span>Add Files</span>
+                </button>
+              </div>
             </div>
 
             {/* Exact Statistics Row */}
@@ -438,8 +466,8 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               <span className="text-[12px] text-[var(--text-muted)] mt-1">Supports PDF, Word (.docx), Excel, CSV, Markdown, and Code</span>
             </div>
 
-            {/* Scrollable Queue & Indexed Documents List */}
-            {queue.length > 0 || indexedDocs.length > 0 ? (
+            {/* Scrollable Queue List */}
+            {queue.length > 0 ? (
               <div className="space-y-2">
                 {/* Active/Recent Queue Section */}
                 {queue.length > 0 && (
@@ -491,39 +519,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                   </div>
                 )}
 
-                {/* Indexed Documents in Database Section */}
-                {indexedDocs.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[12px] font-bold text-[var(--text-muted)] px-1 pt-1 uppercase tracking-wider border-t border-white/[0.04]">
-                      <span>Indexed Database Documents ({indexedDocs.length})</span>
-                      <span>Vector Chunks</span>
-                    </div>
-                    <VirtualScrollList
-                      items={indexedDocs}
-                      rowHeight={34}
-                      containerHeight={150}
-                      renderItem={(doc) => (
-                        <div 
-                          key={`db-${doc.id || doc.file_name}`}
-                          className="flex items-center justify-between text-[12px] px-2.5 py-2 rounded-[5px] bg-[var(--bg-app)]/60 hover:bg-[var(--bg-app)] transition-colors border-0"
-                        >
-                          <div className="flex items-center space-x-2 overflow-hidden">
-                            <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                            <span className="font-medium text-[var(--text-main)] truncate max-w-[310px]" title={doc.file_name}>
-                              {doc.file_name}
-                            </span>
-                          </div>
 
-                          <div className="flex items-center space-x-2 shrink-0 ml-2">
-                            <span className="text-[12px] font-mono px-1.5 py-0.5 rounded-[3px] bg-emerald-500/10 text-emerald-400 font-semibold">
-                              {doc.chunk_count > 0 ? `${doc.chunk_count} vectors` : doc.file_type?.toUpperCase() || 'INDEXED'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    />
-                  </div>
-                )}
               </div>
             ) : (
               <div className="py-6 text-center text-[var(--text-muted)] text-xs font-medium bg-[var(--bg-app)]/30 rounded-[5px]">
@@ -548,11 +544,11 @@ const PDFUploadZone = ({ onIngestComplete }) => {
                   Cancel Ingestion
                 </button>
               )}
-              {completedCount > 0 && (
+              {(completedCount > 0 || errorCount > 0) && (
                 <button 
                   onClick={() => window.api.db.clearQueue()}
                   className="px-2.5 py-1 rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-[var(--text-main)] font-medium text-[12px] flex items-center space-x-1 transition-all border-0"
-                  title="Clear completed files from the view"
+                  title="Clear finished/failed files from the view"
                 >
                   <Trash2 size={12} />
                   <span>Clear Completed</span>
@@ -570,6 +566,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
         </div>
       )}
     </div>
+    </>
   )
 }
 

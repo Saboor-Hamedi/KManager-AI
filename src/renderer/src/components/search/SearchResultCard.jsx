@@ -198,9 +198,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   }, [item.content])
 
   const handleSaveEdit = async () => {
-    // Add two trailing spaces to every line to force Markdown line breaks (<br>)
-    // This perfectly preserves formatting and prevents paragraphs from squishing together
-    const formattedValue = editValue.split('\n').map(line => line.trimEnd() + '  ').join('\n')
+    const formattedValue = editValue.trim()
 
     if (!formattedValue.trim() || formattedValue === localContent) {
       setIsEditing(false)
@@ -305,7 +303,6 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               disabled={isSaving}
-              readOnly={true}
               minHeight="80px"
               maxHeight="400px"
               padding="p-3"
@@ -352,11 +349,11 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               const highlightComponents = {
                 ...cleanMarkdownComponents,
                 p: ({ node, children, ...props }) => (
-                  <p className="mb-1.5 last:mb-0 text-justify" {...props}>
+                  <div className="mb-1.5 last:mb-0 text-justify whitespace-pre-wrap" {...props}>
                     {typeof children === 'string'
                       ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
                       : children}
-                  </p>
+                  </div>
                 ),
                 li: ({ node, children, ...props }) => (
                   <li className="text-justify pl-1 font-normal break-words" {...props}>
@@ -386,6 +383,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           handleSelect={onSelect}
           onReply={onReply}
           isActiveReply={isActiveReply}
+          onEdit={() => setIsEditing(true)}
         />
       </div>
 

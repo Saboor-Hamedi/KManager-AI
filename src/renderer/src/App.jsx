@@ -12,6 +12,7 @@ import DashboardSearch from './components/search/DashboardSearch'
 import Documentation from './components/Documentation'
 import GlobalError from './components/GlobalError'
 import AnalyticsModal from './components/analytics/AnalyticsModal'
+import MyLibrary from './components/library/MyLibrary'
 
 function App() {
   const [activeTab, setActiveTab] = useState('search')
@@ -127,7 +128,12 @@ function App() {
         </div>
 
         {/* ── Other views — lazy-conditional, padding/scroll handled here ── */}
-        {activeTab !== 'search' && (
+        {activeTab === 'library' && (
+          <GlobalError>
+            <MyLibrary />
+          </GlobalError>
+        )}
+        {activeTab !== 'search' && activeTab !== 'library' && (
           <main className="flex-1 min-h-0 overflow-y-auto p-8 custom-scrollbar">
             <div className="max-w-6xl mx-auto space-y-6 flex flex-col h-full">
               {activeTab === 'analytics' && (

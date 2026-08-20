@@ -1,147 +1,193 @@
 import React, { useLayoutEffect, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, FileText } from 'lucide-react'
+import { ExternalLink, FileText } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 
 const cleanPreviewText = (text) => {
   if (!text || typeof text !== 'string') return ''
   return text
-    // Fix period, comma, colon, semicolon, question mark, or closing bracket immediately followed by a letter or number (e.g. `licenses.Mdto` -> `licenses. Mdto`)
     .replace(/([.,;:!?\)\]])([a-zA-Z0-9])/g, '$1 $2')
-    // Fix lowercase letter immediately followed by uppercase letter (e.g. `Mdto` -> `Md to`, `IntroductionBack` -> `Introduction Back`)
     .replace(/([a-z])([A-Z])/g, '$1 $2')
-    // Fix letter followed immediately by 4+ digits (e.g. `Backin2007` -> `Backin 2007`)
     .replace(/([a-zA-Z])(\d{4,})/g, '$1 $2')
-    // Fix multiple consecutive spaces
     .replace(/  +/g, ' ')
     .trim()
 }
 
-const getInitialCoords = (anchorRef) => {
+// Neighboring chunks carry a ~250-char overlap tail (for retrieval quality), so the
+// aggregated result content repeats the same sentences. Drop segments that exactly
+// repeat the end of the already-accumulated text.
+const dedupeOverlap = (text) => {
+  if (!text || typeof text !== 'string') return text
+  const out = []
+  let acc = ''
+  for (const raw of text.split(/\n\s*\n/)) {
+    const part = raw.trim()
+    if (!part) continue
+    if (part.length >= 30 && acc && acc.slice(-part.length) === part) continue
+    out.push(part)
+    acc += part
+  }
+  return out.join('\n\n')
+}
+
+const getCoords = (anchorRef) => {
   if (anchorRef?.current) {
     const rect = anchorRef.current.getBoundingClientRect()
-    let top = rect.bottom + 8
-    if (top + 380 > window.innerHeight) {
-      top = Math.max(20, rect.top - 360)
-    }
+    let top = rect.bottom + 10
+    if (top + 340 > window.innerHeight) top = Math.max(16, rect.top - 340)
     let left = rect.left
-    if (left + 460 > window.innerWidth - 20) {
-      left = Math.max(20, window.innerWidth - 480)
-    }
+    if (left + 420 > window.innerWidth - 16) left = Math.max(16, window.innerWidth - 436)
     return { top, left, ready: true }
   }
   return { top: -9999, left: -9999, ready: false }
 }
 
 const HoverWikilink = ({ item, setShowWikiHover, onSelect, anchorRef }) => {
-  const [coords, setCoords] = useState(() => getInitialCoords(anchorRef))
+  const [coords, setCoords] = useState(() => getCoords(anchorRef))
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   useLayoutEffect(() => {
-    if (anchorRef?.current) {
-      setCoords(getInitialCoords(anchorRef))
-    }
+    if (anchorRef?.current) setCoords(getCoords(anchorRef))
     const myCloser = () => setShowWikiHover(false)
     if (window.__activeHoverWikilinkClose && window.__activeHoverWikilinkClose !== myCloser) {
       window.__activeHoverWikilinkClose()
     }
     window.__activeHoverWikilinkClose = myCloser
     return () => {
-      if (window.__activeHoverWikilinkClose === myCloser) {
-        window.__activeHoverWikilinkClose = null
-      }
+      if (window.__activeHoverWikilinkClose === myCloser) window.__activeHoverWikilinkClose = null
     }
   }, [anchorRef, setShowWikiHover])
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setShowWikiHover(false)
-      }
-    }
+    const handleKey = (e) => { if (e.key === 'Escape') setShowWikiHover(false) }
     const handleClickOutside = (e) => {
-      if (
-        !e.target.closest('#hover-wikilink-container') &&
-        (!anchorRef?.current || !anchorRef.current.contains(e.target))
-      ) {
+      if (!e.target.closest('#hover-wikilink-container') &&
+          (!anchorRef?.current || !anchorRef.current.contains(e.target))) {
         setShowWikiHover(false)
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKey)
     window.addEventListener('mousedown', handleClickOutside)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keydown', handleKey)
       window.removeEventListener('mousedown', handleClickOutside)
     }
   }, [setShowWikiHover, anchorRef])
 
-  if (!coords.ready && coords.top === -9999) {
-    return null
+  if (!coords.ready && coords.top === -9999) return null
+
+  const isJsonOrCode = ['JSON','CODE','TS','JS','PY','SQL','HTML','CSS','SH','BASH','JAVA','CPP','C','RUST','GO']
+    .includes(item.category?.toUpperCase() || '') ||
+    (item.title && ['json','py','js','jsx','ts','tsx','sql','html','css','sh','bash','java','cpp','c','rust','go']
+      .includes(item.title.split('.').pop().toLowerCase()))
+
+  let displayContent = isJsonOrCode
+    ? item.content
+    : cleanPreviewText(item.content || 'Preview content not available.')
+
+  // Strip title if it appears at the very start of content (avoids showing it twice)
+  if (item.title && typeof displayContent === 'string') {
+    const titleClean = item.title.replace(/\.[^/.]+$/, '').trim().toLowerCase()
+    const contentStart = displayContent.slice(0, item.title.length + 5).toLowerCase()
+    if (contentStart.startsWith(titleClean) || contentStart.startsWith(item.title.toLowerCase())) {
+      displayContent = displayContent.slice(item.title.length).replace(/^[\s\-:#]+/, '').trim()
+    }
   }
 
-  const popoverContent = (
-    <div 
+  // Collapse repeated chunk-overlap sentences from the aggregated neighbor context
+  if (!isJsonOrCode && typeof displayContent === 'string') {
+    displayContent = dedupeOverlap(displayContent)
+  }
+
+  if (typeof displayContent === 'string' && displayContent.length > 600) {
+    displayContent = displayContent.slice(0, 600) + '...'
+  }
+
+  const content = (
+    <div
       id="hover-wikilink-container"
       onClick={(e) => e.stopPropagation()}
-      style={{ 
+      style={{
         position: 'fixed',
         top: `${coords.top}px`,
         left: `${coords.left}px`,
-        backgroundColor: '#141822', 
-        opacity: 1, 
-        backdropFilter: 'none' 
+        width: '420px',
+        maxWidth: '95vw',
+        zIndex: 999999,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-5px) scale(0.97)',
+        transition: 'opacity 160ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1)',
+        backgroundColor: 'var(--bg-panel, #141822)',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.06)',
+        boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03)',
       }}
-      className="z-[999999] w-[460px] max-w-[95vw] rounded-[5px] bg-[#141822] ring-1 ring-white/5 shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden text-left select-text"
     >
-      {/* Compact GlobalTitleBar-Styled Header without blur */}
-      <div className="h-[26px] bg-transparent border-b border-white/[0.05] flex items-center justify-between shrink-0 select-none">
-        <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
-          <FileText size={13} className="text-[var(--text-accent)] shrink-0" />
-          <span className="text-[12px] font-semibold text-[var(--text-main)] truncate tracking-tight">{item.title}</span>
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-3 shrink-0 select-none"
+        style={{ height: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <FileText size={11} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+          <span className="text-[11.5px] font-medium truncate leading-none" style={{ color: 'var(--text-muted)' }}>
+            {item.title}
+          </span>
           {item.category && (
-            <span className="px-1 py-0.5 rounded-[3px] text-[9.5px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
+            <span
+              className="shrink-0 text-[9px] font-mono leading-none px-1 py-0.5 rounded-[3px]"
+              style={{ color: 'var(--text-faint)', background: 'rgba(255,255,255,0.04)' }}
+            >
               {item.category}
             </span>
           )}
         </div>
-        <div className="flex items-center h-full shrink-0">
+
+        {onSelect && (
           <button
-            onClick={() => setShowWikiHover(false)}
-            className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0"
-            title="Close popover"
+            onClick={() => { onSelect(item); setShowWikiHover(false) }}
+            className="flex items-center gap-1 ml-2 shrink-0 text-[10px] font-medium border-0 rounded-[4px] px-1.5 py-1 transition-all"
+            style={{ color: 'var(--text-faint)', background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-accent)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'transparent' }}
+            title="Open full source"
           >
-            <X size={13} />
+            <ExternalLink size={10} />
+            <span>Open</span>
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Solid Body Content */}
-      <div className="max-h-[350px] overflow-y-auto custom-scrollbar p-3.5 text-[13px] text-[var(--text-main)] leading-relaxed font-sans break-words bg-[#141822]">
-        {(() => {
-          const isJsonOrCode = ['JSON', 'CODE', 'TS', 'JS', 'PY', 'SQL', 'HTML', 'CSS', 'SH', 'BASH', 'JAVA', 'CPP', 'C', 'RUST', 'GO'].includes(item.category?.toUpperCase() || '') || (item.title && ['json', 'py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(item.title.split('.').pop().toLowerCase()));
-          
-          let displayContent = isJsonOrCode 
-            ? item.content 
-            : cleanPreviewText(item.content || 'Preview content not available.');
-
-          if (typeof displayContent === 'string' && displayContent.length > 600) {
-            displayContent = displayContent.slice(0, 600) + '\n\n... [Content truncated for preview]';
-          }
-
-          return (
-            <DocumentRenderer 
-              className="text-[var(--text-main)] text-[13px] leading-relaxed max-w-full overflow-visible" 
-              content={displayContent} 
-              category={item.category || 'TEXT'}
-              fileTitle={item.title}
-              maxLength={isJsonOrCode ? 500 : undefined}
-            />
-          )
-        })()}
+      {/* Content */}
+      <div className="relative">
+        <div
+          className="overflow-y-auto custom-scrollbar px-3.5 pt-3 pb-5 text-[12.5px] leading-relaxed break-words"
+          style={{ maxHeight: '300px', color: 'var(--text-main)' }}
+        >
+          <DocumentRenderer
+            className="text-[12.5px] leading-relaxed max-w-full overflow-visible"
+            content={displayContent}
+            category={item.category || 'TEXT'}
+            fileTitle={item.title}
+            maxLength={isJsonOrCode ? 500 : undefined}
+          />
+        </div>
+        {/* Gradient fade-out at bottom */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent, var(--bg-panel, #141822))' }}
+        />
       </div>
     </div>
   )
 
-  return createPortal(popoverContent, document.body)
+  return createPortal(content, document.body)
 }
 
 export default HoverWikilink

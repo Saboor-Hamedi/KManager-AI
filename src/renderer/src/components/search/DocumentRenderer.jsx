@@ -75,37 +75,29 @@ const formatMarkdownText = (text) => {
   // Convert remaining standalone [[wikilinks]] to inline wikilink tokens
   result = result.replace(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (_, page) => `\`wikilink:${page.trim()}\``)
 
-  // Convert [Source X] or [Source X: Title] or [Doc X] or standalone [1], [2] into `sourcecite:` tokens with sequential display numbers 1, 2, 3...
+  // Convert [Source X] / [Source X: Title] / [Doc X] / standalone [1] into `sourcecite:` tokens
+  // Display numbers are ALWAYS sequential 1, 2, 3... in order of first appearance
   let citeCounter = 1
-  const citeMap = new Map()
+  const citeMap = new Map() // key → sequential display number
 
-  // Match [Source #1], [Source 1: Title], [Doc #1], [Ref 1], or standalone [1] (up to 2 digits)
-  result = result.replace(/\[(?:(?:Source|Doc|Ref|Document)\s*#?)?([0-9]{1,2})(?:\s*[:|-]\s*([^\]]+))?\]/gi, (match, idx, title) => {
+  const assignCite = (idx, title) => {
     const key = String(idx).trim()
     if (!citeMap.has(key)) {
-      const num = (!isNaN(Number(idx)) && Number(idx) < 100) ? Number(idx) : citeCounter++
-      citeMap.set(key, num)
+      citeMap.set(key, citeCounter++)
     }
-    return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
-  })
+    return `\`sourcecite:${key}|${(title || '').trim()}|${citeMap.get(key)}\``
+  }
 
-  result = result.replace(/\[Source\s+#?([a-zA-Z0-9_-]+)(?:\s*[:|-]\s*([^\]]+))?\]/gi, (_, idx, title) => {
-    const key = String(idx).trim()
-    if (!citeMap.has(key)) {
-      const num = (!isNaN(Number(idx)) && Number(idx) < 100) ? Number(idx) : citeCounter++
-      citeMap.set(key, num)
-    }
-    return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
-  })
+  // [Source #1], [Source 1: Title], [Doc #1], [Ref 1], standalone [1] (up to 2 digits)
+  result = result.replace(/\[(?:(?:Source|Doc|Ref|Document)\s*#?)?([0-9]{1,2})(?:\s*[:|-]\s*([^\]]+))?\]/gi, (_, idx, title) => assignCite(idx, title))
 
+  // [Source #abc] with alphanumeric IDs
+  result = result.replace(/\[Source\s+#?([a-zA-Z0-9_-]+)(?:\s*[:|-]\s*([^\]]+))?\]/gi, (_, idx, title) => assignCite(idx, title))
+
+  // Bare `sourcecite:X` tokens not yet numbered
   result = result.replace(/`sourcecite:([^|`]+)(?:\|([^|`]*))?(?:\|([^|`]*))?`/g, (match, idx, title, existingNum) => {
-    if (existingNum) return match
-    const key = String(idx).trim()
-    if (!citeMap.has(key)) {
-      const num = (!isNaN(Number(idx)) && Number(idx) < 100) ? Number(idx) : citeCounter++
-      citeMap.set(key, num)
-    }
-    return `\`sourcecite:${idx}|${(title || '').trim()}|${citeMap.get(key)}\``
+    if (existingNum) return match // already numbered, leave as-is
+    return assignCite(idx, title)
   })
 
   // Clean up and normalize Markdown tables across chunks so they always render properly inside unified wrappers
@@ -318,10 +310,10 @@ const fastJsonHighlight = (jsonString) => {
 
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
-    <div className="my-4 -mx-4 rounded-[8px] overflow-hidden bg-[#1e1e1e] shadow-sm ring-1 ring-white/5 relative group/code">
+    <div className="my-5 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] border border-[var(--border-dim)] shadow-sm relative group/code">
       {/* Persistent Small Header - Ultra Subtle */}
-      <div className="flex items-center justify-between px-6 py-1.5 bg-black/20 select-none border-b border-white/[0.04]">
-        <div className="text-[12px] font-semibold text-white/40 uppercase tracking-widest pl-1">
+      <div className="flex items-center justify-between px-5 py-2.5 bg-black/[0.08] select-none border-b border-[var(--border-subtle)]">
+        <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest pl-1">
           {title || language || 'code'}
         </div>
         <div className="flex items-center transition-opacity">
@@ -331,7 +323,7 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
       <div className="overflow-x-auto bg-transparent custom-scrollbar pb-2">
         {language === 'json' ? (
           <pre 
-            className="m-0 bg-transparent text-[#d4d4d4] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
+            className="m-0 bg-transparent text-[var(--text-main)] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
             dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
           />
         ) : (
@@ -344,8 +336,8 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
             customStyle={{
               margin: 0,
               background: 'transparent',
-              color: '#d4d4d4',
-              fontSize: '12.5px',
+              color: 'var(--text-main)',
+              fontSize: '13px',
               padding: '1rem 1.75rem',
               overflowX: 'auto',
               lineHeight: '1.6'
@@ -433,7 +425,7 @@ const renderCalloutOrParagraph = (children, props) => {
   }
 
   return (
-    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-normal text-left" {...props}>
+    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-pre-wrap text-left" {...props}>
       {children}
     </div>
   )

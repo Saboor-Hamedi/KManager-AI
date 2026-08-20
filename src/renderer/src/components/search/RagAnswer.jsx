@@ -6,7 +6,7 @@ import InlineChat from './InlineChat'
 import AutoResizeTextarea from './AutoResizeTextarea'
 import './horizontal.css'
 
-const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp, onUpdateAnswer }) => {
+const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp, onUpdateAnswer, onStopGeneration }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
   const [copied, setCopied] = useState(false)
@@ -21,10 +21,12 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
 
   if (!msg.ragStatus || msg.ragStatus === 'disabled') return null
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(msg.ragAnswer || '')
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = async () => {
+    if (msg?.ragAnswer) {
+      await navigator.clipboard.writeText(msg.ragAnswer)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   const handleFeedback = (type) => {
@@ -38,7 +40,7 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
   }
 
   const handleSaveEdit = () => {
-    const formatted = editValue.split('\n').map(l => l.trimEnd() + '  ').join('\n')
+    const formatted = editValue.trim()
     if (onUpdateAnswer && formatted !== msg.ragAnswer) {
       onUpdateAnswer(msg.id, formatted)
     }
@@ -47,7 +49,7 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
 
   return (
     <div 
-      className="w-full"
+      className="w-full relative"
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px' }}
     >
       {msg.ragStatus === 'generating' && !msg.ragAnswer && (
@@ -58,23 +60,20 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
       )}
 
       {msg.ragAnswer && (
-        <div className="flex flex-col">
+        <div className="w-full mt-2 animate-in fade-in duration-300">
+
           {isEditing ? (
-            <div className="flex flex-col gap-2.5 mt-2">
+            <div className="flex flex-col gap-3">
               <AutoResizeTextarea
                 ref={editRef}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                minHeight="120px"
-                maxHeight="400px"
+                className="w-full p-4 rounded-xl bg-black/40 text-[14px] text-[var(--text-main)] leading-relaxed border border-white/10 focus:border-[var(--text-accent)] focus:ring-1 focus:ring-[var(--text-accent)] outline-none resize-none font-mono"
               />
-              <div className="flex justify-end gap-1.5">
+              <div className="flex items-center justify-end gap-2">
                 <button
-                  onClick={() => {
-                    setEditValue(msg.ragAnswer || '')
-                    setIsEditing(false)
-                  }}
-                  className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
+                  onClick={() => setIsEditing(false)}
+                  className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                 >
                   Cancel
                 </button>
@@ -96,6 +95,18 @@ const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textarea
               {msg.ragStatus === 'generating' && (
                 <span className="inline-block w-2 h-4 ml-1 bg-[var(--text-accent)] animate-pulse align-middle" />
               )}
+            </div>
+          )}
+
+          {msg.ragStatus === 'generating' && msg.ragAnswer && onStopGeneration && (
+            <div className="mt-4 flex justify-start">
+              <button 
+                onClick={() => onStopGeneration(msg.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
+              >
+                <div className="w-2 h-2 bg-current rounded-sm"></div>
+                Stop generating
+              </button>
             </div>
           )}
 

@@ -1,32 +1,44 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { FileText, X } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 
 const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const closingRef = useRef(false)
 
-  // Global ESC handler — works even when <webview> has stolen focus
+  // Animate in
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handleKey)
-    
-    // Register global OS-level Escape catcher for PDF plugin
-    if (window.api?.system?.registerEscape) {
-      window.api.system.registerEscape()
+    if (selectedPdf) {
+      closingRef.current = false
+      const raf = requestAnimationFrame(() => setVisible(true))
+      return () => cancelAnimationFrame(raf)
     }
+  }, [selectedPdf])
 
+  // Animate out then call onClose
+  const handleClose = () => {
+    if (closingRef.current) return
+    closingRef.current = true
+    setVisible(false)
+    setTimeout(onClose, 180)
+  }
+
+  // ESC key
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') handleClose() }
+    window.addEventListener('keydown', handleKey)
+    if (window.api?.system?.registerEscape) window.api.system.registerEscape()
     return () => {
       window.removeEventListener('keydown', handleKey)
-      if (window.api?.system?.unregisterEscape) {
-        window.api.system.unregisterEscape()
-      }
+      if (window.api?.system?.unregisterEscape) window.api.system.unregisterEscape()
     }
   }, [onClose])
 
   useEffect(() => {
     if (selectedPdf) {
       setIsReady(false)
-      const t = setTimeout(() => setIsReady(true), 50)
+      const t = setTimeout(() => setIsReady(true), 60)
       return () => clearTimeout(t)
     }
   }, [selectedPdf])
@@ -36,92 +48,122 @@ const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
   const isPdf = selectedPdf.category === 'PDF' ||
     (selectedPdf.vault_path || '').toLowerCase().endsWith('.pdf')
 
+  // Strip title from the start of body content to avoid showing it twice
+  const stripTitleFromContent = (content, title) => {
+    if (!content || !title) return content
+    const titleClean = title.replace(/\.[^/.]+$/, '').trim().toLowerCase()
+    const contentStart = content.slice(0, title.length + 5).toLowerCase()
+    if (contentStart.startsWith(titleClean) || contentStart.startsWith(title.toLowerCase())) {
+      return content.slice(title.length).replace(/^[\s\-:#\n]+/, '')
+    }
+    return content
+  }
+
+  const bodyContent = stripTitleFromContent(selectedPdf.content, selectedPdf.title)
+
   const fileSrc = selectedPdf.vault_path
     ? `file:///${selectedPdf.vault_path.replace(/\\/g, '/')}`
     : null
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 180ms ease',
+        backgroundColor: visible ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0)',
+        backdropFilter: visible ? 'blur(4px)' : 'none',
+      }}
     >
-      <div className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] w-full max-w-5xl h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
-
-        {/* Compact GlobalTitleBar-Styled Header identical to HoverWikilink */}
-        <div className="h-[26px] bg-[#0e1117] border-b border-white/[0.08] flex items-center justify-between shrink-0 select-none">
-          <div className="flex items-center gap-1.5 px-2.5 min-w-0 flex-1 mr-2 h-full">
-            <FileText size={13} className="text-[var(--text-accent)] shrink-0" />
-            <span className="text-[12px] font-semibold text-[var(--text-main)] truncate tracking-tight">{selectedPdf.title}</span>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '64rem',
+          height: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: '8px',
+          backgroundColor: 'var(--bg-app)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.8)',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'scale(1) translateY(0)' : 'scale(0.96) translateY(12px)',
+          transition: 'opacity 200ms ease, transform 200ms cubic-bezier(0.16,1,0.3,1)',
+        }}
+      >
+        {/* Subtle titlebar */}
+        <div
+          className="flex items-center justify-between shrink-0 select-none px-3"
+          style={{ height: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <FileText size={11} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+            <span
+              className="text-[11.5px] font-medium truncate leading-none"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {selectedPdf.title}
+            </span>
             {selectedPdf.category && (
-              <span className="px-1 py-0.5 rounded-[3px] text-[9.5px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
+              <span
+                className="shrink-0 text-[9px] font-mono leading-none px-1 py-0.5 rounded-[3px]"
+                style={{ color: 'var(--text-faint)', background: 'rgba(255,255,255,0.04)' }}
+              >
                 {selectedPdf.category}
               </span>
             )}
-            {!fileExists && (
-              <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9.5px] font-bold shrink-0 leading-none">
-                Archived (disk file removed)
-              </span>
-            )}
           </div>
-          <div className="flex items-center h-full shrink-0">
-            <button
-              onClick={onClose}
-              className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0"
-              title="Close (Esc)"
-            >
-              <X size={13} />
-            </button>
-          </div>
+          <button
+            onClick={handleClose}
+            className="flex items-center justify-center border-0 rounded-[4px] transition-colors"
+            style={{ width: '24px', height: '24px', color: 'var(--text-faint)', background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#e81123'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)' }}
+            title="Close (Esc)"
+          >
+            <X size={12} />
+          </button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-hidden relative select-text">
-          {/* ── PDF: render directly via file:// ── */}
           {isPdf && fileExists && fileSrc ? (
             <webview
               src={fileSrc}
               plugins="true"
               className="w-full h-full border-none bg-white"
             />
-          ) : isPdf && !fileExists ? (
-            /* ── PDF but file missing: fallback to stored text ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify cursor-default">
-              <div className="max-w-3xl mx-auto">
-                <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[12px] font-medium">
-                  Original file no longer on disk — showing archived text from database.
-                </div>
-                {isReady && selectedPdf.content ? (
-                  <DocumentRenderer
-                    content={selectedPdf.content}
-                    category={selectedPdf.category}
-                    fileTitle={selectedPdf.title}
-                    className="text-[13.5px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible text-justify"
-                  />
-                ) : (
-                  <div className="text-[var(--text-faint)] text-[12px]">No archived content available.</div>
-                )}
-              </div>
-            </div>
           ) : (
-            /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
-            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify cursor-default">
+            <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar text-justify cursor-default"
+              style={{ background: 'var(--bg-app)' }}>
               <div className="max-w-3xl mx-auto">
                 {!isReady ? (
                   <div className="flex flex-col gap-4 animate-pulse py-6">
-                    <div className="h-5 w-1/3 rounded bg-[var(--border-subtle)]/70" />
-                    <div className="h-4 w-full rounded bg-[var(--border-subtle)]/50" />
-                    <div className="h-4 w-5/6 rounded bg-[var(--border-subtle)]/40" />
-                    <div className="h-4 w-2/3 rounded bg-[var(--border-subtle)]/30" />
+                    <div className="h-5 w-1/3 rounded" style={{ background: 'var(--border-subtle)', opacity: 0.7 }} />
+                    <div className="h-4 w-full rounded" style={{ background: 'var(--border-subtle)', opacity: 0.5 }} />
+                    <div className="h-4 w-5/6 rounded" style={{ background: 'var(--border-subtle)', opacity: 0.4 }} />
+                    <div className="h-4 w-2/3 rounded" style={{ background: 'var(--border-subtle)', opacity: 0.3 }} />
                   </div>
-                ) : selectedPdf.content ? (
+                ) : bodyContent ? (
                   <DocumentRenderer
-                    content={selectedPdf.content}
+                    content={bodyContent}
                     category={selectedPdf.category}
                     fileTitle={selectedPdf.title}
-                    className="text-[13.5px] text-[var(--text-main)] leading-relaxed max-w-full overflow-visible text-justify"
+                    className="text-[13.5px] leading-relaxed max-w-full overflow-visible text-justify"
+                    style={{ color: 'var(--text-main)' }}
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-[12px]">No content available for this file.</div>
+                  <div className="text-[12px]" style={{ color: 'var(--text-faint)' }}>
+                    No content available for this file.
+                  </div>
                 )}
               </div>
             </div>

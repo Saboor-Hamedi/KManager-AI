@@ -1,29 +1,38 @@
 import React, { memo } from 'react'
 import { cn } from '../lib/utils'
-import { LayoutDashboard, Users, Search, PlusCircle } from 'lucide-react'
+import { LayoutDashboard, Users, Search, PlusCircle, Library } from 'lucide-react'
 import SidebarHeader from './SidebarHeader'
 import SidebarFooter from './SidebarFooter'
 
 const SidebarItem = memo(({ icon: Icon, label, shortcut, active, collapsed, onClick }) => (
   <button
-    onClick={onClick}
+    onClick={(e) => {
+      e.currentTarget.blur()
+      if (onClick) onClick(e)
+    }}
     className={cn(
-      'flex items-center w-full py-2 transition-all duration-200 group relative outline-none',
+      'flex items-center w-full py-2.5 transition-all duration-200 group relative outline-none focus:outline-none focus:ring-0',
       collapsed ? 'justify-center px-0' : 'px-5',
       active
         ? 'bg-white/[0.03] text-[var(--text-main)] border-l-2 border-[var(--text-accent)]'
-        : 'text-[var(--text-muted)] hover:bg-white/[0.03] hover:text-[var(--text-main)] border-l-2 border-transparent'
+        : 'text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-main)] border-l-2 border-transparent'
     )}
   >
     <Icon
-      size={15}
-      className={cn('shrink-0', active ? 'text-[var(--text-accent)]' : 'group-hover:text-[var(--text-main)]')}
+      size={16}
+      className={cn(
+        'shrink-0 transition-transform duration-300 ease-out',
+        active ? 'text-[var(--text-accent)]' : 'group-hover:text-[var(--text-main)]',
+        collapsed && 'group-hover:scale-125'
+      )}
     />
     {!collapsed && (
       <>
         <span className="ml-3.5 text-[12px] font-medium tracking-tight truncate">{label}</span>
         {shortcut && (
-          <kbd className="ml-auto text-[12px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] border border-white/[0.05] text-[var(--text-faint)] transition-opacity">{shortcut}</kbd>
+          <kbd className="ml-auto text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">
+            {shortcut}
+          </kbd>
         )}
       </>
     )}
@@ -34,6 +43,7 @@ const SidebarItem = memo(({ icon: Icon, label, shortcut, active, collapsed, onCl
 const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, onOpenDocs, onOpenAnalytics, collapsed, toggleCollapsed }) => {
   const items = [
     { id: 'search',    label: 'Search',    shortcut: 'Ctrl+P', icon: Search },
+    { id: 'library',   label: 'Library',   shortcut: 'Ctrl+L', icon: Library },
     { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
   ]
 
@@ -55,7 +65,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
           active={false}
           collapsed={collapsed}
           onClick={() => {
-            window.dispatchEvent(new CustomEvent('new-session'))
+            window.dispatchEvent(new CustomEvent('new-session-intent'))
             if (activeTab !== 'search') setActiveTab('search')
           }}
         />
@@ -65,7 +75,9 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
         {items.map((item) => (
           <SidebarItem
             key={item.id}
-            {...item}
+            icon={item.icon}
+            label={item.label}
+            shortcut={item.shortcut}
             active={activeTab === item.id}
             collapsed={collapsed}
             onClick={() => {

@@ -52,6 +52,10 @@ extraResources:
       - "**/*"
   - from: schema.sql
     to: schema.sql
+  - from: brain
+    to: brain
+    filter:
+      - "**/*"
 publish:
   provider: github
   owner: Saboor-Hamedi

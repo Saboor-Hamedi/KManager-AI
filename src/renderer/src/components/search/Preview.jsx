@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, X } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
+import PulseLoader from '../PulseLoader'
 
 const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
@@ -40,43 +41,52 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
     ? `file:///${selectedPdf.vault_path.replace(/\\/g, '/')}`
     : null
   return (
-    <div className="bg-[var(--bg-card)] w-full h-full flex flex-col overflow-hidden animate-in fade-in duration-150 relative">
+    <div className="w-full h-full flex flex-col overflow-hidden animate-in fade-in duration-150 relative">
 
-        {/* Balanced, Comfortable Title Bar matching HoverWikilink style */}
-        <div className="h-8 bg-[#0e1117] border-b border-white/[0.08] flex items-center justify-between shrink-0 select-none">
-          <div className="flex items-center gap-2 px-3 min-w-0 flex-1 mr-3 h-full">
-            <FileText size={15} className="text-[var(--text-accent)] shrink-0" />
-            <span className="text-xs font-semibold text-[var(--text-main)] truncate tracking-tight">{selectedPdf.title}</span>
+        {/* Titlebar — matches HoverWikilink style */}
+        <div
+          className="flex items-center justify-between shrink-0 select-none pl-3 pr-0"
+          style={{ height: '28px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <FileText size={11} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+            <span className="text-[11.5px] font-medium truncate leading-none" style={{ color: 'var(--text-muted)' }}>
+              {selectedPdf.title}
+            </span>
             {selectedPdf.category && (
-              <span className="px-1.5 py-0.5 rounded-[3px] text-[12px] font-mono text-[var(--text-muted)] bg-[var(--bg-active)] shrink-0 leading-none">
+              <span
+                className="shrink-0 text-[9px] font-mono leading-none px-1 py-0.5 rounded-[3px]"
+                style={{ color: 'var(--text-faint)', background: 'rgba(255,255,255,0.04)' }}
+              >
                 {selectedPdf.category}
               </span>
             )}
-            {!fileExists && (
-              <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[12px] font-bold shrink-0 leading-none">
-                Archived (disk file removed)
-              </span>
-            )}
           </div>
-          <div className="flex items-center h-full shrink-0">
-            <button
-              onClick={onClose}
-              className="h-full px-3.5 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0"
-              title="Close (Esc)"
-            >
-              <X size={15} />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-6 h-6 rounded-[4px] border-0 shrink-0 transition-colors text-[var(--text-faint)] hover:bg-[#e81123] hover:text-white"
+            title="Close (Esc)"
+          >
+            <X size={12} />
+          </button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-hidden relative">
+          
+          {/* Shared Loader Overlay (Visible while loadingText or !isReady is true) */}
+          {(loadingText || !isReady) && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm animate-in fade-in duration-300">
+              <PulseLoader text="Loading Document" size="md" />
+            </div>
+          )}
+
           {/* ── PDF: render directly via file:// ── */}
           {isPdf && fileExists && fileSrc ? (
             <webview
               src={fileSrc}
               plugins="true"
-              className="w-full h-full border-none bg-white"
+              className="w-full h-full border-none bg-white relative z-0"
             />
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
@@ -85,14 +95,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
-                {loadingText || !isReady ? (
-                  <div className="flex flex-col gap-4 animate-pulse py-6">
-                    <div className="h-5 w-1/3 rounded bg-[var(--border-subtle)]/70" />
-                    <div className="h-4 w-full rounded bg-[var(--border-subtle)]/50" />
-                    <div className="h-4 w-5/6 rounded bg-[var(--border-subtle)]/40" />
-                    <div className="h-4 w-2/3 rounded bg-[var(--border-subtle)]/30" />
-                  </div>
-                ) : fullText || selectedPdf.content ? (
+                {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
                     content={fullText || selectedPdf.content}
@@ -100,22 +103,15 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                     fileTitle={selectedPdf.title}
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-sm">No archived content available.</div>
-                )}
+                  <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No archived content available.</div>
+                ))}
               </div>
             </div>
           ) : (
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
             <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify">
               <div className="max-w-3xl mx-auto">
-                {loadingText || !isReady ? (
-                  <div className="flex flex-col gap-4 animate-pulse py-6">
-                    <div className="h-5 w-1/3 rounded bg-[var(--border-subtle)]/70" />
-                    <div className="h-4 w-full rounded bg-[var(--border-subtle)]/50" />
-                    <div className="h-4 w-5/6 rounded bg-[var(--border-subtle)]/40" />
-                    <div className="h-4 w-2/3 rounded bg-[var(--border-subtle)]/30" />
-                  </div>
-                ) : fullText || selectedPdf.content ? (
+                {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[14px] leading-relaxed max-w-full overflow-visible text-justify ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
                     content={fullText || selectedPdf.content}
@@ -123,8 +119,8 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                     fileTitle={selectedPdf.title}
                   />
                 ) : (
-                  <div className="text-[var(--text-faint)] text-sm">No content available for this file.</div>
-                )}
+                  <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No content available for this file.</div>
+                ))}
               </div>
             </div>
           )}

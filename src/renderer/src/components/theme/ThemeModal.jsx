@@ -79,12 +79,8 @@ const ThemeModal = ({ isOpen, onClose }) => {
                 <div className="theme-card-header">
                   <div className="theme-title-row">
                     <span className="theme-modal-name">{t.name}</span>
-                    {isActive ? (
-                      <span className="theme-check-badge">
-                        <Check size={10} strokeWidth={3} />
-                      </span>
-                    ) : (
-                      <span className="theme-badge installed">INSTALLED</span>
+                    {isActive && (
+                      <span className="theme-badge installed" style={{ background: 'var(--text-accent)', color: 'var(--bg-app)' }}>ACTIVE</span>
                     )}
                   </div>
                 </div>

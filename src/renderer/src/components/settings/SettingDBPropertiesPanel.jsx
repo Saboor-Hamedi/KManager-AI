@@ -292,7 +292,7 @@ const SettingDBPropertiesPanel = () => {
             <table className="w-full text-left border-collapse mt-1">
               <thead>
                 <tr className="border-b border-[var(--border-subtle)]/40 text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  <th className="py-2.5 pl-2">File Type (Icon)</th>
+                  <th className="py-2.5 pl-2">File Type</th>
                   <th className="py-2.5 pl-4">Count</th>
                   <th className="py-2.5 pl-4">Total Size (MB)</th>
                   <th className="py-2.5 pl-4">Avg Size/File (KB)</th>
@@ -313,7 +313,7 @@ const SettingDBPropertiesPanel = () => {
                     let iconBadge = <span className={`${baseBadgeClass} bg-[#252833] text-[var(--text-muted)]`}><FileText size={11}/>{format}</span>
                     if (format === 'md' || format === '.md') {
                       iconBadge = <span className={`${baseBadgeClass} bg-[#a855f7]/15 text-[#c084fc]`}><FileText size={11}/>.md</span>
-                    } else if (format === 'AI_RESPONSE' || format === 'AI' || format === 'ai') {
+                    } else if (format === 'ai_response' || format === 'AI' || format === 'ai') {
                       iconBadge = <span className={`${baseBadgeClass} bg-purple-500/15 text-purple-300`}><Cpu size={11}/>AI</span>
                     } else if (format === 'pdf' || format === '.pdf') {
                       iconBadge = <span className={`${baseBadgeClass} bg-red-500/15 text-red-400`}><FileText size={11}/>.pdf</span>
@@ -325,7 +325,8 @@ const SettingDBPropertiesPanel = () => {
                       iconBadge = <span className={`${baseBadgeClass} bg-emerald-500/15 text-emerald-400`}><FileSpreadsheet size={11}/>.{format.replace('.', '')}</span>
                     }
 
-                    const displayFormatName = format === 'AI_RESPONSE' || format === 'AI' ? 'AI_RESPONSE' : format.startsWith('.') ? format : `.${format}`
+                    const isAiFormat = format === 'ai_response' || format === 'ai' || format === 'AI';
+                    const displayFormatName = isAiFormat ? 'AI' : format.startsWith('.') ? format : `.${format}`
 
                     return (
                       <tr key={format} className="hover:bg-[var(--bg-panel)]/50 transition-colors text-[12px] text-[var(--text-main)] font-semibold">

@@ -30,7 +30,8 @@ export const query = async (messages, apiKey) => {
   return data.content[0].text;
 };
 
-export const stream = async (messages, apiKey, onChunk) => {
+export const stream = async (messages, apiKey, onChunk, abortSignal) => {
+  const signal = abortSignal || AbortSignal.timeout(25000);
   const systemMessage = messages.find(m => m.role === 'system');
   const system = systemMessage ? systemMessage.content : '';
   const filteredMessages = messages.filter(m => m.role !== 'system');
@@ -50,7 +51,8 @@ export const stream = async (messages, apiKey, onChunk) => {
       temperature: 0.3,
       max_tokens: 1500,
       stream: true
-    })
+    }),
+    signal
   });
 
   if (!response.ok) {

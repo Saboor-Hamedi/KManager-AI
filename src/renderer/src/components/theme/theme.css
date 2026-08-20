@@ -111,7 +111,7 @@
 
 .theme-modal-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
   padding: 20px 24px;
   overflow-y: auto;

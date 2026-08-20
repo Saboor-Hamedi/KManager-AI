@@ -22,7 +22,8 @@ export const query = async (messages, apiKey) => {
   return data.choices[0].message.content;
 };
 
-export const stream = async (messages, apiKey, onChunk) => {
+export const stream = async (messages, apiKey, onChunk, abortSignal) => {
+  const signal = abortSignal || AbortSignal.timeout(25000);
   const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
     method: 'POST',
     headers: {
@@ -35,7 +36,8 @@ export const stream = async (messages, apiKey, onChunk) => {
       temperature: 0.3,
       max_tokens: 1500,
       stream: true
-    })
+    }),
+    signal
   });
 
   if (!response.ok) {
