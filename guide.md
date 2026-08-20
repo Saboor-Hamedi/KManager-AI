@@ -1,16 +1,76 @@
-# KManager Setup & Polish Tasks
+mermaid sequenceDiagram diagram always shows diagram syntax issue (falling back to raw view )
 
-## Essential Onboarding (For Non-Technical Users)
-- [ ] **First-run onboarding wizard**: Guided setup flow for new users (connect database → initialize schema → drag files).
-- [ ] **Auto-initialize schema**: Automatically initialize schema when a user successfully connects to a new database.
-- [ ] **Friendly Setup Prompt**: If the app is empty or disconnected, show a friendly "Connect your library to begin" button in the center instead of silently failing searches.
-- [x] **Friendly Settings**: Rename technical tabs like "DB Properties", and translate scary raw network errors (like `ECONNREFUSED`) into friendly instructions like *"Database isn't running — start it up and try again."*
-- [x] **Folder Scan Safety Check**: Show a confirmation dialog (*"Found 1,500 files, proceed?"*) before scanning massive folders to prevent freezing.
 
-## Completed Tasks
-- [x] **LLM Instant Routing**: Stop delaying normal queries by routing conversational checks instantly.
-- [x] **Smart Confirm Modals**: Only show confirmation modals when clearing a session that actually has history.
-- [x] **Removed Session Storage**: Removed localStorage persistence so chats remain ephemeral.
-- [x] **Fixed Maximum update depth exceeded**: Throttled offline RAG extraction to prevent infinite React loops.
-- [x] **Fixed `<p> cannot contain <div>` error**: Safely rendered Markdown image tags and component clouds inside `<div>` instead of `<p>`.
-- [x] **Seamless RAG Answers**: Removed the dark card styling and "Synthesis" header so RAG answers flow naturally.
+SequenceDiagram
+Autonumber
+Participant Client
+Participant API as API Gateway
+Participant Ingest as Ingestion Service
+Participant Queue as Message Queue
+Participant Process as Processing Service
+Participant Storage as Storage Service
+Participant Notify as Notification Service
+
+Rect rgb(240, 248, 255)
+    Note over Client,API: Phase 1: Document Upload
+    Client->>API: POST /documents<br/>Upload file (multipart)
+    Activate API
+    API->>API: Validate file type & size
+    Alt Valid document
+        API->>Ingest: Forward document + metadata
+        Activate Ingest
+        Ingest->>Storage: Save raw file
+        Activate Storage
+        Storage-->>Ingest: File ID + location
+        Deactivate Storage
+        
+        Ingest->>Queue: Publish processing job<br/>(async)
+        Ingest-->>API: Job ID + status: "accepted"
+        Deactivate Ingest
+        
+        API-->>Client: 202 Accepted<br/>{jobId, status}
+        Deactivate API
+    Else Invalid document
+        API-->>Client: 400 Bad Request<br/>{error: "Invalid format"}
+        Deactivate API
+    End
+End
+
+Rect rgb(240, 255, 240)
+    Note over Queue,Notify: Phase 2: Async Processing
+    Queue->>Process: Consume job message
+    Activate Process
+    
+    Process->>Storage: Retrieve raw file
+    Activate Storage
+    Storage-->>Process: File content
+    Deactivate Storage
+    
+    Process->>Process: Extract text & metadata
+    Process->>Process: Run OCR if needed
+    Process->>Process: Generate embeddings
+    
+    Process->>Storage: Store processed data<br/>+ extracted content
+    Activate Storage
+    Storage-->>Process: Confirmation
+    Deactivate Storage
+    
+    Process->>Queue: Mark job complete
+    Process-->>Queue: Acknowledge
+    Deactivate Process
+End
+
+Rect rgb(255, 250, 240)
+    Note over Notify,Client: Phase 3: Notification
+    Queue->>Notify: Trigger notification event
+    Activate Notify
+    Notify->>Client: WebSocket/Push:<br/>"Processing complete"
+    Deactivate Notify
+End
+
+Opt Error Handling
+    Process--xProcess: Processing failed
+    Process->>Queue: Publish failure event
+    Queue->>Notify: Send error notification
+    Notify->>Client: "Processing failed"<br/>{error details}
+End

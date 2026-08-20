@@ -189,16 +189,28 @@ const MermaidDiagram = memo(({ chart }) => {
         const existingNode = document.getElementById(renderId)
         if (existingNode) existingNode.remove()
 
-        // Fix common AI capitalization typos for the root diagram type
+        // Fix common AI capitalization typos for the root diagram type and internal blocks
         let sanitizedChart = chart.trim()
-        sanitizedChart = sanitizedChart.replace(/^(Graph|Flowchart|SequenceDiagram|ClassDiagram|StateDiagram|ErDiagram|Gantt|Pie|GitGraph)/i, (match) => {
+        
+        // Fix Root nodes
+        sanitizedChart = sanitizedChart.replace(/^(\s*)(Graph|Flowchart|SequenceDiagram|ClassDiagram|StateDiagram|ErDiagram|Gantt|Pie|GitGraph)/i, (_, space, match) => {
           const m = match.toLowerCase()
-          if (m === 'sequencediagram') return 'sequenceDiagram'
-          if (m === 'classdiagram') return 'classDiagram'
-          if (m === 'statediagram') return 'stateDiagram'
-          if (m === 'erdiagram') return 'erDiagram'
-          if (m === 'gitgraph') return 'gitGraph'
-          return m // graph, flowchart, gantt, pie
+          if (m === 'sequencediagram') return space + 'sequenceDiagram'
+          if (m === 'classdiagram') return space + 'classDiagram'
+          if (m === 'statediagram') return space + 'stateDiagram'
+          if (m === 'erdiagram') return space + 'erDiagram'
+          if (m === 'gitgraph') return space + 'gitGraph'
+          return space + m // graph, flowchart, gantt, pie
+        })
+
+        // Fix internal block keywords that Mermaid expects to be mostly lowercase, allowing for leading whitespace/indentation
+        sanitizedChart = sanitizedChart.replace(/^(\s*)(Participant|Activate|Deactivate|Opt|Alt|Else|End|Rect|Note over|Note left of|Note right of|Note|Autonumber)\b/gmi, (_, space, match) => {
+          const m = match.toLowerCase()
+          if (m.startsWith('note')) {
+            // Mermaid accepts 'note over', 'Note over', etc., but standardizing to Capital N is safe
+            return space + match.charAt(0).toUpperCase() + match.slice(1).toLowerCase() 
+          }
+          return space + m
         })
 
         const { svg } = await mermaid.render(renderId, sanitizedChart)
@@ -245,28 +257,28 @@ const MermaidDiagram = memo(({ chart }) => {
     <>
       <div className="my-6 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] shadow-sm max-w-full border border-[var(--border-dim)]">
         {/* Persistent Small Header - Ultra Subtle */}
-        <div className="flex items-center justify-between px-5 py-2.5 bg-black/[0.08] select-none border-b border-[var(--border-subtle)]">
-          <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest pl-1">
+        <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
+          <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
             Mermaid
           </div>
-          <div className="flex items-center gap-1.5 transition-opacity">
+          <div className="flex items-center gap-1.5 transition-opacity h-full">
             {!showRaw && !error && (
               <>
-                <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Zoom In"><ZoomIn size={14} /></button>
-                <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Zoom Out"><ZoomOut size={14} /></button>
-                <button onClick={() => { setIsModalOpen(true); setPan({x:0, y:0}); setZoom(1); }} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Expand to fullscreen"><Maximize size={14} /></button>
-                <button onClick={handleDownload} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Download SVG"><Download size={14} /></button>
-                <div className="w-px h-4 bg-white/10 mx-0.5" />
+                <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors" title="Zoom In"><ZoomIn size={12} /></button>
+                <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors" title="Zoom Out"><ZoomOut size={12} /></button>
+                <button onClick={() => { setIsModalOpen(true); setPan({x:0, y:0}); setZoom(1); }} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors" title="Expand to fullscreen"><Maximize size={12} /></button>
+                <button onClick={handleDownload} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors" title="Download SVG"><Download size={12} /></button>
+                <div className="w-px h-3 bg-white/10 mx-0.5" />
               </>
             )}
-            <button onClick={handleCopy} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[4px] transition-colors" title="Copy raw source">
-              {copied ? <Check size={14} className="text-[var(--text-accent)]" /> : <Copy size={14} />}
+            <button onClick={handleCopy} className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-[3px] transition-all duration-300 border-0 ${copied ? 'text-green-400 translate-x-1 bg-green-500/10' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'}`} title="Copy raw source">
+              {copied ? 'COPIED' : 'COPY'}
             </button>
             <button
               onClick={() => setShowRaw(!showRaw)}
-              className="px-2 py-1 ml-1 text-[12px] font-bold tracking-wider uppercase rounded text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
+              className="px-2 py-0.5 ml-0.5 text-[10px] font-bold tracking-widest uppercase rounded text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-colors"
             >
-              {showRaw ? 'Preview' : 'Code'}
+              {showRaw ? 'VIEW' : 'CODE'}
             </button>
           </div>
         </div>

@@ -40,7 +40,7 @@ const formatMarkdownText = (text) => {
     .replace(/\|\s+\|/g, '|\n|')
 
   // 0. Remove completely hallucinated ```markdown fences around the whole document
-  result = result.replace(/^```(markdown|md|text)?\n([\s\S]*?)\n```$/gm, '$2')
+  result = result.replace(/^```(markdown|md|text)?\n([\s\S]*?)\n```\s*$/g, '$2')
   
   // 0.5 Remove 4-space indentations that cause accidental code blocks (except for lists)
   result = result.replace(/^( {4}|\t)(?!\s*[-*+]\s|\s*\d+\.\s)/gm, '')
@@ -268,7 +268,7 @@ const formatMarkdownText = (text) => {
   return endRefsParagraphs.join('\n')
 }
 
-const CodeCopyButton = ({ code }) => {
+const CodeCopyButton = ({ code, language }) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -280,10 +280,14 @@ const CodeCopyButton = ({ code }) => {
   return (
     <button
       onClick={handleCopy}
-      className="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] rounded-[4px] transition-colors"
+      className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-[3px] transition-all duration-300 border-0 ${
+        copied 
+          ? 'text-green-400 translate-x-1 bg-green-500/10' 
+          : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+      }`}
       title="Copy to clipboard"
     >
-      {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+      {copied ? 'Copied' : (language || 'Copy')}
     </button>
   )
 }
@@ -311,13 +315,13 @@ const fastJsonHighlight = (jsonString) => {
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
     <div className="my-5 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] border border-[var(--border-dim)] shadow-sm relative group/code">
-      {/* Persistent Small Header - Ultra Subtle */}
-      <div className="flex items-center justify-between px-5 py-2.5 bg-black/[0.08] select-none border-b border-[var(--border-subtle)]">
-        <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest pl-1">
-          {title || language || 'code'}
+      {/* Persistent Small Header - Ultra Subtle & Compact */}
+      <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
+        <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
+          {title || ''}
         </div>
-        <div className="flex items-center transition-opacity">
-          <CodeCopyButton code={code} />
+        <div className="flex items-center transition-opacity h-full">
+          <CodeCopyButton code={code} language={language} />
         </div>
       </div>
       <div className="overflow-x-auto bg-transparent custom-scrollbar pb-2">
@@ -697,7 +701,9 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', resu
   if (!content) return null
   const safeContent = typeof content !== 'string' && category !== 'JSON' ? String(content) : content
   const ext = fileTitle ? fileTitle.split('.').pop().toLowerCase() : ''
-  const isCodeFile = ['py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext)
+  
+  // Prevent AI Responses (which might have titles like "Explain index.js") from being rendered entirely as code files.
+  const isCodeFile = category !== 'AI_RESPONSE' && ['py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext)
 
   if (category === 'JSON' || ext === 'json') {
     const formattedJson = formatJsonContent(safeContent, maxLength)

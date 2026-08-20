@@ -15,6 +15,8 @@ const api = {
     lexicalSearch: (query, limit) => ipcRenderer.invoke('db:lexical-search', { query, limit }),
     getAnalytics: () => ipcRenderer.invoke('db:get-analytics'),
     ingestFile: (filePath) => ipcRenderer.invoke('db:ingest-file', filePath),
+    ingestAIResponse: (text, title) => ipcRenderer.invoke('db:ingest-ai-response', text, title),
+    updateAIResponse: (vaultPath, content) => ipcRenderer.invoke('db:update-ai-response', vaultPath, content),
     queueFiles: (filePaths) => ipcRenderer.invoke('db:queue-files', filePaths),
     getQueue: () => ipcRenderer.invoke('db:get-queue'),
     cancelQueue: () => ipcRenderer.invoke('db:cancel-queue'),
@@ -53,7 +55,10 @@ const api = {
     registerEscape: () => ipcRenderer.invoke('system:register-escape'),
     unregisterEscape: () => ipcRenderer.invoke('system:unregister-escape'),
     readBrainDocs: () => ipcRenderer.invoke('system:read-brain-docs'),
-    readFileContent: (filePath) => ipcRenderer.invoke('system:read-file-content', filePath)
+    readFileContent: (filePath) => ipcRenderer.invoke('system:read-file-content', filePath),
+    readFileBinary: (filePath) => ipcRenderer.invoke('system:read-file-binary', filePath),
+    saveFileContent: (filePath, content) => ipcRenderer.invoke('system:save-file-content', filePath, content),
+    showInFolder: (filePath) => ipcRenderer.invoke('system:show-in-folder', filePath)
   },
   windowControls: {
     minimize: () => ipcRenderer.send('window:minimize'),

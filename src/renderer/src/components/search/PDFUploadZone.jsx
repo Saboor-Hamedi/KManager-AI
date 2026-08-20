@@ -318,14 +318,6 @@ const PDFUploadZone = ({ onIngestComplete }) => {
         className="w-full h-full flex items-center justify-between px-2 border-0 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
       >
         <div className="flex items-center space-x-2.5 overflow-hidden">
-          <Database size={13} className="text-[var(--text-accent)] shrink-0" />
-          <div className="font-semibold tracking-tight truncate flex items-center">
-            <span>My Library</span>
-            {totalDbCount > 0 && (
-              <span className="text-[var(--text-muted)] font-normal ml-1">({totalDbCount} indexed)</span>
-            )}
-          </div>
-          
           {isBusy && (
             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[12px] animate-pulse shrink-0 border-0">
               <Loader2 size={10} className="animate-spin" />
@@ -338,12 +330,17 @@ const PDFUploadZone = ({ onIngestComplete }) => {
               <span>{totalFiles} {totalFiles === 1 ? 'file' : 'files'} in queue</span>
             </span>
           )}
+          
+          {!isBusy && totalFiles === 0 && totalDbCount > 0 && (
+            <span className="text-[var(--text-faint)] text-[11px] font-mono tracking-wide">
+              {totalDbCount} INDEXED
+            </span>
+          )}
         </div>
 
         <div className="flex items-center space-x-1.5 shrink-0 ml-2">
-
-
-          <div className="text-[var(--text-muted)] pl-0.5">
+          <div className="flex items-center gap-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
+            <span className="text-[11px] font-semibold tracking-wide">Insert</span>
             {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </div>
         </div>

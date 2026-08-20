@@ -2,16 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Book, FileText, Code, Database, Search, Library as LibraryIcon, X, FileSpreadsheet, FileJson, File, Calendar, Clock, Trash2 } from 'lucide-react'
 import Preview from '../search/Preview'
 import PulseLoader from '../PulseLoader'
+import ConfirmModal from '../layout/ConfirmModal'
 
-const getFileMeta = (type) => {
-  const t = (type || '').toLowerCase()
-  if (t === 'pdf') return { icon: Book, color: 'text-red-400', bg: 'bg-red-400/10', gradient: 'from-red-500/20 to-transparent', border: 'border-red-500/20' }
-  if (t === 'json') return { icon: FileJson, color: 'text-blue-400', bg: 'bg-blue-400/10', gradient: 'from-blue-500/20 to-transparent', border: 'border-blue-500/20' }
-  if (t === 'md') return { icon: FileText, color: 'text-amber-400', bg: 'bg-amber-400/10', gradient: 'from-amber-500/20 to-transparent', border: 'border-amber-500/20' }
-  if (t === 'txt') return { icon: FileText, color: 'text-emerald-400', bg: 'bg-emerald-400/10', gradient: 'from-emerald-500/20 to-transparent', border: 'border-emerald-500/20' }
-  if (t === 'csv' || t === 'xlsx') return { icon: FileSpreadsheet, color: 'text-green-400', bg: 'bg-green-400/10', gradient: 'from-green-500/20 to-transparent', border: 'border-green-500/20' }
-  return { icon: File, color: 'text-gray-400', bg: 'bg-gray-400/10', gradient: 'from-gray-500/20 to-transparent', border: 'border-gray-500/20' }
-}
+
 
 const formatBytes = (bytes, decimals = 1) => {
   if (!+bytes) return '0 B'
@@ -20,6 +13,15 @@ const formatBytes = (bytes, decimals = 1) => {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const d = new Date(dateString)
+  if (isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('en-US', { 
+    month: 'short', day: 'numeric', year: 'numeric' 
+  }).format(d)
 }
 
 const Highlight = ({ text, query }) => {
@@ -58,20 +60,47 @@ const cleanSnippetText = (snippet) => {
 
 const MyLibrary = () => {
   const [documents, setDocuments] = useState([])
-  const [searchResults, setSearchResults] = useState(null)
-  const [isDeepSearching, setIsDeepSearching] = useState(false)
-  const [recentSearches, setRecentSearches] = useState([])
-  const [isFocused, setIsFocused] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const deferredSearch = React.useDeferredValue(search)
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [fullText, setFullText] = useState('')
-  const [fileExists, setFileExists] = useState(true)
   const [loadingText, setLoadingText] = useState(false)
+  const [fileExists, setFileExists] = useState(true)
+  
+  // Search & Filter State
+  const [search, setSearch] = useState('')
+  const deferredSearch = React.useDeferredValue(search)
+  const [searchResults, setSearchResults] = useState(null)
+  const [isDeepSearching, setIsDeepSearching] = useState(false)
   const [visibleCount, setVisibleCount] = useState(50)
   const [sortOrder, setSortOrder] = useState('newest')
+  const [isSortOpen, setIsSortOpen] = useState(false)
+  const [activeFileType, setActiveFileType] = useState('all')
+  const [recentSearches, setRecentSearches] = useState([])
+  const [isFocused, setIsFocused] = useState(false)
   const searchInputRef = React.useRef(null)
+  const [loading, setLoading] = useState(true)
+
+  const fileTypes = React.useMemo(() => {
+    const types = new Set(documents.map(d => (d.file_type || '').toLowerCase()).filter(Boolean))
+    return ['all', ...Array.from(types).sort()]
+  }, [documents])
+
+  // Deletion State
+  const [docToDelete, setDocToDelete] = useState(null)
+
+  const confirmDelete = async () => {
+    if (!docToDelete) return
+    try {
+      await window.api.db.query('DELETE FROM documents WHERE id = $1', [docToDelete.id])
+      setDocuments(prev => prev.filter(d => d.id !== docToDelete.id))
+      if (searchResults) {
+        setSearchResults(prev => prev.filter(d => d.id !== docToDelete.id))
+      }
+    } catch (err) {
+      console.error('Failed to delete document:', err)
+    } finally {
+      setDocToDelete(null)
+    }
+  }
 
   useEffect(() => {
     fetchDocuments()
@@ -103,36 +132,42 @@ const MyLibrary = () => {
 
     let isMounted = true
     setIsDeepSearching(true)
+    setSearchResults([]) // Clear to trigger the loading pulse in the grid
 
     const timer = setTimeout(async () => {
       try {
-        // Build a robust wildcard search that ignores newlines/extra spaces between words
-        const wildcardStr = `%${s.split(/\s+/).join('%')}%`
-        
-        // Search inside filenames, types, and raw file content (Deep Search)
-        const query = `
-          SELECT id, file_name, file_type, vault_path, created_at, file_size, SUBSTRING(content, 1, 300) as snippet 
-          FROM documents 
-          WHERE file_name ILIKE $1 OR file_type ILIKE $1 OR content ILIKE $1
-          ORDER BY created_at DESC
-          LIMIT 250
-        `
-        const res = await window.api.db.query(query, [wildcardStr])
-        if (isMounted) {
-          if (res && Array.isArray(res.rows)) {
-            setSearchResults(res.rows)
-          } else if (Array.isArray(res)) {
-            setSearchResults(res)
-          } else {
-            setSearchResults([])
+        // Use the advanced Hybrid Search (Semantic + FTS + Trigram RRF)
+        const res = await window.api.db.search(s.trim(), 50)
+        if (isMounted && res && Array.isArray(res.rows)) {
+          // search_chunks returns CHUNKS, we need unique DOCUMENTS for the library grid
+          const uniqueDocs = []
+          const seenDocs = new Set()
+          
+          for (const row of res.rows) {
+            if (!seenDocs.has(row.document_id)) {
+              seenDocs.add(row.document_id)
+              uniqueDocs.push({
+                id: row.document_id,
+                file_name: row.file_name,
+                file_type: row.file_type,
+                vault_path: row.vault_path,
+                created_at: row.created_at,
+                file_size: row.file_size || 0,
+                snippet: row.content
+              })
+            }
           }
+          setSearchResults(uniqueDocs)
+        } else if (isMounted) {
+          setSearchResults([])
         }
       } catch (err) {
-        console.error('Deep search error:', err)
+        console.error('Hybrid search error:', err)
+        if (isMounted) setSearchResults([])
       } finally {
         if (isMounted) setIsDeepSearching(false)
       }
-    }, 150) // Snappy 150ms debounce
+    }, 250) // Slightly longer debounce (250ms) to allow typing before LLM embedding call
 
     return () => { 
       isMounted = false
@@ -210,21 +245,19 @@ const MyLibrary = () => {
 
   const filteredDocs = React.useMemo(() => {
     const baseDocs = Array.isArray(searchResults) ? searchResults : (Array.isArray(documents) ? documents : [])
-    const s = deferredSearch.toLowerCase()
     
-    let result = baseDocs
-    
-    // Fallback local filter if search results are null but user typed 1 character
-    if (searchResults === null && s.length > 0) {
-      result = baseDocs.filter(d => 
-        (d.file_name || '').toLowerCase().includes(s) || 
-        (d.file_type || '').toLowerCase().includes(s)
-      )
+    // Apply file type filter
+    const typeFiltered = activeFileType === 'all' 
+      ? baseDocs 
+      : baseDocs.filter(d => (d.file_type || '').toLowerCase() === activeFileType)
+
+    // CRITICAL: If we have AI search results, DO NOT re-sort them. 
+    // They are already perfectly ordered by Hybrid RRF Semantic Similarity.
+    if (searchResults !== null) {
+      return typeFiltered
     }
 
-    const safeResult = Array.isArray(result) ? result : []
-
-    return [...safeResult].sort((a, b) => {
+    return [...typeFiltered].sort((a, b) => {
       if (sortOrder === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0)
       if (sortOrder === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0)
       if (sortOrder === 'az') return (a.file_name || '').localeCompare(b.file_name || '')
@@ -232,7 +265,7 @@ const MyLibrary = () => {
       if (sortOrder === 'size') return (b.file_size || 0) - (a.file_size || 0)
       return 0
     })
-  }, [documents, searchResults, deferredSearch, sortOrder])
+  }, [documents, searchResults, sortOrder, activeFileType])
 
   useEffect(() => {
     setVisibleCount(50)
@@ -241,21 +274,6 @@ const MyLibrary = () => {
   const renderThumbnail = (doc) => {
     const type = (doc.file_type || '').toLowerCase()
     const snippet = cleanSnippetText(doc.snippet, type)
-
-    if (type === 'pdf') {
-      return (
-        <div className="w-full h-full bg-red-500/[0.03] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-          <div className="text-red-500/40 text-[14px] font-black tracking-widest uppercase mb-2 border border-red-500/20 px-3 py-1 rounded-[3px]">
-            PDF
-          </div>
-          {snippet && (
-            <div className="text-[5.5px] text-red-500/40 font-mono leading-[1.4] text-center line-clamp-4 max-w-[80%] break-words">
-              {snippet}
-            </div>
-          )}
-        </div>
-      )
-    } 
 
     if (type === 'json') {
       return (
@@ -318,19 +336,6 @@ const MyLibrary = () => {
   if (selectedDoc) {
     return (
       <div className="flex flex-col w-full h-full bg-[var(--bg-app)] animate-in fade-in duration-200">
-        <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)]">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleCloseDoc}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] hover:bg-white/[0.05] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 text-[11px] font-semibold tracking-wide"
-            >
-              <LibraryIcon size={13} />
-              Back to Library
-            </button>
-            <div className="w-px h-3.5 bg-[var(--border-subtle)]" />
-            <span className="text-[11px] text-[var(--text-muted)] font-medium tracking-tight">Read Mode</span>
-          </div>
-        </div>
         <div className="flex-1 min-h-0 relative">
           <Preview
             selectedPdf={selectedDoc}
@@ -397,17 +402,23 @@ const MyLibrary = () => {
   }
 
   return (
-    <div className="flex flex-col w-full h-full bg-[var(--bg-app)]">
+    <div className="flex flex-col w-full h-full bg-[var(--bg-app)] relative">
+      <ConfirmModal
+        isOpen={!!docToDelete}
+        title="Remove Document"
+        message={`Are you sure you want to remove "${docToDelete?.file_name}" from the database? The physical file will remain untouched on your machine.`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDocToDelete(null)}
+      />
       {/* ── STICKY/FIXED HEADER ── */}
-      <div className="w-full z-40 bg-[var(--bg-app)] pt-6 pb-4 px-6 lg:px-10 shadow-sm border-b border-transparent">
-        <div className="max-w-6xl mx-auto flex flex-col items-center text-center animate-in slide-in-from-bottom-2 duration-300">
-          <h1 className="text-xl font-black tracking-tight text-[var(--text-main)] mb-6">
-            My Library
-          </h1>
+      <div className="w-full z-40 bg-[var(--bg-app)] pt-6 pb-2 px-6 lg:px-10 shadow-none border-b border-white/[0.02]">
+        <div className="max-w-4xl mx-auto flex flex-col items-center animate-in slide-in-from-top-2 duration-300 gap-4">
           
-          {/* Minimalist Flat Search Input */}
+          {/* Oily, Compact Search Input */}
           <div 
-            className="relative w-full max-w-2xl group" 
+            className="relative w-full group" 
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget)) {
                 setIsFocused(false)
@@ -415,8 +426,8 @@ const MyLibrary = () => {
               }
             }}
           >
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none z-10">
-              <Search size={14} className="text-[var(--text-muted)] group-focus-within:text-[var(--text-main)] transition-colors" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+              <Search size={15} className="text-[var(--text-muted)] group-focus-within:text-[var(--text-main)] transition-colors" />
             </div>
             <input
               ref={searchInputRef}
@@ -429,23 +440,18 @@ const MyLibrary = () => {
                 fetchRecentSearches(e.target.value)
               }}
               onKeyDown={handleKeyDown}
-              className="relative z-10 w-full pl-9 pr-14 py-2.5 bg-[var(--bg-panel)] border border-transparent focus:border-transparent focus:ring-0 rounded-[5px] text-[13px] font-medium text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none transition-none shadow-none"
+              className="relative z-10 w-full pl-10 pr-16 py-2.5 bg-[var(--bg-panel)] border border-white/[0.02] focus:border-transparent focus:ring-0 rounded-[5px] text-[13px] font-medium text-[var(--text-main)] placeholder-[var(--text-muted)]/50 outline-none transition-all duration-300 shadow-[0_4px_15px_-5px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.3)]"
             />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-1.5 z-10">
-              {isDeepSearching && (
-                <div className="flex gap-1 mr-2 opacity-50">
-                  {[0,1,2].map(i => <div key={i} className="w-1 h-1 rounded-full bg-[var(--text-accent)] animate-pulse" style={{ animationDelay: `${i*150}ms` }} />)}
-                </div>
-              )}
+            <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1.5 z-10">
               {search ? (
                 <button
                   onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
-                  className="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[5px] transition-colors"
                 >
                   <X size={13} />
                 </button>
               ) : (
-                <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-[3px] border border-transparent bg-[var(--bg-app)] text-[9px] font-bold text-[var(--text-muted)]/50 tracking-widest font-mono uppercase shadow-none pointer-events-none">
+                <kbd className="hidden sm:inline-block px-2 py-1 rounded-[5px] bg-[var(--text-muted)]/10 text-[9px] font-bold text-[var(--text-muted)]/70 tracking-widest font-mono uppercase shadow-none pointer-events-none border-0 mr-2">
                   Ctrl F
                 </kbd>
               )}
@@ -453,7 +459,7 @@ const MyLibrary = () => {
 
             {/* DROPDOWN */}
             {isFocused && dropdownItems.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-[8px] shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute top-full left-0 right-0 mt-3 bg-[var(--bg-panel)] border border-[var(--border-dim)] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 <div ref={dropdownRef} className="max-h-[280px] overflow-y-auto custom-scrollbar py-2">
                   {!search ? (
                     <>
@@ -473,21 +479,19 @@ const MyLibrary = () => {
                         <div
                           key={i}
                           data-idx={i}
-                          className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-colors group/item ${activeIndex === i ? 'bg-[var(--bg-active)]' : 'hover:bg-[var(--bg-active)]'}`}
+                          onMouseEnter={() => setActiveIndex(i)}
                           onMouseDown={(e) => {
-                            e.preventDefault() // ← prevents input blur firing first
+                            e.preventDefault()
                             setSearch(item.value)
-                            setActiveIndex(-1)
-                            setIsFocused(true)
-                            searchInputRef.current?.focus()
+                            setIsFocused(false)
                           }}
-                          style={{ cursor: 'pointer' }}
+                          className={`px-4 py-2 flex items-center gap-2 cursor-pointer transition-colors ${activeIndex === i ? 'bg-[var(--bg-active)]' : 'hover:bg-[var(--bg-active)]'}`}
                         >
-                          <Clock size={13} className="text-[var(--text-faint)] shrink-0" />
-                          <span className="text-[13px] font-medium text-[var(--text-main)] truncate flex-1">{item.value}</span>
+                          <History size={13} className="text-[var(--text-muted)]" />
+                          <span className="text-[12.5px] font-medium text-[var(--text-main)] truncate flex-1">{item.value}</span>
                           <button
-                            onMouseDown={(e) => { e.preventDefault(); deleteOneHistory(item.value, e) }}
-                            className="opacity-0 group-hover/item:opacity-100 p-1 rounded-[3px] hover:bg-red-500/10 text-[var(--text-faint)] hover:text-red-400 transition-all shrink-0"
+                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteOneHistory(item.value, e) }}
+                            className="p-1 opacity-0 hover:opacity-100 focus:opacity-100 group-hover:opacity-100 text-[var(--text-muted)] hover:text-red-400 transition-colors"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -496,14 +500,14 @@ const MyLibrary = () => {
                     </>
                   ) : (
                     <>
-                      <div className="px-4 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Top Matches</div>
                       {dropdownItems.map((item, i) => {
                         const doc = item.value
                         return (
                           <button
                             key={doc.id}
                             data-idx={i}
-                            className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors outline-none border-b border-[var(--border-subtle)] last:border-0 ${activeIndex === i ? 'bg-[var(--bg-active)]' : 'hover:bg-[var(--bg-active)]'}`}
+                            onMouseEnter={() => setActiveIndex(i)}
+                            className={`w-full text-left px-4 py-2.5 flex gap-3 cursor-pointer transition-colors border-0 outline-none ${activeIndex === i ? 'bg-[var(--bg-active)]' : 'hover:bg-[var(--bg-active)]'}`}
                             onMouseDown={(e) => {
                               e.preventDefault()
                               handleOpenDoc(doc)
@@ -514,10 +518,7 @@ const MyLibrary = () => {
                             <FileText size={15} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
                             <div className="flex flex-col gap-1 min-w-0 flex-1">
                               <span className="text-[13px] font-semibold text-[var(--text-main)] truncate">
-                                <Highlight text={doc.file_name} query={search} />
-                              </span>
-                              <span className="text-[11px] text-[var(--text-muted)] line-clamp-2 leading-relaxed break-words">
-                                <Highlight text={cleanSnippetText(doc.snippet) || 'No text content available.'} query={search} />
+                                {doc.file_name}
                               </span>
                             </div>
                           </button>
@@ -530,27 +531,69 @@ const MyLibrary = () => {
             )}
           </div>
 
-          {/* Sort Filters */}
-          <div className="flex items-center justify-center gap-1.5 mt-4 flex-wrap">
-            {sortOptions.map(opt => (
+          {/* Filters Row */}
+          <div className="flex items-center justify-between w-full max-w-4xl mx-auto gap-4">
+            
+            {/* Horizontal Scrollable Types */}
+            <div className="flex-1 overflow-x-auto flex items-center gap-1.5 pr-4 mask-image-right [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {fileTypes.map(type => (
+                <button
+                  key={type}
+                  onClick={() => setActiveFileType(type)}
+                  className={`shrink-0 px-3 py-1.5 rounded-[5px] text-[11px] font-bold tracking-wide capitalize transition-all duration-300 border-0 ${
+                    activeFileType === type
+                      ? 'bg-[var(--text-accent)]/15 text-[var(--text-accent)] shadow-[0_2px_10px_rgba(0,0,0,0.15)]'
+                      : 'bg-[var(--bg-panel)] text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] shadow-sm hover:shadow-md'
+                  }`}
+                >
+                  {type === 'all' ? 'All Files' : type}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort Options (Right Aligned) */}
+            <div className="shrink-0 flex items-center relative">
               <button
-                key={opt.id}
-                onClick={() => setSortOrder(opt.id)}
-                className={`px-3 py-1.5 rounded-[5px] text-[10px] font-bold tracking-wider uppercase transition-all duration-200 border ${
-                  sortOrder === opt.id 
-                    ? 'bg-[var(--text-accent)]/10 text-[var(--text-accent)] border-[var(--text-accent)]/30 shadow-sm' 
-                    : 'bg-transparent text-[var(--text-muted)] border-transparent hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
+                onClick={() => !searchResults && setIsSortOpen(!isSortOpen)}
+                disabled={searchResults !== null}
+                className={`bg-[var(--bg-panel)] text-[11px] font-bold text-[var(--text-muted)] border-0 rounded-[5px] px-3 py-1.5 outline-none transition-all shadow-sm flex items-center gap-2 ${
+                  searchResults !== null ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] hover:shadow-md'
                 }`}
               >
-                {opt.label}
+                {sortOptions.find(o => o.id === sortOrder)?.label || 'Sort'}
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
               </button>
-            ))}
+
+              {isSortOpen && searchResults === null && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsSortOpen(false)} />
+                  <div className="absolute top-full right-0 mt-2 bg-[var(--bg-panel)] border border-white/[0.04] rounded-[5px] shadow-xl z-50 overflow-hidden w-36 py-1 animate-in fade-in slide-in-from-top-1">
+                    {sortOptions.map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          setSortOrder(opt.id)
+                          setIsSortOpen(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-[11px] font-bold transition-colors ${
+                          sortOrder === opt.id 
+                            ? 'bg-[var(--text-accent)]/10 text-[var(--text-accent)]' 
+                            : 'text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── SCROLLABLE GRID ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 lg:px-10 lg:py-8">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 pb-32 lg:px-10 lg:py-8 lg:pb-40">
         <div className="max-w-6xl mx-auto space-y-6">
 
           {loading ? (
@@ -559,12 +602,18 @@ const MyLibrary = () => {
             </div>
           ) : filteredDocs.length === 0 ? (
             <div className="text-center py-20 text-[var(--text-muted)] text-[13px] font-medium">
-              No documents found matching your search.
+              {isDeepSearching ? (
+                <div className="flex flex-col items-center justify-center space-y-4 animate-in fade-in">
+                  <PulseLoader text="Searching library..." size="md" />
+                </div>
+              ) : (
+                'No documents found matching your search.'
+              )}
             </div>
           ) : (
             <>
               <div 
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 transition-opacity duration-200"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-opacity duration-200"
                 style={{ opacity: deferredSearch !== search ? 0.6 : 1 }}
               >
                 {filteredDocs.slice(0, visibleCount).map((doc, idx) => {
@@ -572,10 +621,22 @@ const MyLibrary = () => {
                     <div
                       key={doc.id || idx}
                       onClick={() => handleOpenDoc(doc)}
-                      className="group flex flex-col bg-[var(--bg-panel)] border border-transparent hover:bg-[var(--bg-active)] rounded-[5px] transition-all duration-200 cursor-pointer overflow-hidden shadow-none"
+                      className="group relative flex flex-col bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_2px_15px_-3px_rgba(0,0,0,0.1),0_10px_20px_-2px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] border-0"
                     >
+                      {/* Delete Button (Hover) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDocToDelete(doc)
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-red-400 hover:bg-red-500/20 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 border-0 shadow-lg"
+                        title="Remove from database"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+
                       {/* Thumbnail Preview Area */}
-                      <div className="h-[120px] w-full border-b border-transparent bg-black/20 overflow-hidden">
+                      <div className="h-[120px] w-full border-b border-black/10 bg-black/30 overflow-hidden relative">
                         {renderThumbnail(doc)}
                       </div>
                       
@@ -584,9 +645,9 @@ const MyLibrary = () => {
                         <h3 className="text-[12.5px] font-semibold text-[var(--text-main)] truncate" title={doc.file_name}>
                           {doc.file_name}
                         </h3>
-                        <div className="flex justify-between items-center text-[10px] font-mono text-[var(--text-muted)]/70">
-                          <span className="tracking-wider uppercase font-bold">{doc.file_type || 'UNKNOWN'}</span>
-                          {doc.file_size > 0 && <span>{formatBytes(doc.file_size)}</span>}
+                        <div className="flex justify-between items-center text-[10.5px] font-medium text-[var(--text-muted)]/70">
+                          <span className="tracking-wider">{formatDate(doc.created_at)}</span>
+                          {doc.file_size > 0 && <span className="font-mono">{formatBytes(doc.file_size)}</span>}
                         </div>
                       </div>
                     </div>

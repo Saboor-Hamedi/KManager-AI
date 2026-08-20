@@ -135,16 +135,16 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
                         key={tab.id}
                         onClick={() => setActiveSection(tab.id)}
                         className={cn(
-                          "w-full flex items-center gap-3 px-5 py-2.5 text-[12px] font-semibold transition-all duration-200 relative outline-none border-0",
+                          "w-full flex items-center gap-3 px-5 py-2.5 text-[12px] font-semibold transition-colors duration-100 relative outline-none border-0",
                           isActive 
-                            ? "bg-[var(--bg-active)] text-[var(--text-accent)]" 
-                            : "text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)]"
+                            ? "bg-[var(--text-accent)]/10 text-[var(--text-accent)]" 
+                            : "text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-main)]"
                         )}
                       >
                         {isActive && (
-                          <div className="absolute left-0 top-0.5 bottom-0.5 w-0.5 bg-[var(--text-accent)] rounded-full" />
+                          <div className="absolute left-0 top-1 bottom-1 w-[2.5px] bg-[var(--text-accent)] rounded-full" />
                         )}
-                        <Icon size={15} className={isActive ? "text-[var(--text-accent)]" : "group-hover:text-[var(--text-main)]"} />
+                        <Icon size={14} className={isActive ? "text-[var(--text-accent)]" : ""} />
                         <span className="tracking-wide">{tab.label}</span>
                       </button>
                     )

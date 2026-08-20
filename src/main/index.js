@@ -369,6 +369,26 @@ app.whenReady().then(() => {
     }
   })
 
+  ipcMain.handle('db:ingest-ai-response', async (_event, text, title) => {
+    return await ingestionService.ingestAIResponse(text, title)
+  })
+
+  ipcMain.handle('db:update-ai-response', async (_event, vaultPath, content) => {
+    try {
+      const docRes = await db.query('SELECT id FROM documents WHERE vault_path = $1', [vaultPath])
+      if (docRes.rows.length === 0) return { success: false, error: 'Document not found' }
+      
+      await db.transaction(async (client) => {
+        await client.query('UPDATE documents SET content = $1, updated_at = NOW() WHERE vault_path = $2', [content, vaultPath])
+        await ingestionService.chunkAndEmbedDocument(client, docRes.rows[0].id, content)
+      })
+      return { success: true }
+    } catch (err) {
+      log.error('Failed to update AI response:', err)
+      return { success: false, error: err.message }
+    }
+  })
+
   ipcMain.handle('db:test-connection', async (_event, config) => {
     const testDb = new Database(config)
     return await testDb.testConnection(config)
@@ -430,7 +450,7 @@ app.whenReady().then(() => {
             )
             RETURNS TABLE (
               id UUID, document_id UUID, chunk_index INT, content TEXT,
-              vault_path TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMPTZ, similarity FLOAT, cosine_similarity FLOAT
+              vault_path TEXT, file_name TEXT, file_type TEXT, file_size BIGINT, created_at TIMESTAMPTZ, similarity FLOAT, cosine_similarity FLOAT
             )
             LANGUAGE plpgsql AS $func$
             BEGIN
@@ -466,7 +486,7 @@ app.whenReady().then(() => {
               )
               SELECT dc.id, dc.document_id, dc.chunk_index,
                 (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
-                d.vault_path, d.file_name, d.file_type, d.created_at,
+                d.vault_path, d.file_name, d.file_type, d.file_size, d.created_at,
                 (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
                  COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
                  COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity,
@@ -998,6 +1018,39 @@ app.whenReady().then(() => {
     } catch (err) {
       console.error('Failed to read file:', err)
       return null
+    }
+  })
+
+  ipcMain.handle('system:read-file-binary', async (_event, filePath) => {
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return null
+      const buffer = await fs.promises.readFile(filePath)
+      return buffer
+    } catch (error) {
+      log.error(`Failed to read binary file ${filePath}:`, error)
+      return null
+    }
+  })
+
+  ipcMain.handle('system:save-file-content', async (_event, filePath, content) => {
+    try {
+      if (!filePath) throw new Error('File path required')
+      await fs.promises.writeFile(filePath, content, 'utf8')
+      return { success: true }
+    } catch (error) {
+      log.error(`Failed to save file content ${filePath}:`, error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('system:show-in-folder', async (_event, filePath) => {
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return null
+      shell.showItemInFolder(filePath)
+      return { success: true }
+    } catch (error) {
+      log.error(`Failed to show file in folder ${filePath}:`, error)
+      return { success: false, error: error.message }
     }
   })
 

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { FileText, X } from 'lucide-react'
+import { FileText, X, Home } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 import PulseLoader from '../PulseLoader'
 
 const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
   // Global ESC handler — works even when <webview> has stolen focus
   useEffect(() => {
@@ -37,42 +40,142 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
   const isPdf = selectedPdf.category === 'PDF' ||
     (selectedPdf.vault_path || '').toLowerCase().endsWith('.pdf')
 
+  const isEditable = !isPdf && (fileExists || (selectedPdf.vault_path && selectedPdf.vault_path.startsWith('ai-response-'))) && selectedPdf.vault_path
+
   const fileSrc = selectedPdf.vault_path
     ? `file:///${selectedPdf.vault_path.replace(/\\/g, '/')}`
     : null
+
+  const handleEditToggle = () => {
+    if (isEditing) {
+      setIsEditing(false)
+    } else {
+      setEditContent(fullText || selectedPdf.content || '')
+      setIsEditing(true)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!isEditable) return
+    setIsSaving(true)
+    try {
+      if (selectedPdf.vault_path.startsWith('ai-response-')) {
+        // Direct database update for AI Responses
+        const res = await window.api.db.updateAIResponse(selectedPdf.vault_path, editContent)
+        if (res?.success) {
+          setIsEditing(false)
+          onClose()
+        } else {
+          alert('Failed to save AI response: ' + res?.error)
+        }
+      } else {
+        // Normal file save
+        const res = await window.api.system.saveFileContent(selectedPdf.vault_path, editContent)
+        if (res?.success) {
+          await window.api.db.ingestFile(selectedPdf.vault_path)
+          setIsEditing(false)
+          onClose()
+        } else {
+          alert('Failed to save file: ' + res?.error)
+        }
+      }
+    } catch (err) {
+      alert('Error saving document: ' + err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="w-full h-full flex flex-col overflow-hidden animate-in fade-in duration-150 relative">
 
-        {/* Titlebar — matches HoverWikilink style */}
+        {/* Titlebar — matches GlobalTitleBar style (small, flat) */}
         <div
-          className="flex items-center justify-between shrink-0 select-none pl-3 pr-0"
-          style={{ height: '28px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+          className="flex items-center justify-between shrink-0 select-none bg-[var(--bg-panel)] border-b border-white/[0.04]"
+          style={{ height: '32px' }}
         >
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <FileText size={11} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-            <span className="text-[11.5px] font-medium truncate leading-none" style={{ color: 'var(--text-muted)' }}>
-              {selectedPdf.title}
-            </span>
-            {selectedPdf.category && (
-              <span
-                className="shrink-0 text-[9px] font-mono leading-none px-1 py-0.5 rounded-[3px]"
-                style={{ color: 'var(--text-faint)', background: 'rgba(255,255,255,0.04)' }}
-              >
-                {selectedPdf.category}
+          <div className="flex items-center h-full flex-1 min-w-0 pr-4">
+            <button
+              onClick={onClose}
+              className="flex items-center shrink-0 gap-1.5 px-3 h-full hover:bg-white/[0.05] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 text-[10.5px] font-semibold tracking-wide"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              Library
+            </button>
+            <div className="w-px h-3.5 bg-white/[0.08] mx-1 shrink-0" />
+            
+            <div className="flex items-center gap-1.5 px-2 min-w-0 flex-1">
+              <span className="text-[11.5px] font-medium truncate leading-none shrink text-[var(--text-main)]">
+                {selectedPdf.title}
               </span>
-            )}
+              
+              {selectedPdf.vault_path && !selectedPdf.vault_path.startsWith('ai-response-') && (
+                <div className="flex items-center gap-1.5 ml-1.5 border-l border-white/[0.08] pl-2.5 shrink-0 min-w-0">
+                  <button
+                    onClick={() => window.api.system.showInFolder(selectedPdf.vault_path)}
+                    className="flex items-center justify-center p-1 rounded hover:bg-white/[0.1] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 shrink-0"
+                    title="Show in File Explorer"
+                  >
+                    <Home size={11} />
+                  </button>
+                  <span className="text-[10px] font-mono text-[var(--text-faint)] truncate max-w-[150px] hidden sm:block" title={selectedPdf.vault_path}>
+                    {selectedPdf.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-6 h-6 rounded-[4px] border-0 shrink-0 transition-colors text-[var(--text-faint)] hover:bg-[#e81123] hover:text-white"
-            title="Close (Esc)"
-          >
-            <X size={12} />
-          </button>
+
+          <div className="flex items-center h-full shrink-0 pr-1">
+            {isEditable && (
+              isEditing ? (
+                <div className="flex items-center gap-1.5 mr-2">
+                  <button
+                    onClick={handleEditToggle}
+                    disabled={isSaving}
+                    className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05] disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-[var(--text-accent)] text-white hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                  >
+                    {isSaving ? (
+                      <>
+                        <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Saving</span>
+                      </>
+                    ) : (
+                      <span>Save</span>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleEditToggle}
+                  className="h-[22px] px-2.5 mr-2 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-transparent text-[var(--text-muted)] hover:bg-white/[0.05] hover:text-[var(--text-main)]"
+                >
+                  Edit
+                </button>
+              )
+            )}
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center w-7 h-7 rounded-[5px] border-0 shrink-0 transition-colors text-[var(--text-faint)] hover:bg-[#e81123] hover:text-white"
+              title="Close (Esc)"
+            >
+              <X size={12} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden relative select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
+        <div className="flex-1 min-h-0 overflow-hidden relative select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
           
           {/* Shared Loader Overlay (Visible while loadingText or !isReady is true) */}
           {(loadingText || !isReady) && (
@@ -91,7 +194,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
             <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
-              <div className="max-w-3xl mx-auto pb-32">
+              <div className="max-w-3xl mx-auto pb-8">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
@@ -113,8 +216,16 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
               className="w-full h-full overflow-y-auto p-6 lg:p-10 custom-scrollbar bg-[var(--bg-app)] text-justify select-text"
               style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
             >
-              <div className="max-w-3xl mx-auto pb-40">
-                {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
+              <div className={`max-w-3xl mx-auto ${isEditing ? 'h-full flex flex-col' : 'pb-6'}`}>
+                {isEditing ? (
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    disabled={isSaving}
+                    spellCheck={false}
+                    className="w-full h-full flex-1 bg-transparent border-0 text-[14px] font-mono leading-relaxed text-[var(--text-main)] outline-none resize-none"
+                  />
+                ) : !(loadingText || !isReady) && (fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap font-mono text-[13px]' : ''} ${selectedPdf.category === 'JSON' ? 'font-mono text-[13px]' : ''}`}
                     content={fullText || selectedPdf.content}
