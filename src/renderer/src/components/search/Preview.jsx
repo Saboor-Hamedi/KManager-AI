@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { FileText, X, Home } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 import PulseLoader from '../PulseLoader'
+import ScrollToTopButton from '../ScrollToTopButton'
 
 const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
@@ -149,8 +150,14 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isSaving) {
+                      e.preventDefault()
+                      handleSave()
+                    }
+                  }}
                   disabled={isSaving}
-                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-white/[0.1] rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:border-[var(--text-accent)] transition-all flex items-center"
+                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
                 />
               ) : (
                 <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
@@ -291,6 +298,9 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
             </div>
           )}
         </div>
+        
+        {/* Scroll to Top Button */}
+        <ScrollToTopButton />
     </div>
   )
 }

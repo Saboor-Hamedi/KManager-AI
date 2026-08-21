@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Search, Bot, FileText, ArrowRight } from 'lucide-react'
-import SpotLitePreview from './SpotLitePreview'
+import Preview from '../search/Preview'
 import ChatBot from '../ChatBot'
-import SpotliteList from './SpotliteList'
 
 const SpotLite = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [mode, setMode] = useState('search') // 'search' | 'ai'
   const [query, setQuery] = useState('')
-  const inputRef = useRef(null)
   const [results, setResults] = useState([])
   const [hoveredDoc, setHoveredDoc] = useState(null)
   const [isSearching, setIsSearching] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const inputRef = useRef(null)
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -47,63 +46,59 @@ const SpotLite = () => {
     setIsSearching(true)
 
     if (s.length < 2) {
-      // Load recent documents automatically with truncated content to prevent IPC/render freezes
-      window.api.db.query('SELECT id as document_id, file_name, file_type, vault_path, file_size, SUBSTRING(content, 1, 10000) as content FROM documents ORDER BY created_at DESC LIMIT 15').then(res => {
+      // Load recent documents automatically with content
+      window.api.db.query('SELECT id as document_id, file_name, file_type, vault_path, content FROM documents ORDER BY created_at DESC LIMIT 15').then(res => {
         if (!isMounted) return
         const rows = res?.rows || (Array.isArray(res) ? res : [])
-        if (Array.isArray(rows)) {
+        if (rows.length > 0) {
            const finalDocs = rows.map(row => ({
              id: row.document_id,
              title: row.file_name || 'Untitled',
              category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
              vault_path: row.vault_path,
-             file_size: row.file_size,
              content: row.content
            }))
            setResults(finalDocs)
            setSelectedIndex(0)
-           if (finalDocs.length > 0) setHoveredDoc(finalDocs[0])
+           setHoveredDoc(finalDocs[0])
+        } else {
+           setResults([])
+           setHoveredDoc(null)
         }
         setIsSearching(false)
-      }).catch(console.error)
+      }).catch(err => {
+        console.error(err)
+        if (isMounted) setIsSearching(false)
+      })
       return
     }
 
     const timer = setTimeout(async () => {
       try {
-        // High-performance search: Avoid full table scan on 'documents.content' by using the trigram FTS index on 'embedding_documents'.
+        // Ultra-fast lexical search on both title and content
         const res = await window.api.db.query(`
-          SELECT d.id as document_id, d.file_name, d.file_type, d.vault_path, d.file_size, SUBSTRING(d.content, 1, 10000) as content 
-          FROM documents d
-          WHERE d.file_name ILIKE $1 
-             OR d.id IN (
-               SELECT document_id 
-               FROM embedding_documents 
-               WHERE content ILIKE $1 
-               LIMIT 50
-             )
-          ORDER BY d.updated_at DESC
+          SELECT id as document_id, file_name, file_type, vault_path, content 
+          FROM documents 
+          WHERE file_name ILIKE $1 OR content ILIKE $1
+          ORDER BY updated_at DESC
           LIMIT 15
         `, [`%${s}%`])
         
         if (isMounted) {
            const rows = res?.rows || (Array.isArray(res) ? res : [])
-           if (Array.isArray(rows)) {
-             const finalDocs = rows.map(row => ({
-               id: row.document_id,
-               title: row.file_name || 'Untitled',
-               category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
-               vault_path: row.vault_path,
-               file_size: row.file_size,
-               content: row.content
-             }))
-             setResults(finalDocs)
-             setSelectedIndex(0)
-             if (finalDocs.length > 0) {
-               setHoveredDoc(finalDocs[0])
-             } else {
-               setHoveredDoc(null)
-             }
+           const finalDocs = rows.map(row => ({
+             id: row.document_id,
+             title: row.file_name || 'Untitled',
+             category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
+             vault_path: row.vault_path,
+             content: row.content
+           }))
+           setResults(finalDocs)
+           setSelectedIndex(0)
+           if (finalDocs.length > 0) {
+             setHoveredDoc(finalDocs[0])
+           } else {
+             setHoveredDoc(null)
            }
         }
       } catch (err) {
@@ -111,7 +106,7 @@ const SpotLite = () => {
       } finally {
         if (isMounted) setIsSearching(false)
       }
-    }, 200)
+    }, 50)
 
     return () => {
       isMounted = false
@@ -143,22 +138,22 @@ const SpotLite = () => {
   return (
     <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[12vh] animate-in fade-in duration-150 ease-out" onClick={() => setIsOpen(false)}>
       <div 
-        className="bg-[var(--bg-app)] rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden relative w-[760px] h-[480px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
+        className="bg-[var(--bg-app)] rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[760px] h-[480px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header / Search Input */}
-        <div className="flex items-center p-4 pb-0 bg-transparent">
+        {/* Top Input Bar */}
+        <div className="flex items-center px-4 py-2.5 border-b border-white/[0.06] bg-[var(--bg-panel)] shrink-0 h-[48px]">
           {mode === 'search' ? (
             <>
-              <Search size={22} className="text-[var(--text-accent)] shrink-0" />
+              <Search size={16} className="text-[var(--text-muted)] mr-3 shrink-0" />
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search documents..."
-                className="flex-1 bg-transparent text-[22px] font-medium text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none ml-3"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleInputKeyDown}
+                placeholder="Search your library..."
+                className="flex-1 bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none focus:border-0 text-[14px] font-medium text-[var(--text-main)] placeholder-[var(--text-faint)]"
                 spellCheck={false}
               />
             </>
@@ -170,7 +165,7 @@ const SpotLite = () => {
           )}
           
           {/* Toggles - Made smaller */}
-          <div className="flex items-center gap-1 ml-4 bg-black/20 p-1 rounded-md">
+          <div className="flex items-center gap-1 ml-4 bg-black/20 p-1 rounded-md border border-white/[0.05]">
             <button 
               onClick={() => setMode('search')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10.5px] font-semibold transition-colors border-0 outline-none ${mode === 'search' ? 'bg-[var(--text-accent)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05]'}`}
@@ -189,18 +184,32 @@ const SpotLite = () => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 flex min-h-0 overflow-hidden bg-[var(--bg-app)] relative mt-2">
+        <div className="flex-1 flex min-h-0 overflow-hidden bg-[var(--bg-app)] relative">
           {mode === 'search' ? (
             <div className="flex w-full h-full">
               {/* Left: Results List */}
-              <div className="w-[280px] shrink-0 flex flex-col overflow-y-auto custom-scrollbar bg-[var(--bg-panel)]/30">
+              <div className="w-[280px] shrink-0 border-r border-white/[0.06] flex flex-col overflow-y-auto custom-scrollbar bg-[var(--bg-panel)]/30">
                 {results.length > 0 ? (
-                  <SpotliteList 
-                    results={results} 
-                    selectedIndex={selectedIndex} 
-                    setSelectedIndex={setSelectedIndex} 
-                    setHoveredDoc={setHoveredDoc} 
-                  />
+                  <div className="p-2 flex flex-col gap-1">
+                    {results.map((doc, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          setSelectedIndex(idx)
+                          setHoveredDoc(doc)
+                        }}
+                        className={`px-3 py-2.5 rounded-md cursor-pointer transition-colors flex flex-col gap-1 border border-transparent ${selectedIndex === idx ? 'bg-[var(--bg-active)] shadow-sm' : 'hover:bg-white/[0.03]'}`}
+                      >
+                         <div className="flex items-center gap-2">
+                           <FileText size={13} className={selectedIndex === idx ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
+                           <span className="text-[12px] font-semibold text-[var(--text-main)] truncate leading-none">{doc.title}</span>
+                         </div>
+                         <span className="text-[10px] text-[var(--text-faint)] truncate pl-5 font-mono leading-none">
+                           {doc.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
+                         </span>
+                      </div>
+                    ))}
+                  </div>
                 ) : query.length < 2 ? (
                    <div className="p-6 text-center text-[12px] text-[var(--text-faint)] mt-8">
                      Type to search documents...
@@ -228,13 +237,15 @@ const SpotLite = () => {
               </div>
 
               {/* Right: Preview Area */}
-              <div className="flex-1 bg-[var(--bg-app)] min-w-0 flex flex-col relative h-full">
+              <div className="flex-1 min-w-0 bg-[var(--bg-app)] flex flex-col overflow-hidden relative">
                 {hoveredDoc ? (
                   <div className="absolute inset-0 z-0 select-text overflow-hidden">
-                    <SpotLitePreview 
+                    <Preview 
                       selectedPdf={hoveredDoc} 
                       fullText={hoveredDoc.content}
                       fileExists={true}
+                      onClose={() => {}} 
+                      isEditable={false} 
                     />
                   </div>
                 ) : (

@@ -26,7 +26,7 @@ class EmbeddingService {
       console.log('Initializing embedding model...', this.modelName);
       console.log('Model cache dir:', env.cacheDir);
       
-      this.initPromise = pipeline('feature-extraction', this.modelName, {
+      this.initPromise = pipeline('embeddings', this.modelName, {
         quantized: true, // Use quantized for faster performance and lower memory
       });
     }

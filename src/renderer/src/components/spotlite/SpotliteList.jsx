@@ -66,4 +66,4 @@ const SpotliteList = ({ results, selectedIndex, setSelectedIndex, setHoveredDoc 
   )
 }
 
-export default SpotliteList
+export default React.memo(SpotliteList)

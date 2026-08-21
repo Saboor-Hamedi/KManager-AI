@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { FileText, X, Home } from 'lucide-react'
+import { FileText, Home } from 'lucide-react'
 import DocumentRenderer from '../search/DocumentRenderer'
 import PulseLoader from '../PulseLoader'
+import ScrollToTopButton from '../ScrollToTopButton'
 
-const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists }) => {
+const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClose, onDocumentUpdate }) => {
   const [isReady, setIsReady] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState('')
@@ -114,6 +115,15 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists }) => 
       }
       
       setIsEditing(false)
+
+      if (onDocumentUpdate) {
+        onDocumentUpdate({
+          ...selectedPdf,
+          title: titleChanged ? editTitle : displayTitle,
+          vault_path: currentVaultPath,
+          content: contentChanged ? editContent : displayContent
+        })
+      }
     } catch (err) {
       alert('Error saving document: ' + err.message)
     } finally {
@@ -136,11 +146,17 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists }) => 
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isSaving) {
+                      e.preventDefault()
+                      handleSave()
+                    }
+                  }}
                   disabled={isSaving}
-                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-white/[0.1] rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:border-[var(--text-accent)] transition-all flex items-center"
+                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
                 />
               ) : (
-                <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
+                <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
                   {localTitle !== null ? localTitle : selectedPdf.title}
                 </span>
               )}
@@ -271,8 +287,11 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists }) => 
             </div>
           )}
         </div>
+        
+        {/* Scroll to Top Button */}
+        <ScrollToTopButton />
     </div>
   )
 }
 
-export default SpotLitePreview
+export default React.memo(SpotLitePreview)
