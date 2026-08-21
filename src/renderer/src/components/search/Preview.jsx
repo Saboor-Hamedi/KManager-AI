@@ -3,6 +3,7 @@ import { FileText, X, Home } from 'lucide-react'
 import DocumentRenderer from './DocumentRenderer'
 import PulseLoader from '../PulseLoader'
 import ScrollToTopButton from '../ScrollToTopButton'
+import FilePathIndicator from '../FilePathIndicator'
 
 const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
