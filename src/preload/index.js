@@ -17,6 +17,7 @@ const api = {
     ingestFile: (filePath) => ipcRenderer.invoke('db:ingest-file', filePath),
     ingestAIResponse: (text, title) => ipcRenderer.invoke('db:ingest-ai-response', text, title),
     updateAIResponse: (vaultPath, content) => ipcRenderer.invoke('db:update-ai-response', vaultPath, content),
+    updateDocumentTitle: (vaultPath, title) => ipcRenderer.invoke('db:update-document-title', vaultPath, title),
     queueFiles: (filePaths) => ipcRenderer.invoke('db:queue-files', filePaths),
     getQueue: () => ipcRenderer.invoke('db:get-queue'),
     cancelQueue: () => ipcRenderer.invoke('db:cancel-queue'),

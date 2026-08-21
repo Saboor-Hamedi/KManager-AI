@@ -308,10 +308,10 @@ const UserMessage = memo(({ text, attachedFile }) => (
 
 const EMPTY_STATE = {}
 
-const ChatBot = ({ appState = EMPTY_STATE }) => {
-  const [isOpen, setIsOpen] = useState(false)
+const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) => {
+  const [isOpen, setIsOpen] = useState(inline)
   const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialQuery)
   const [isTyping, setIsTyping] = useState(false)
   const [savedResponses, setSavedResponses] = useState({})
   const [dbStats, setDbStats] = useState({})
@@ -552,6 +552,196 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
     }
   }
 
+
+
+  const ChatUI = (
+    <div
+      className={cn(
+        "bg-[var(--bg-app)] flex flex-col overflow-hidden relative",
+        inline ? "w-full h-full" : "rounded-[5px] shadow-[var(--shadow-modal)] w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200"
+      )}
+      onClick={!inline ? (e) => e.stopPropagation() : undefined}
+    >
+      {/* Header matching main window titlebar style & proportions */}
+      {!inline && (
+        <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04] relative z-40">
+          <div className="flex items-center gap-1.5 px-2.5 h-full">
+            <Bot size={13} className="text-[var(--text-accent)] shrink-0" />
+            <h3 className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
+          </div>
+          <div className="flex h-full items-center">
+            {messages.length > 0 && (
+              <button onClick={handleClearChat} className="h-full px-3 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-red-400 transition-colors flex items-center justify-center border-0" title="Clear Session">
+                <Trash2 size={12} />
+              </button>
+            )}
+            <button onClick={() => setIsOpen(false)} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
+              <X size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {inline && messages.length > 0 && (
+        <div className="absolute top-4 right-4 z-50">
+          <button onClick={handleClearChat} className="p-2 rounded hover:bg-white/[0.05] text-[var(--text-muted)] hover:text-red-400 transition-colors flex items-center justify-center border-0 shadow-sm" title="Clear Session">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
+        <div className="max-w-3xl mx-auto flex flex-col gap-3 min-h-full pb-16">
+          {messages.length === 0 && !isTyping && !inline && (
+            <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
+              <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">
+                <kbd className="font-mono font-bold text-base text-[var(--text-accent)]">KM</kbd>
+              </div>
+              <h3 className="text-base font-semibold text-[var(--text-main)] mb-1.5">KManager AI</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-8 max-w-[320px] leading-relaxed">
+                {dbStats.totalDocuments
+                  ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
+                  : 'Ask me about your knowledge base or features.'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
+                {['Summarize key insights across documents', 'Find core concepts and definitions', 'Compare two related topics'].map((s) => (
+                  <button key={s} onClick={() => sendQuickPrompt(s)}
+                    className="flex-1 text-left px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] bg-white/[0.03] hover:bg-white/[0.06] rounded-[5px] border-0 transition-colors">
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((msg, idx) => (
+            msg.role === 'user'
+              ? <UserMessage key={idx} text={msg.text} attachedFile={msg.attachedFile} />
+              : <BotMessage
+                  key={idx}
+                  text={msg.text}
+                  idx={idx}
+                  onSave={handleSaveResponse}
+                  savedState={savedResponses[idx]}
+                  queryText={idx > 0 ? messages[idx - 1]?.text || '' : ''}
+                  onSelectPrompt={sendQuickPrompt}
+                />
+          ))}
+          {isTyping && (
+            <div className="flex items-start w-full animate-in fade-in duration-200">
+              <div className="px-4 py-3 rounded-[5px] bg-[var(--bg-panel)]/90 shadow-sm flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" />
+                <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+                <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} className="h-16 shrink-0" />
+        </div>
+      </div>
+
+      <div className={cn("bg-transparent shrink-0 relative z-40", inline ? "px-0 pb-0 pt-0 border-t border-white/[0.06] bg-[var(--bg-panel)]" : "px-6 pb-6 pt-2")}>
+        <div className={cn("max-w-3xl mx-auto w-full", inline && "max-w-full")}>
+          <div 
+            className={cn("flex flex-col transition-all duration-200 overflow-hidden relative", inline ? "bg-transparent border-0 rounded-none" : "bg-white/[0.02] border border-white/[0.05] rounded-[24px]")}
+            onDragEnter={handleDragOver}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            
+            {isDragging && (
+              <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 backdrop-blur flex flex-col items-center justify-center border-2 border-dashed border-[var(--text-accent)] rounded-[24px] pointer-events-none transition-all duration-200">
+                <FileText size={24} className="text-[var(--text-accent)] mb-2 animate-bounce" />
+                <h3 className="text-sm font-bold text-[var(--text-main)]">Drop file to attach</h3>
+              </div>
+            )}
+
+            {attachedFile && (
+              <div className="relative flex flex-col mx-4 mt-4 w-[140px] h-[140px] bg-[var(--bg-active)] hover:bg-white/[0.04] border border-white/[0.05] rounded-[24px] group animate-in slide-in-from-bottom-2 duration-200 transition-colors shadow-sm">
+                <div className="p-4 pb-2">
+                  <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[var(--bg-panel)] mb-1 shadow-sm">
+                    <FileText size={20} className="text-[#10a37f] dark:text-[#2dd4bf]" />
+                  </div>
+                </div>
+                <div className="px-4 pb-4 flex-1 overflow-hidden flex items-start">
+                  <span className="text-[12px] font-semibold text-[var(--text-main)] leading-[1.3] line-clamp-3 break-words uppercase tracking-wide opacity-90">
+                    {attachedFile.name}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setAttachedFile(null)} 
+                  className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center bg-[var(--bg-card)] border border-white/[0.1] hover:bg-red-500 hover:border-red-500 hover:text-white rounded-full text-[var(--text-muted)] transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+                >
+                  <X size={14} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+
+            {/* Top Row: Auto-growing Textarea */}
+            <textarea 
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={handleInput}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a question or drop a file to attach..."
+              className={cn("w-full bg-transparent border-none outline-none font-normal text-[var(--text-main)] resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40", inline ? "text-[14px] py-3 px-5 placeholder-[var(--text-faint)]" : "text-[13.5px] py-3 px-4 placeholder-[var(--text-muted)]/60")}
+              autoComplete="off"
+              spellCheck="false"
+            />
+
+            {/* Hidden File Input */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={handleFileSelect}
+            />
+
+            {/* Bottom Row: Send Button & Actions */}
+            <div className={cn("flex items-center justify-between select-none", inline ? "px-4 pb-3 pt-0" : "px-3 pb-2 pt-1")}>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center justify-center w-7 h-7 rounded-[8px] bg-white/[0.02] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-all border-0 shrink-0" 
+                  title="Click to select a file or drag & drop anywhere"
+                >
+                  <Paperclip size={14} />
+                </button>
+                <span className="text-[12px] text-[var(--text-faint)] hidden sm:block">
+                  Press Enter to send • Drag & drop to attach files
+                </span>
+              </div>
+              <button 
+                onClick={handleSend}
+                disabled={(!input.trim() && !attachedFile) || isTyping}
+                className="w-7 h-7 rounded-[8px] bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center border-0 shrink-0"
+                title="Send message"
+              >
+                <ArrowUp size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (inline) {
+    return (
+      <>
+        {ChatUI}
+        <ConfirmModal
+          isOpen={showConfirm}
+          message="Clear current session? Your chat history will be permanently deleted."
+          onConfirm={executeClearChat}
+          onCancel={() => setShowConfirm(false)}
+          confirmText="Clear Session"
+        />
+      </>
+    )
+  }
+
   return (
     <>
       <button
@@ -567,164 +757,7 @@ const ChatBot = ({ appState = EMPTY_STATE }) => {
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
-          <div
-            className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[80vw] h-[85vh] max-w-[920px] animate-in zoom-in-95 duration-200 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-
-            {/* Header matching main window titlebar style & proportions */}
-            <div className="h-[26px] bg-[var(--bg-panel)] flex items-center justify-between shrink-0 select-none border-b border-white/[0.04] relative z-40">
-              <div className="flex items-center gap-1.5 px-2.5 h-full">
-                <Bot size={13} className="text-[var(--text-accent)] shrink-0" />
-                <h3 className="text-[12px] font-semibold text-[var(--text-main)] tracking-tight">KManager Agent</h3>
-              </div>
-              <div className="flex h-full items-center">
-                {messages.length > 0 && (
-                  <button onClick={handleClearChat} className="h-full px-3 hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-red-400 transition-colors flex items-center justify-center border-0" title="Clear Session">
-                    <Trash2 size={12} />
-                  </button>
-                )}
-                <button onClick={() => setIsOpen(false)} className="h-full px-3 hover:bg-[#e81123] hover:text-white text-[var(--text-muted)] transition-colors flex items-center justify-center border-0" title="Close (Esc)">
-                  <X size={13} />
-                </button>
-              </div>
-            </div>
-
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
-              <div className="max-w-3xl mx-auto flex flex-col gap-3 min-h-full pb-16">
-                {messages.length === 0 && !isTyping && (
-                  <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
-                    <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">
-                      <kbd className="font-mono font-bold text-base text-[var(--text-accent)]">KM</kbd>
-                    </div>
-                    <h3 className="text-base font-semibold text-[var(--text-main)] mb-1.5">KManager AI</h3>
-                    <p className="text-xs text-[var(--text-muted)] mb-8 max-w-[320px] leading-relaxed">
-                      {dbStats.totalDocuments
-                        ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
-                        : 'Ask me about your knowledge base or features.'}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
-                      {['Summarize key insights across documents', 'Find core concepts and definitions', 'Compare two related topics'].map((s) => (
-                        <button key={s} onClick={() => sendQuickPrompt(s)}
-                          className="flex-1 text-left px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] bg-white/[0.03] hover:bg-white/[0.06] rounded-[5px] border-0 transition-colors">
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {messages.map((msg, idx) => (
-                  msg.role === 'user'
-                    ? <UserMessage key={idx} text={msg.text} attachedFile={msg.attachedFile} />
-                    : <BotMessage
-                        key={idx}
-                        text={msg.text}
-                        idx={idx}
-                        onSave={handleSaveResponse}
-                        savedState={savedResponses[idx]}
-                        queryText={idx > 0 ? messages[idx - 1]?.text || '' : ''}
-                        onSelectPrompt={sendQuickPrompt}
-                      />
-                ))}
-                {isTyping && (
-                  <div className="flex items-start w-full animate-in fade-in duration-200">
-                    <div className="px-4 py-3 rounded-[5px] bg-[var(--bg-panel)]/90 shadow-sm flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" />
-                      <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                      <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} className="h-16 shrink-0" />
-              </div>
-            </div>
-
-            <div className="px-6 pb-6 pt-2 bg-transparent shrink-0 relative z-40">
-              <div className="max-w-3xl mx-auto w-full">
-                <div 
-                  className="flex flex-col bg-white/[0.02] border border-white/[0.05] rounded-[24px] transition-all duration-200 overflow-hidden relative"
-                  onDragEnter={handleDragOver}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  
-                  {isDragging && (
-                    <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 backdrop-blur flex flex-col items-center justify-center border-2 border-dashed border-[var(--text-accent)] rounded-[24px] pointer-events-none transition-all duration-200">
-                      <FileText size={24} className="text-[var(--text-accent)] mb-2 animate-bounce" />
-                      <h3 className="text-sm font-bold text-[var(--text-main)]">Drop file to attach</h3>
-                    </div>
-                  )}
-
-                  {attachedFile && (
-                    <div className="relative flex flex-col mx-4 mt-4 w-[140px] h-[140px] bg-[var(--bg-active)] hover:bg-white/[0.04] border border-white/[0.05] rounded-[24px] group animate-in slide-in-from-bottom-2 duration-200 transition-colors shadow-sm">
-                      <div className="p-4 pb-2">
-                        <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[var(--bg-panel)] mb-1 shadow-sm">
-                          <FileText size={20} className="text-[#10a37f] dark:text-[#2dd4bf]" />
-                        </div>
-                      </div>
-                      <div className="px-4 pb-4 flex-1 overflow-hidden flex items-start">
-                        <span className="text-[12px] font-semibold text-[var(--text-main)] leading-[1.3] line-clamp-3 break-words uppercase tracking-wide opacity-90">
-                          {attachedFile.name}
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => setAttachedFile(null)} 
-                        className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center bg-[var(--bg-card)] border border-white/[0.1] hover:bg-red-500 hover:border-red-500 hover:text-white rounded-full text-[var(--text-muted)] transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
-                      >
-                        <X size={14} strokeWidth={2.5} />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Top Row: Auto-growing Textarea */}
-                  <textarea 
-                    ref={textareaRef}
-                    rows={1}
-                    value={input}
-                    onChange={handleInput}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask a question or drop a file to attach..."
-                    className="w-full bg-transparent border-none outline-none text-[13.5px] font-normal text-[var(--text-main)] py-3 px-4 placeholder-[var(--text-muted)]/60 resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40"
-                    autoComplete="off"
-                    spellCheck="false"
-                  />
-
-                  {/* Hidden File Input */}
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    style={{ display: 'none' }} 
-                    onChange={handleFileSelect}
-                  />
-
-                  {/* Bottom Row: Send Button & Actions */}
-                  <div className="flex items-center justify-between px-3 pb-2 pt-1 select-none">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center justify-center w-7 h-7 rounded-[8px] bg-white/[0.02] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-all border-0 shrink-0" 
-                        title="Click to select a file or drag & drop anywhere"
-                      >
-                        <Paperclip size={14} />
-                      </button>
-                      <span className="text-[12px] text-[var(--text-faint)] hidden sm:block">
-                        Press Enter to send • Drag & drop to attach files
-                      </span>
-                    </div>
-                    <button 
-                      onClick={handleSend}
-                      disabled={(!input.trim() && !attachedFile) || isTyping}
-                      className="w-7 h-7 rounded-[8px] bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center border-0 shrink-0"
-                      title="Send message"
-                    >
-                      <ArrowUp size={16} strokeWidth={2.5} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {ChatUI}
         </div>
       )}
 

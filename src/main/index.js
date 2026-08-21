@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, Menu, ipcMain, protocol, net } from 'electron'
+import { app, shell, BrowserWindow, Menu, ipcMain, protocol, net, Tray, nativeImage } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -35,6 +35,8 @@ pdfServer.listen(0, '127.0.0.1', () => {
 })
 
 let mainWindow = null
+let appIsQuitting = false
+let tray = null
 
 function safeSendToWindow(channel, ...args) {
   try {
@@ -108,6 +110,13 @@ function createWindow() {
     mainWindow.show()
   })
 
+  mainWindow.on('close', (e) => {
+    if (!appIsQuitting) {
+      e.preventDefault()
+      mainWindow.hide()
+    }
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -121,6 +130,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  tray = new Tray(icon)
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show KManager', click: () => { if (mainWindow) mainWindow.show() } },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { appIsQuitting = true; app.quit() } }
+  ])
+  tray.setToolTip('KManager AI')
+  tray.setContextMenu(contextMenu)
+  tray.on('click', () => { if (mainWindow) mainWindow.show() })
+
   ipcMain.handle('get-pdf-port', () => {
     return pdfPort
   })
@@ -144,7 +163,11 @@ app.whenReady().then(() => {
 
   ipcMain.on('window:close', () => {
     const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
-    if (win) win.close()
+    if (win === mainWindow && !appIsQuitting) {
+      win.hide()
+    } else if (win) {
+      win.close()
+    }
   })
 
   electronApp.setAppUserModelId('com.electron')
@@ -385,6 +408,42 @@ app.whenReady().then(() => {
       return { success: true }
     } catch (err) {
       log.error('Failed to update AI response:', err)
+      return { success: false, error: err.message }
+    }
+  })
+
+  ipcMain.handle('db:update-document-title', async (_event, vaultPath, newTitle) => {
+    try {
+      if (vaultPath.startsWith('ai-response-')) {
+        await db.query('UPDATE documents SET file_name = $1, updated_at = NOW() WHERE vault_path = $2', [newTitle, vaultPath])
+        return { success: true, newVaultPath: vaultPath }
+      } else {
+        const dir = path.dirname(vaultPath)
+        const ext = path.extname(vaultPath)
+        
+        // Prevent double extension if user typed it
+        let cleanTitle = newTitle
+        if (ext && cleanTitle.toLowerCase().endsWith(ext.toLowerCase())) {
+          cleanTitle = cleanTitle.slice(0, -ext.length)
+        }
+        
+        const newFileName = cleanTitle + ext
+        const newVaultPath = path.join(dir, newFileName)
+        
+        if (vaultPath !== newVaultPath) {
+          if (fs.existsSync(newVaultPath)) {
+            return { success: false, error: 'A file with that name already exists in the folder.' }
+          }
+          await fs.promises.rename(vaultPath, newVaultPath)
+          await db.query('UPDATE documents SET file_name = $1, vault_path = $2, updated_at = NOW() WHERE vault_path = $3', [newFileName, newVaultPath, vaultPath])
+        } else {
+          await db.query('UPDATE documents SET file_name = $1, updated_at = NOW() WHERE vault_path = $2', [newFileName, vaultPath])
+        }
+        
+        return { success: true, newVaultPath: newVaultPath }
+      }
+    } catch (err) {
+      log.error('Failed to update document title:', err)
       return { success: false, error: err.message }
     }
   })
@@ -1156,6 +1215,10 @@ ipcMain.handle('update:check-latest', async () => {
 
 ipcMain.handle('app:version', () => {
   return app.getVersion()
+})
+
+app.on('before-quit', () => {
+  appIsQuitting = true
 })
 
 app.on('window-all-closed', () => {

@@ -188,6 +188,15 @@ export const useKeyboardShortcuts = (shortcuts) => {
           shortcutsRef.current.onToggleDocs()
         }
       }
+
+      // My Library: Ctrl+L
+      if (isCmd && !e.shiftKey && key === 'l') {
+        if (shortcutsRef.current.onToggleLibrary) {
+          e.preventDefault()
+          e.stopPropagation()
+          shortcutsRef.current.onToggleLibrary()
+        }
+      }
     }
 
     window.addEventListener('keydown', handleOtherKeys, { capture: true })

@@ -537,7 +537,7 @@ const WikiHoverCite = ({ idx, title, displayNum }) => {
 
 const cleanMarkdownComponents = {
   h1: ({node, ...props}) => <h1 className="text-base font-bold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
-  h2: ({node, ...props}) => <h2 className="text-sm font-bold text-[var(--text-main)] mt-4 mb-2 border-b border-[var(--border-subtle)] pb-1.5 break-words" {...props} />,
+  h2: ({node, ...props}) => <h2 className="text-sm font-bold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
   h3: ({node, ...props}) => <h3 className="text-xs font-semibold text-[var(--text-main)] mt-3 mb-1.5 uppercase tracking-wide break-words" {...props} />,
   h4: ({node, ...props}) => <h4 className="text-xs font-semibold text-[var(--text-main)] mt-2 mb-1 break-words" {...props} />,
   p: ({node, children, ...props}) => renderCalloutOrParagraph(children, props),

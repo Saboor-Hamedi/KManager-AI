@@ -7,7 +7,18 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
   const [isReady, setIsReady] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState('')
+  const [editTitle, setEditTitle] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [localContent, setLocalContent] = useState(null)
+  const [localTitle, setLocalTitle] = useState(null)
+  const [localVaultPath, setLocalVaultPath] = useState(null)
+
+  // Reset local content if a new file is opened
+  useEffect(() => {
+    setLocalContent(null)
+    setLocalTitle(null)
+    setLocalVaultPath(null)
+  }, [selectedPdf?.id, selectedPdf?.vault_path])
 
   // Global ESC handler — works even when <webview> has stolen focus
   useEffect(() => {
@@ -37,20 +48,23 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
 
   if (!selectedPdf) return null
 
+  let currentVaultPath = localVaultPath !== null ? localVaultPath : selectedPdf.vault_path
+
   const isPdf = selectedPdf.category === 'PDF' ||
-    (selectedPdf.vault_path || '').toLowerCase().endsWith('.pdf')
+    (currentVaultPath || '').toLowerCase().endsWith('.pdf')
 
-  const isEditable = !isPdf && (fileExists || (selectedPdf.vault_path && selectedPdf.vault_path.startsWith('ai-response-'))) && selectedPdf.vault_path
+  const isEditable = !isPdf && (fileExists || (currentVaultPath && currentVaultPath.startsWith('ai-response-'))) && currentVaultPath
 
-  const fileSrc = selectedPdf.vault_path
-    ? `file:///${selectedPdf.vault_path.replace(/\\/g, '/')}`
+  const fileSrc = currentVaultPath
+    ? `file:///${currentVaultPath.replace(/\\/g, '/')}`
     : null
 
   const handleEditToggle = () => {
     if (isEditing) {
       setIsEditing(false)
     } else {
-      setEditContent(fullText || selectedPdf.content || '')
+      setEditContent(localContent !== null ? localContent : (fullText || selectedPdf.content || ''))
+      setEditTitle(localTitle !== null ? localTitle : selectedPdf.title)
       setIsEditing(true)
     }
   }
@@ -59,26 +73,51 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
     if (!isEditable) return
     setIsSaving(true)
     try {
-      if (selectedPdf.vault_path.startsWith('ai-response-')) {
-        // Direct database update for AI Responses
-        const res = await window.api.db.updateAIResponse(selectedPdf.vault_path, editContent)
+      const displayTitle = localTitle !== null ? localTitle : selectedPdf.title
+      const titleChanged = editTitle !== displayTitle
+      
+      const displayContent = localContent !== null ? localContent : (fullText || selectedPdf.content || '')
+      const contentChanged = editContent !== displayContent
+
+      if (!titleChanged && !contentChanged) {
+        setIsEditing(false)
+        setIsSaving(false)
+        return
+      }
+
+      if (titleChanged) {
+        const res = await window.api.db.updateDocumentTitle(currentVaultPath, editTitle)
         if (res?.success) {
-          setIsEditing(false)
-          onClose()
+          if (res.newVaultPath) {
+            setLocalVaultPath(res.newVaultPath)
+            currentVaultPath = res.newVaultPath
+          }
+          setLocalTitle(editTitle)
         } else {
-          alert('Failed to save AI response: ' + res?.error)
-        }
-      } else {
-        // Normal file save
-        const res = await window.api.system.saveFileContent(selectedPdf.vault_path, editContent)
-        if (res?.success) {
-          await window.api.db.ingestFile(selectedPdf.vault_path)
-          setIsEditing(false)
-          onClose()
-        } else {
-          alert('Failed to save file: ' + res?.error)
+          alert('Failed to rename file: ' + res?.error)
+          setIsSaving(false)
+          return
         }
       }
+
+      if (contentChanged) {
+        if (currentVaultPath.startsWith('ai-response-')) {
+          // Direct database update for AI Responses
+          const res = await window.api.db.updateAIResponse(currentVaultPath, editContent)
+          if (!res?.success) throw new Error(res?.error || 'Failed to save AI response')
+        } else {
+          // Normal file save
+          const res = await window.api.system.saveFileContent(currentVaultPath, editContent)
+          if (res?.success) {
+            await window.api.db.ingestFile(currentVaultPath)
+          } else {
+            throw new Error(res?.error || 'Failed to save file')
+          }
+        }
+        setLocalContent(editContent)
+      }
+      
+      setIsEditing(false)
     } catch (err) {
       alert('Error saving document: ' + err.message)
     } finally {
@@ -105,21 +144,31 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
             <div className="w-px h-3.5 bg-white/[0.08] mx-1 shrink-0" />
             
             <div className="flex items-center gap-1.5 px-2 min-w-0 flex-1">
-              <span className="text-[11.5px] font-medium truncate leading-none shrink text-[var(--text-main)]">
-                {selectedPdf.title}
-              </span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  disabled={isSaving}
+                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-white/[0.1] rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:border-[var(--text-accent)] transition-all flex items-center"
+                />
+              ) : (
+                <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
+                  {localTitle !== null ? localTitle : selectedPdf.title}
+                </span>
+              )}
               
-              {selectedPdf.vault_path && !selectedPdf.vault_path.startsWith('ai-response-') && (
+              {currentVaultPath && !currentVaultPath.startsWith('ai-response-') && (
                 <div className="flex items-center gap-1.5 ml-1.5 border-l border-white/[0.08] pl-2.5 shrink-0 min-w-0">
                   <button
-                    onClick={() => window.api.system.showInFolder(selectedPdf.vault_path)}
+                    onClick={() => window.api.system.showInFolder(currentVaultPath)}
                     className="flex items-center justify-center p-1 rounded hover:bg-white/[0.1] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 shrink-0"
                     title="Show in File Explorer"
                   >
                     <Home size={11} />
                   </button>
-                  <span className="text-[10px] font-mono text-[var(--text-faint)] truncate max-w-[150px] hidden sm:block" title={selectedPdf.vault_path}>
-                    {selectedPdf.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
+                  <span className="text-[10px] font-mono text-[var(--text-faint)] truncate max-w-[150px] hidden sm:block" title={currentVaultPath}>
+                    {currentVaultPath.split(/[\\/]/).slice(0, -1).join('\\')}
                   </span>
                 </div>
               )}
@@ -201,9 +250,9 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                 {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
-                    content={fullText || selectedPdf.content}
+                    content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
                     category={selectedPdf.category}
-                    fileTitle={selectedPdf.title}
+                    fileTitle={localTitle !== null ? localTitle : selectedPdf.title}
                   />
                 ) : (
                   <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No archived content available.</div>
@@ -225,12 +274,12 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                     spellCheck={false}
                     className="w-full h-full flex-1 bg-transparent border-0 text-[14px] font-mono leading-relaxed text-[var(--text-main)] outline-none resize-none"
                   />
-                ) : !(loadingText || !isReady) && (fullText || selectedPdf.content ? (
+                ) : !(loadingText || !isReady) && (localContent !== null || fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap font-mono text-[13px]' : ''} ${selectedPdf.category === 'JSON' ? 'font-mono text-[13px]' : ''}`}
-                    content={fullText || selectedPdf.content}
+                    content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
                     category={selectedPdf.category}
-                    fileTitle={selectedPdf.title}
+                    fileTitle={localTitle !== null ? localTitle : selectedPdf.title}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center mt-20 opacity-50">

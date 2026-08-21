@@ -7,6 +7,7 @@ import Setting from './components/settings/Setting'
 import ThemeModal from './components/theme/ThemeModal'
 import { useTheme } from './components/theme/useTheme'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts'
+import SpotLite from './components/spotlite/SpotLite'
 
 import DashboardSearch from './components/search/DashboardSearch'
 import Documentation from './components/Documentation'
@@ -15,7 +16,14 @@ import AnalyticsModal from './components/analytics/AnalyticsModal'
 import MyLibrary from './components/library/MyLibrary'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('search')
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('activeTab') || 'search'
+  })
+  
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab)
+  }, [activeTab])
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isThemeOpen, setIsThemeOpen] = useState(false)
   const [isDocsOpen, setIsDocsOpen] = useState(false)
@@ -80,6 +88,7 @@ function App() {
       setActiveTab('search')
       setSearchFocusTrigger(prev => prev + 1)
     }, []),
+    onToggleLibrary: useCallback(() => setActiveTab('library'), []),
     onToggleSidebar: toggleSidebar,
     onToggleTheme: useCallback(() => setIsThemeOpen(prev => !prev), []),
     onToggleSettings: useCallback(() => setIsSettingsOpen(prev => !prev), []),
@@ -156,6 +165,7 @@ function App() {
       <GlobalError><ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} /></GlobalError>
       <GlobalError><Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} /></GlobalError>
       <GlobalError><AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} /></GlobalError>
+      <SpotLite />
     </div>
   )
 }

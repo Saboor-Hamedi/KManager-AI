@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Book, FileText, Code, Database, Search, Library as LibraryIcon, X, FileSpreadsheet, FileJson, File, Calendar, Clock, Trash2 } from 'lucide-react'
+import { Book, FileText, Code, Database, Search, Library as LibraryIcon, X, FileSpreadsheet, FileJson, File, Calendar, Clock, Trash2, History } from 'lucide-react'
 import Preview from '../search/Preview'
 import PulseLoader from '../PulseLoader'
 import ConfirmModal from '../layout/ConfirmModal'
@@ -189,19 +189,29 @@ const MyLibrary = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedDoc])
 
-  const fetchDocuments = async () => {
-    setLoading(true)
+  const fetchDocuments = async (retryCount = 0) => {
+    if (retryCount === 0) setLoading(true)
     try {
       const res = await window.api.db.query('SELECT id, file_name, file_type, vault_path, created_at, file_size, SUBSTRING(content, 1, 300) as snippet FROM documents ORDER BY created_at DESC')
-      if (res && res.rows) {
+      
+      // IPC returns { success: false } instead of throwing if DB not connected
+      if (!res || res.success === false || (!res.rows && !Array.isArray(res))) {
+        throw new Error(res?.message || 'Database not ready')
+      }
+
+      if (res.rows) {
         setDocuments(res.rows)
       } else if (Array.isArray(res)) {
         setDocuments(res)
       }
-    } catch (err) {
-      console.error('Error fetching documents', err)
-    } finally {
       setLoading(false)
+    } catch (err) {
+      console.warn('Documents not ready yet, retrying...', err.message)
+      if (retryCount < 5) {
+        setTimeout(() => fetchDocuments(retryCount + 1), 500)
+      } else {
+        setLoading(false)
+      }
     }
   }
 
