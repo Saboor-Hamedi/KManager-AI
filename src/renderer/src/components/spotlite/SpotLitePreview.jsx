@@ -51,7 +51,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
   const isPdf = selectedPdf.category === 'PDF' ||
     (currentVaultPath || '').toLowerCase().endsWith('.pdf')
 
-  const isEditable = !isPdf && (fileExists || (currentVaultPath && currentVaultPath.startsWith('ai-response-'))) && currentVaultPath
+  const isEditable = !isPdf && currentVaultPath
 
   const fileSrc = currentVaultPath
     ? `file:///${currentVaultPath.replace(/\\/g, '/')}`

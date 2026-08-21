@@ -55,7 +55,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
   const isPdf = selectedPdf.category === 'PDF' ||
     (currentVaultPath || '').toLowerCase().endsWith('.pdf')
 
-  const isEditable = !isPdf && (fileExists || (currentVaultPath && currentVaultPath.startsWith('ai-response-'))) && currentVaultPath
+  const isEditable = !isPdf && currentVaultPath
 
   const fileSrc = currentVaultPath
     ? `file:///${currentVaultPath.replace(/\\/g, '/')}`
