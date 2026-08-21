@@ -165,20 +165,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                 </span>
               )}
               
-              {currentVaultPath && !currentVaultPath.startsWith('ai-response-') && (
-                <div className="flex items-center gap-1.5 ml-1.5 border-l border-white/[0.08] pl-2.5 shrink-0 min-w-0">
-                  <button
-                    onClick={() => window.api.system.showInFolder(currentVaultPath)}
-                    className="flex items-center justify-center p-1 rounded hover:bg-white/[0.1] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 shrink-0"
-                    title="Show in File Explorer"
-                  >
-                    <Home size={11} />
-                  </button>
-                  <span className="text-[10px] font-mono text-[var(--text-faint)] truncate max-w-[150px] hidden sm:block" title={currentVaultPath}>
-                    {currentVaultPath.split(/[\\/]/).slice(0, -1).join('\\')}
-                  </span>
-                </div>
-              )}
+              <FilePathIndicator vaultPath={currentVaultPath} />
             </div>
           </div>
 
@@ -196,7 +183,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-[var(--text-accent)] text-white hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                    className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05] disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {isSaving ? (
                       <>

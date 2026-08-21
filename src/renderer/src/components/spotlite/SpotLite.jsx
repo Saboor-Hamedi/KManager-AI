@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Search, Bot, FileText, ArrowRight } from 'lucide-react'
-import Preview from '../search/Preview'
+import SpotLitePreview from './SpotLitePreview'
 import ChatBot from '../ChatBot'
 
 const SpotLite = () => {
@@ -47,7 +47,7 @@ const SpotLite = () => {
 
     if (s.length < 2) {
       // Load recent documents automatically with content
-      window.api.db.query('SELECT id as document_id, file_name, file_type, vault_path, content FROM documents ORDER BY created_at DESC LIMIT 15').then(res => {
+      window.api.db.query('SELECT id as document_id, file_name, file_type, vault_path, content, file_size, created_at FROM documents ORDER BY created_at DESC LIMIT 15').then(res => {
         if (!isMounted) return
         const rows = res?.rows || (Array.isArray(res) ? res : [])
         if (rows.length > 0) {
@@ -56,7 +56,9 @@ const SpotLite = () => {
              title: row.file_name || 'Untitled',
              category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
              vault_path: row.vault_path,
-             content: row.content
+             content: row.content,
+             file_size: row.file_size,
+             created_at: row.created_at
            }))
            setResults(finalDocs)
            setSelectedIndex(0)
@@ -77,7 +79,7 @@ const SpotLite = () => {
       try {
         // Ultra-fast lexical search on both title and content
         const res = await window.api.db.query(`
-          SELECT id as document_id, file_name, file_type, vault_path, content 
+          SELECT id as document_id, file_name, file_type, vault_path, content, file_size, created_at 
           FROM documents 
           WHERE file_name ILIKE $1 OR content ILIKE $1
           ORDER BY updated_at DESC
@@ -91,7 +93,9 @@ const SpotLite = () => {
              title: row.file_name || 'Untitled',
              category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
              vault_path: row.vault_path,
-             content: row.content
+             content: row.content,
+             file_size: row.file_size,
+             created_at: row.created_at
            }))
            setResults(finalDocs)
            setSelectedIndex(0)
@@ -133,12 +137,20 @@ const SpotLite = () => {
     }
   }
 
+  const formatBytes = (bytes) => {
+    if (!bytes) return ''
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[12vh] animate-in fade-in duration-150 ease-out" onClick={() => setIsOpen(false)}>
       <div 
-        className="bg-[var(--bg-app)] rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[760px] h-[480px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
+        className="bg-[var(--bg-app)] rounded-[5px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[760px] h-[480px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
         onClick={e => e.stopPropagation()}
       >
         {/* Top Input Bar */}
@@ -164,21 +176,19 @@ const SpotLite = () => {
             </div>
           )}
           
-          {/* Toggles - Made smaller */}
+          {/* Toggles - Plain text with background wrapper restored */}
           <div className="flex items-center gap-1 ml-4 bg-black/20 p-1 rounded-md border border-white/[0.05]">
             <button 
               onClick={() => setMode('search')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10.5px] font-semibold transition-colors border-0 outline-none ${mode === 'search' ? 'bg-[var(--text-accent)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05]'}`}
+              className={`px-2 py-0.5 rounded-[4px] text-[10px] font-medium transition-colors border-0 outline-none ${mode === 'search' ? 'bg-[var(--text-accent)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
             >
-              <FileText size={12} />
               Library
             </button>
             <button 
               onClick={() => setMode('ai')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10.5px] font-semibold transition-colors border-0 outline-none ${mode === 'ai' ? 'bg-[#10a37f] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05]'}`}
+              className={`px-2 py-0.5 rounded-[4px] text-[10px] font-medium transition-colors border-0 outline-none ${mode === 'ai' ? 'bg-[#10a37f] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
             >
-              <Bot size={12} />
-              AI Chat
+              Ask AI
             </button>
           </div>
         </div>
@@ -201,12 +211,19 @@ const SpotLite = () => {
                         className={`px-3 py-2.5 rounded-md cursor-pointer transition-colors flex flex-col gap-1 border border-transparent ${selectedIndex === idx ? 'bg-[var(--bg-active)] shadow-sm' : 'hover:bg-white/[0.03]'}`}
                       >
                          <div className="flex items-center gap-2">
-                           <FileText size={13} className={selectedIndex === idx ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
+                           <FileText size={14} className={`shrink-0 ${selectedIndex === idx ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} />
                            <span className="text-[12px] font-semibold text-[var(--text-main)] truncate leading-none">{doc.title}</span>
                          </div>
-                         <span className="text-[10px] text-[var(--text-faint)] truncate pl-5 font-mono leading-none">
-                           {doc.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
-                         </span>
+                         <div className="flex flex-col gap-1 pl-6 mt-0.5">
+                           <span className="text-[10px] text-[var(--text-faint)] truncate font-mono leading-none">
+                             {doc.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
+                           </span>
+                           <span className="text-[9.5px] text-[var(--text-faint)]/60 leading-none flex items-center gap-1.5">
+                             {doc.file_size ? <span>{formatBytes(doc.file_size)}</span> : null}
+                             {doc.file_size && doc.created_at ? <span>•</span> : null}
+                             {doc.created_at ? <span>{new Date(doc.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span> : null}
+                           </span>
+                         </div>
                       </div>
                     ))}
                   </div>
@@ -240,12 +257,15 @@ const SpotLite = () => {
               <div className="flex-1 min-w-0 bg-[var(--bg-app)] flex flex-col overflow-hidden relative">
                 {hoveredDoc ? (
                   <div className="absolute inset-0 z-0 select-text overflow-hidden">
-                    <Preview 
+                    <SpotLitePreview 
                       selectedPdf={hoveredDoc} 
                       fullText={hoveredDoc.content}
                       fileExists={true}
                       onClose={() => {}} 
-                      isEditable={false} 
+                      onDocumentUpdate={(updatedDoc) => {
+                        setHoveredDoc(updatedDoc)
+                        setResults(prev => prev.map(d => d.id === updatedDoc.id ? updatedDoc : d))
+                      }}
                     />
                   </div>
                 ) : (

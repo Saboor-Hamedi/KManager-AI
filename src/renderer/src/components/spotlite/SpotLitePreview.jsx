@@ -3,6 +3,7 @@ import { FileText, Home } from 'lucide-react'
 import DocumentRenderer from '../search/DocumentRenderer'
 import PulseLoader from '../PulseLoader'
 import ScrollToTopButton from '../ScrollToTopButton'
+import FilePathIndicator from '../FilePathIndicator'
 
 const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClose, onDocumentUpdate }) => {
   const [isReady, setIsReady] = useState(false)
@@ -57,6 +58,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
     : null
 
   const handleEditToggle = () => {
+    if (!isEditable) return
     if (isEditing) {
       setIsEditing(false)
     } else {
@@ -152,36 +154,28 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                       handleSave()
                     }
                   }}
+                  autoFocus
                   disabled={isSaving}
-                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
+                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none focus:border-0 rounded-none px-2 h-[22px] flex-1 min-w-0 max-w-[600px] flex items-center"
                 />
               ) : (
-                <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
+                <span 
+                  className={`text-[11.5px] font-medium truncate shrink text-[var(--text-main)] px-2 h-[22px] flex items-center ${isEditable ? 'cursor-text' : ''}`} 
+                  title={localTitle !== null ? localTitle : selectedPdf.title}
+                  onDoubleClick={handleEditToggle}
+                >
                   {localTitle !== null ? localTitle : selectedPdf.title}
                 </span>
               )}
               
-              {currentVaultPath && !currentVaultPath.startsWith('ai-response-') && (
-                <div className="flex items-center gap-1.5 ml-1.5 border-l border-white/[0.08] pl-2.5 shrink-0 min-w-0">
-                  <button
-                    onClick={() => window.api.system.showInFolder(currentVaultPath)}
-                    className="flex items-center justify-center p-1 rounded hover:bg-white/[0.1] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 shrink-0"
-                    title="Show in File Explorer"
-                  >
-                    <Home size={11} />
-                  </button>
-                  <span className="text-[10px] font-mono text-[var(--text-faint)] truncate max-w-[150px] hidden sm:block" title={currentVaultPath}>
-                    {currentVaultPath.split(/[\\/]/).slice(0, -1).join('\\')}
-                  </span>
-                </div>
-              )}
+              <FilePathIndicator vaultPath={currentVaultPath} />
             </div>
           </div>
 
           <div className="flex items-center h-full shrink-0 pr-2">
             {isEditable && (
               isEditing ? (
-                <div className="flex items-center gap-1.5 mr-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={handleEditToggle}
                     disabled={isSaving}
@@ -192,7 +186,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-[var(--text-accent)] text-white hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                    className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05] disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {isSaving ? (
                       <>
@@ -238,12 +232,12 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
             />
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
-            <div className="w-full h-full overflow-y-auto px-5 py-4 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
+            <div className="w-full h-full overflow-y-auto px-3 py-2 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
               <div className="w-full pb-8">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
-                {!(loadingText || !isReady) && (fullText || selectedPdf.content ? (
+                {fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap' : ''}`}
                     content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
@@ -252,16 +246,16 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                   />
                 ) : (
                   <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No archived content available.</div>
-                ))}
+                )}
               </div>
             </div>
           ) : (
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
             <div
-              className="w-full h-full overflow-y-auto px-5 py-4 custom-scrollbar bg-[var(--bg-app)] text-justify select-text"
+              className="w-full h-full overflow-y-auto px-3 py-2 custom-scrollbar bg-[var(--bg-app)] text-justify select-text"
               style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
             >
-              <div className={`w-full ${isEditing ? 'h-full flex flex-col' : 'pb-6'}`}>
+              <div className={`w-full ${isEditing ? 'h-full flex flex-col' : 'pb-4'}`}>
                 {isEditing ? (
                   <textarea
                     value={editContent}
@@ -270,7 +264,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                     spellCheck={false}
                     className="w-full h-full flex-1 bg-transparent border-0 text-[14px] font-mono leading-relaxed text-[var(--text-main)] outline-none resize-none"
                   />
-                ) : !(loadingText || !isReady) && (localContent !== null || fullText || selectedPdf.content ? (
+                ) : localContent !== null || fullText || selectedPdf.content ? (
                   <DocumentRenderer
                     className={`text-[var(--text-main)] text-[15px] leading-relaxed max-w-full overflow-visible text-justify select-text ${selectedPdf.category === 'TXT' ? 'whitespace-pre-wrap font-mono text-[13px]' : ''} ${selectedPdf.category === 'JSON' ? 'font-mono text-[13px]' : ''}`}
                     content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
@@ -282,7 +276,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                     <FileText size={48} className="text-[var(--text-muted)] mb-4" />
                     <div className="text-[var(--text-faint)] text-[13px] font-medium tracking-wide">No content available for this file.</div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
