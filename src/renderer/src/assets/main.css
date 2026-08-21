@@ -36,16 +36,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0e1117;
+  background: var(--bg-app);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--bg-active);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--border-subtle);
 }
 
 /* ─── Global focus / outline reset ─────────────────────────────────────────
@@ -79,5 +79,5 @@ textarea:focus {
 /* ─── Scrollbar utility ─────────────────────────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 99px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--bg-active); border-radius: 99px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

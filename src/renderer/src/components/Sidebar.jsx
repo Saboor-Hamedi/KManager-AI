@@ -50,7 +50,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onOpenSettings, onOpenTheme, on
   return (
     <div
       className={cn(
-        'h-full bg-[var(--bg-sidebar)] border-r border-[var(--border-dim)] flex flex-col transition-all duration-300 overflow-hidden shrink-0',
+        'h-full bg-[var(--bg-sidebar)] flex flex-col transition-all duration-300 overflow-hidden shrink-0',
         collapsed ? 'w-14' : 'w-60'
       )}
     >

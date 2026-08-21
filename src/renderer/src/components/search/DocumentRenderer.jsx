@@ -429,7 +429,7 @@ const renderCalloutOrParagraph = (children, props) => {
   }
 
   return (
-    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-pre-wrap text-left" {...props}>
+    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-pre-wrap text-justify" {...props}>
       {children}
     </div>
   )

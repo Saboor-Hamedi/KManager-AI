@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Search, Bot, FileText, ArrowRight } from 'lucide-react'
-import Preview from '../search/Preview'
+import SpotLitePreview from './SpotLitePreview'
 import ChatBot from '../ChatBot'
 import SpotliteList from './SpotliteList'
 
@@ -228,15 +228,13 @@ const SpotLite = () => {
               </div>
 
               {/* Right: Preview Area */}
-              <div className="flex-1 min-w-0 bg-[var(--bg-app)] flex flex-col overflow-hidden relative">
+              <div className="flex-1 bg-[var(--bg-app)] min-w-0 flex flex-col relative h-full">
                 {hoveredDoc ? (
                   <div className="absolute inset-0 z-0 select-text overflow-hidden">
-                    <Preview 
+                    <SpotLitePreview 
                       selectedPdf={hoveredDoc} 
                       fullText={hoveredDoc.content}
                       fileExists={true}
-                      onClose={() => {}} 
-                      isEditable={false} 
                     />
                   </div>
                 ) : (
