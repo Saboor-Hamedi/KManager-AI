@@ -4,29 +4,44 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 const Wrapper = ({ children, maxHeight = 300 }) => {
   const [expanded, setExpanded] = useState(false)
   const [isOverflowing, setIsOverflowing] = useState(false)
+  const [contentHeight, setContentHeight] = useState(0)
   const contentRef = useRef(null)
 
   useEffect(() => {
     if (!contentRef.current) return
+    
     const checkOverflow = () => {
-      if (contentRef.current.scrollHeight > maxHeight + 20) {
-        setIsOverflowing(true)
-      } else {
-        setIsOverflowing(false)
+      if (!contentRef.current) return
+      const sh = contentRef.current.scrollHeight
+      setContentHeight(prev => prev !== sh ? sh : prev)
+      setIsOverflowing(sh > maxHeight + 20)
+    }
+    
+    checkOverflow()
+    
+    // Observe for any dynamic height changes (e.g. lazy-loaded images, diagrams, markdown settling)
+    const ro = new ResizeObserver(() => {
+      checkOverflow()
+    })
+    
+    if (contentRef.current) {
+      ro.observe(contentRef.current)
+      // Also observe the first child which contains the actual flowing content
+      if (contentRef.current.firstElementChild) {
+        ro.observe(contentRef.current.firstElementChild)
       }
     }
-    checkOverflow()
-    const timer = setTimeout(checkOverflow, 150)
-    return () => clearTimeout(timer)
+    
+    return () => ro.disconnect()
   }, [children, maxHeight])
 
   return (
     <div className="relative w-full group -mx-4 px-4">
       <div 
         ref={contentRef} 
-        className={`transition-[max-height] duration-500 ease-in-out overflow-hidden`}
+        className="transition-[max-height] duration-500 ease-in-out overflow-hidden"
         style={{ 
-          maxHeight: expanded && contentRef.current ? `${contentRef.current.scrollHeight}px` : (isOverflowing ? `${maxHeight}px` : 'none') 
+          maxHeight: expanded ? `${Math.max(contentHeight, maxHeight + 20)}px` : (isOverflowing ? `${maxHeight}px` : 'none') 
         }}
       >
         {children}

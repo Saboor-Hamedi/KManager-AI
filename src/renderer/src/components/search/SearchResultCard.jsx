@@ -350,8 +350,8 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               const highlightComponents = {
                 ...cleanMarkdownComponents,
                 p: ({ node, children, ...props }) => renderCalloutOrParagraph(children, props, fallbackRender),
-                ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-3 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+                ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
                 li: ({ node, children, ...props }) => (
                   <li className="pl-1 leading-relaxed text-justify break-words" {...props}>
                     {typeof children === 'string'

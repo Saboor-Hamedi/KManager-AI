@@ -573,8 +573,8 @@ const cleanMarkdownComponents = {
   h3: ({node, ...props}) => <h3 className="text-[15px] font-semibold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
   h4: ({node, ...props}) => <h4 className="text-[14px] font-semibold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
   p: ({node, children, ...props}) => renderCalloutOrParagraph(children, props),
-  ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
-  ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+  ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+  ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
   li: ({node, ...props}) => <li className="pl-1.5 leading-relaxed" {...props} />,
   img: ({node, src, alt, ...props}) => (
     <Suspense fallback={<div className="w-full h-[200px] my-6 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[12px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
@@ -650,23 +650,20 @@ const cleanMarkdownComponents = {
     <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-[var(--text-accent)]/10 pl-4 py-2 pr-4 rounded-r-[4px] text-[var(--text-main)] italic my-4 break-words shadow-sm has-[.callout-box]:border-0 has-[.callout-box]:bg-transparent has-[.callout-box]:p-0 has-[.callout-box]:m-0 has-[.callout-box]:shadow-none" {...props} />
   ),
   a: ({node, href, children, ...props}) => {
-    const isFileLink = href && (!href.startsWith('http') || href.includes('system-design') || href.includes('Vault'))
-    if (isFileLink) {
+    if (href && href.startsWith('#')) {
       return (
         <a
           href={href}
           onClick={(e) => {
             e.preventDefault()
-            if (!href) return
-            if (window.api?.system?.openExternal) window.api.system.openExternal(href)
-            else window.open(href, '_blank')
+            const id = href.substring(1)
+            const el = document.getElementById(id)
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 my-1 rounded-full bg-[var(--bg-active)] border border-white/[0.08] hover:bg-white/[0.12] transition-colors text-[12px] font-medium text-[var(--text-main)] max-w-full no-underline align-middle shadow-sm"
-          title={href}
+          className="text-[var(--text-accent)] hover:underline hover:opacity-80 transition-all font-medium break-words"
           {...props}
         >
-          <svg className="w-3.5 h-3.5 text-[var(--text-accent)] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          <span className="truncate break-all">{children}</span>
+          {children}
         </a>
       )
     }
@@ -704,10 +701,10 @@ const cleanMarkdownComponents = {
   td: ({node, ...props}) => <td className="py-2 px-3 text-xs text-[var(--text-main)]/90 leading-relaxed break-words select-text border-0" {...props} />,
   em: ({node, ...props}) => <em className="italic text-[var(--text-accent)] font-normal" {...props} />,
   details: ({node, ...props}) => (
-    <details className="my-3 border border-white/[0.08] bg-[var(--bg-panel)] rounded-[6px] overflow-hidden group shadow-sm [&>*:not(summary)]:px-4 [&>*:not(summary)]:pb-3 [&>*:not(summary)]:pt-1.5 [&>*:not(summary)]:last:mb-0" {...props} />
+    <details className="my-3 border border-white/[0.08] bg-[var(--bg-panel)] rounded-[6px] overflow-hidden group shadow-sm px-4 group-open:pb-2 [&>summary+br]:hidden [&>summary+p]:mt-2" {...props} />
   ),
   summary: ({node, ...props}) => (
-    <summary className="px-4 py-2.5 bg-[var(--bg-active)]/40 cursor-pointer text-[13.5px] font-semibold text-[var(--text-main)] list-none flex items-center justify-between hover:bg-white/[0.06] transition-colors" {...props}>
+    <summary className="-mx-4 px-4 py-2 bg-[var(--bg-active)]/40 cursor-pointer text-[13.5px] font-semibold text-[var(--text-main)] list-none flex items-center justify-between hover:bg-white/[0.06] transition-colors group-open:border-b group-open:border-white/[0.04]" {...props}>
       <span className="flex-1">{props.children}</span>
       <span className="shrink-0 ml-3 opacity-50 group-open:rotate-180 transition-transform">▼</span>
     </summary>

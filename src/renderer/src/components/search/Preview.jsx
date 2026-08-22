@@ -54,8 +54,14 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
 
   const isPdf = selectedPdf.category === 'PDF' ||
     (currentVaultPath || '').toLowerCase().endsWith('.pdf')
+    
+  const isImageFile = (currentVaultPath || '').toLowerCase().match(/\.(png|jpe?g|gif|webp|svg)$/i) || 
+    selectedPdf.category === 'IMAGE' || 
+    selectedPdf.category === 'PNG' || 
+    selectedPdf.category === 'JPG' || 
+    selectedPdf.category === 'JPEG'
 
-  const isEditable = !isPdf && currentVaultPath
+  const isEditable = !isPdf && !isImageFile && currentVaultPath
 
   const fileSrc = currentVaultPath
     ? `file:///${currentVaultPath.replace(/\\/g, '/')}`
@@ -229,15 +235,21 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
             </div>
           )}
 
-          {/* ── PDF: render directly via file:// ── */}
-          {isPdf && fileExists && fileSrc ? (
+          {/* ── IMAGE: render directly ── */}
+          {isImageFile && fileExists && fileSrc ? (
+            <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a] overflow-auto p-4 custom-scrollbar">
+              <img src={fileSrc} alt={selectedPdf.title} className="max-w-full max-h-full object-contain shadow-2xl rounded-sm" draggable="false" />
+            </div>
+          ) : 
+          /* ── PDF: render directly via file:// ── */
+          isPdf && fileExists && fileSrc ? (
             <webview
               src={fileSrc}
               plugins="true"
               className="w-full h-full border-none bg-white relative z-0"
             />
-          ) : isPdf && !fileExists ? (
-            /* ── PDF but file missing: fallback to stored text ── */
+          ) : (isPdf || isImageFile) && !fileExists ? (
+            /* ── PDF/IMAGE but file missing: fallback to stored text ── */
             <div className="w-full h-full overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
               <div className="max-w-3xl mx-auto pb-8">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
