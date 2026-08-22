@@ -24,9 +24,9 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
     <div className="relative w-full group -mx-4 px-4">
       <div 
         ref={contentRef} 
-        className={`transition-all duration-300 ease-in-out overflow-hidden`}
+        className={`transition-[max-height] duration-500 ease-in-out overflow-hidden`}
         style={{ 
-          maxHeight: expanded ? 'none' : (isOverflowing ? `${maxHeight}px` : 'none') 
+          maxHeight: expanded && contentRef.current ? `${contentRef.current.scrollHeight}px` : (isOverflowing ? `${maxHeight}px` : 'none') 
         }}
       >
         {children}
@@ -34,12 +34,12 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
       
       {/* Gradient Fade (Only when overflowing and collapsed) */}
       {isOverflowing && !expanded && (
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[var(--bg-app)] to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[var(--bg-app)] via-[var(--bg-app)]/80 to-transparent pointer-events-none" />
       )}
 
       {/* Expand / Collapse Button */}
       {isOverflowing && (
-        <div className={`flex justify-center mt-2 ${!expanded && 'absolute bottom-2 left-0 right-0 z-10'}`}>
+        <div className={`flex justify-center mt-1 ${!expanded && 'absolute bottom-2 left-0 right-0 z-10'}`}>
           <button
             type="button"
             onClick={(e) => {
@@ -47,17 +47,17 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
               e.stopPropagation()
               setExpanded(!expanded)
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold text-[var(--text-main)] bg-[var(--bg-panel)]/80 hover:bg-[var(--bg-active)] border border-white/[0.05] hover:border-white/[0.1] backdrop-blur-md shadow-sm transition-all cursor-pointer opacity-90 hover:opacity-100"
+            className="flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium text-[var(--text-accent)] opacity-80 hover:opacity-100 hover:text-[var(--text-main)] transition-all cursor-pointer bg-transparent border-0 select-none"
           >
             {expanded ? (
               <>
                 <span>Show less</span>
-                <ChevronUp size={12} />
+                <ChevronUp size={14} />
               </>
             ) : (
               <>
                 <span>See more</span>
-                <ChevronDown size={12} />
+                <ChevronDown size={14} />
               </>
             )}
           </button>

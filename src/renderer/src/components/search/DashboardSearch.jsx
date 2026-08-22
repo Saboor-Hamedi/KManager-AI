@@ -897,7 +897,7 @@ const DashboardSearch = () => {
       <>
         {/* Resize Handle */}
         <div
-          className="w-1 cursor-col-resize hover:bg-[var(--text-accent)] transition-colors relative z-50 flex items-center justify-center shrink-0"
+          className="w-1 cursor-col-resize hover:bg-[var(--text-accent)] border-l border-[var(--border-subtle)] bg-[var(--bg-panel)] transition-colors relative z-50 flex items-center justify-center shrink-0"
           onMouseDown={handleMouseDown}
         >
           <div className="w-1 h-8 rounded-full bg-[var(--border-subtle)]/70 pointer-events-none" />

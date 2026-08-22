@@ -209,10 +209,10 @@ const MyLibrary = () => {
     }
   }, [search])
 
-  // Ctrl+F to focus search input
+  // Ctrl+F or Ctrl+/ to focus search input
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'f' || e.key === '/')) {
         if (!selectedDoc) {
           e.preventDefault()
           searchInputRef.current?.focus()
@@ -324,7 +324,11 @@ const MyLibrary = () => {
       return (
         <div className={`w-full h-full flex flex-col p-4 relative overflow-hidden ${isCode ? 'bg-[#1e1e1e]' : 'bg-[var(--bg-app)]'}`}>
           {/* File Type Badge */}
-          <div className="absolute top-2 left-2 bg-black/40 text-white/90 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10 uppercase tracking-wider backdrop-blur-md border border-white/10">
+          <div className={`absolute bottom-2 left-2 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10 uppercase tracking-wider backdrop-blur-md border ${
+            (type === 'ai_response' || type === 'ai') 
+              ? 'bg-[#a855f7]/20 text-[#c084fc] border-[#a855f7]/30' 
+              : 'bg-black/40 text-white/90 border-white/10'
+          }`}>
             {type || 'TXT'}
           </div>
           

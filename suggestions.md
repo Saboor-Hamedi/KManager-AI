@@ -1,0 +1,5 @@
+<div class="mb-1.5 last:mb-0 text-justify whitespace-pre-wrap"><em class="italic text-[var(--text-accent)] font-normal">References: Vault: <span class="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 my-0.5 rounded-[5px] bg-[var(--bg-panel)] border-0 text-[var(--text-accent)] text-[12px] font-medium font-sans leading-none hover:bg-[var(--bg-active)] transition-colors cursor-default whitespace-nowrap"><span class="opacity-40 text-[12px]">◈</span>system-design/Databases/Database Replication Strategies</span> | <span class="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 my-0.5 rounded-[5px] bg-[var(--bg-panel)] border-0 text-[var(--text-accent)] text-[12px] font-medium font-sans leading-none hover:bg-[var(--bg-active)] transition-colors cursor-default whitespace-nowrap"><span class="opacity-40 text-[12px]">◈</span>system-design/Databases/PostgreSQL Features</span></em></div>
+
+
+
+i have this refrences area is ugly shows as paragraph remove that em either replace with div or section show it in lists 

@@ -1,47 +1,105 @@
-This is looking very professional. The addition of the **Scope** indicator and the **Suggestion Chips** transforms this from a simple chat box into a powerful research tool.
+# KManager - Architecture & Developer Guide
 
-Here are specific suggestions to refine this "Ask AI" interface further:
+KManager is a highly polished, local-first knowledge management application that combines advanced file organization with integrated AI capabilities (RAG, Semantic Search, and Contextual Chat). It is built as a desktop application using the Electron framework.
 
-### 1. The "Scope" Indicator (Bottom Left)
-This is a critical feature for a local RAG app. Users need to know *what* the AI is looking at.
--   **Make it Interactive:** Turn `SCOPE: ALL FILES` into a clickable dropdown or toggle. Allow users to quickly switch to:
-    -   `Current Folder`
-    -   `Selected File` (if coming from Library view)
-    -   `AI Responses Only`
-    -   `Code Files Only`
--   **Visual Feedback:** When the scope changes, maybe flash a subtle animation or change the border color briefly to confirm the action.
+---
 
-### 2. Suggestion Chips (The Lightbulb Items)
-These are great for onboarding, but they take up a lot of vertical space.
--   **Compact Layout:** Consider arranging them in a horizontal row or a 2x2 grid rather than a vertical list. This saves screen real estate for the actual chat history.
--   **Dynamic Suggestions:** Instead of generic "What can you help with?", make them context-aware based on your library content.
-    -   *Example:* "Summarize 'school-chat.md'"
-    -   *Example:* "Find all Python scripts about caching"
-    -   *Example:* "Explain the 99 Names of Allah"
--   **Dismissable:** Add a small "X" or allow users to swipe/dismiss these suggestions once they start typing, so they don't clutter the view during an active session.
+## 🛠 Technology Stack
 
-### 3. Action Icons (Below AI Response)
-You have Thumbs Up/Down, Copy, Refresh, and Check. This is a solid set.
--   **Tooltip Labels:** On hover, show what each icon does (e.g., "Copy to Clipboard", "Regenerate Response", "Mark as Helpful"). New users might not guess what the "Check" or "Refresh" icons do immediately.
--   **"Add to Lumina" Button:** Since you have Lumina for writing, add a button here (maybe a "Save" or "Export" icon) to send the AI's response directly to Lumina as a new note. This connects your two apps seamlessly.
--   **Citation Toggle:** If the AI used sources, maybe add a "Show Sources" button here that expands a list of the files referenced (with links back to Library).
+### Core Frameworks
+*   **Electron**: The desktop runtime providing native OS integration, local file system access, and multi-process architecture (Main, Preload, Renderer).
+*   **React 18**: The UI library powering the renderer process.
+*   **Vite**: The ultra-fast build tool and development server for the React frontend.
 
-### 4. Chat History & Context
--   **Timestamps:** For long sessions, add subtle timestamps (e.g., "2:30 PM") between messages so users can track when conversations happened.
--   **Code Block Styling:** Ensure that if the AI outputs code (like your Python cache example), it has:
-    -   Syntax highlighting
-    -   A language label (e.g., "Python") in the top corner
-    -   A dedicated "Copy Code" button inside the block
--   **Streaming Indicator:** While the AI is generating text, show a subtle cursor or pulsing dot at the end of the message. This reassures users the local model is still working (especially important since local models can be slower than cloud APIs).
+### Data & Backend (Main Process)
+*   **Node.js**: Powers the backend logic (file parsing, system watching, IPC bridging).
+*   **PostgreSQL + `pgvector`**: The core database. Used for storing document metadata, FTS (Full-Text Search) chunks, and vector embeddings for semantic search.
+*   **Local File System (FS)**: KManager acts as a lens over the user's local directory structure, maintaining a synchronized state with physical files.
 
-### 5. Input Area Refinements
--   **Auto-Resize:** Ensure the input box grows vertically as the user types a long question, up to a max height (e.g., 5 lines), then scrolls internally.
--   **Attachment Preview:** When a file is dragged in, show a small "chip" with the filename and a remove (X) button *above* the input bar. This confirms the file is attached before sending.
--   **Keyboard Shortcut Hint:** You have "Press Enter to send". Consider adding "Shift+Enter for new line" nearby, as power users often want to format their prompts.
+### UI & Styling (Renderer Process)
+*   **Tailwind CSS**: Utility-first CSS framework for rapid, highly-customizable UI styling.
+*   **Lucide React**: The unified icon library used throughout the application.
+*   **React Markdown & Remark-GFM**: Used for rendering AI responses and Markdown documents with syntax highlighting, tables, and rich text.
+*   **React Syntax Highlighter**: For rendering code blocks within AI chats and markdown files.
 
-### 6. Visual Hierarchy
--   **User vs. AI Distinction:** Your current design has the User message on the right (dark grey bubble) and AI on the left (full width panel). This is good.
-    -   *Suggestion:* Make the AI's response container slightly lighter or add a subtle left border accent to visually separate it from the background, making it easier to read long responses.
--   **Delete Icon (Top Right):** The trash can icon next to "Hello" is clear. Maybe add a "Clear Chat" confirmation tooltip to prevent accidental deletion of long research sessions.
+### AI & LLM Integration
+*   **Ollama (Local)** / **DeepSeek / OpenAI (Remote)**: The LLM providers powering the KManager Agent.
+*   **RAG Pipeline**: Retrieves highly relevant document chunks using hybrid search (Trigram + Vector similarity) and injects them into the AI context window.
 
-This UI is already miles ahead of many commercial tools. The focus on **local control** (Scope) and **actionability** (icons/suggestions) is exactly what makes a knowledge manager truly useful. Keep iterating! 🚀
+---
+
+## 🗺 System Architecture
+
+The application strictly follows Electron's inter-process communication (IPC) model to ensure security and performance. The React frontend never touches the database directly.
+
+```mermaid
+graph TD
+  %% Frontend / UI Layer
+  subgraph Renderer [Renderer Process - React Frontend]
+    App[App.jsx - Shell & Router]
+    SpotLite[SpotLite Modal - Cmd+K]
+    Library[My Library - Grid/List]
+    Chat[KManager Agent - AI Chat]
+    App --> SpotLite
+    App --> Library
+    App --> Chat
+  end
+
+  %% IPC Bridge
+  Preload((Preload.js Context Bridge))
+
+  %% Backend Layer
+  subgraph Main [Main Process - Node.js Backend]
+    IPC[IPC Handlers]
+    FileWatcher[File System Watcher]
+    DBManager[Postgres DB Manager]
+    AIManager[LLM & Embedding Engine]
+    DocParser[Document Parsers PDF/MD]
+  end
+
+  %% Infrastructure
+  subgraph Infrastructure [Data & External Services]
+    Postgres[(PostgreSQL + pgvector)]
+    LocalFS[(Local Disk Vaults)]
+    LLM[Local/Cloud LLMs]
+  end
+
+  %% Connections
+  Renderer <--> |Context API| Preload
+  Preload <--> |IPC Messages| IPC
+  
+  IPC <--> DBManager
+  IPC <--> FileWatcher
+  IPC <--> AIManager
+  IPC <--> DocParser
+
+  DBManager <--> |SQL Queries| Postgres
+  FileWatcher <--> |Read/Sync| LocalFS
+  DocParser <--> |Extract Text| LocalFS
+  AIManager <--> |Prompts/Tokens| LLM
+```
+
+---
+
+## ✨ Core Features & Components
+
+### 1. SpotLite (`SpotLite.jsx`)
+Inspired by macOS Spotlight and Raycast. Triggered globally via `Ctrl+K` or `Cmd+K`.
+*   **Instant Hybrid Search**: Debounced, lightning-fast search hitting the Postgres database for instant file retrieval.
+*   **Zero-Latency Switching**: Uses React 18 `useTransition` and CSS `display: hidden` toggling to switch between "Search" and "AI" modes instantaneously without unmounting heavy DOM nodes.
+*   **Inline Previews**: Previews document contents on the right side, allowing users to copy paths, toggle editing, or read without opening the full file.
+
+### 2. KManager Agent (`ChatBot.jsx`)
+The dedicated AI assistant that sits on top of your knowledge base.
+*   **Context-Aware**: Can be injected with a `contextFile` (e.g., when triggered from a specific document) to answer "Explain this file" queries.
+*   **Scope Toggling**: Users can constrain the AI's search scope (All Files, Recent Files, Current Folder) via an interactive UI badge.
+*   **Real-time Typewriter Streaming**: Custom token-by-token rendering engine for a responsive, "alive" feel during generation.
+
+### 3. My Library (`MyLibrary.jsx`)
+The primary document browser and management interface.
+*   **Dynamic Layouts**: Supports Large Grid, Small Grid, and List views.
+*   **Smart Badging**: Automatically extracts file extensions or categories and highlights AI-generated content (e.g., `AI_RESPONSE`) with distinct glowing purple aesthetics.
+*   **Keyboard Shortcuts**: Advanced user shortcuts (`Ctrl + /` to focus search) for a mouse-free experience.
+
+### 4. Continuous File Sync
+The Main process continuously watches designated local folders. When a user creates a new note or adds a PDF, KManager parses the text, generates vector embeddings, and silently upserts the data into PostgreSQL, making it immediately available to the RAG pipeline.

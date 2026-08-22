@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
 import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus, Edit } from 'lucide-react'
 import HoverWikilink from './HoverWikilink'
-import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex } from './DocumentRenderer'
+import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex, renderCalloutOrParagraph } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
 import Wrapper from '../code/Wrapper'
 import AutoResizeTextarea from './AutoResizeTextarea'
 import './horizontal.css'
@@ -88,8 +89,8 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
       {/* Like */}
       <button 
         onClick={() => handleFeedback('helpful')}
-        className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
-          feedback === 'helpful' ? 'text-[#a855f7] bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+        className={`p-1.5 rounded-[4px] transition-all duration-200 active:scale-90 flex items-center justify-center border-0 ${
+          feedback === 'helpful' ? 'text-[#a855f7] bg-[var(--bg-active)] scale-110' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
         }`}
         title="Helpful result"
       >
@@ -99,8 +100,8 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
       {/* Dislike */}
       <button 
         onClick={() => handleFeedback('unhelpful')}
-        className={`p-1.5 rounded-[4px] transition-colors flex items-center justify-center border-0 ${
-          feedback === 'unhelpful' ? 'text-red-400 bg-[var(--bg-active)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+        className={`p-1.5 rounded-[4px] transition-all duration-200 active:scale-90 flex items-center justify-center border-0 ${
+          feedback === 'unhelpful' ? 'text-red-400 bg-[var(--bg-active)] scale-110' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
         }`}
         title="Not helpful"
       >
@@ -111,7 +112,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
       <button 
         onClick={handleCopy}
         className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
-        title="Copy section text"
+        title="Copy Snippet"
       >
         {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
       </button>
@@ -127,7 +128,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
           }
         }}
         className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-accent)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
-        title="Open citation preview drawer"
+        title="View Source"
       >
         <Eye size={13} />
       </button>
@@ -137,7 +138,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
         <button
           onClick={onEdit}
           className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
-          title="Edit chunk content"
+          title="Edit"
         >
           <Edit size={13} />
         </button>
@@ -156,7 +157,7 @@ const UnifiedActionBar = memo(({ item, query, handleSelect, onReply, isActiveRep
               ? 'bg-[var(--bg-active)] text-[var(--text-main)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
           }`}
-          title={isActiveReply ? 'Close chat' : 'Reply'}
+          title={isActiveReply ? 'Close chat' : 'Ask about this chunk'}
         >
           {isActiveReply ? <X size={13} strokeWidth={2.5} /> : <MessageSquarePlus size={13} />}
         </button>
@@ -244,7 +245,6 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
     return () => window.removeEventListener('click', handleClickOutside)
   }, [showWikiHover])
 
-  // Format created_at as a human-readable relative or short date
   const formatDate = (ts) => {
     if (!ts) return null
     const d = new Date(ts)
@@ -262,39 +262,33 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   return (
     <div 
       onClick={handleCardClick} 
-      className="group relative transition-all duration-200 overflow-visible py-4 shadow-none bg-transparent border-0"
+      className={`group relative transition-all duration-200 overflow-visible py-4 shadow-none ${selected ? 'bg-[var(--bg-active)]/50 border-l-[3px] border-l-[var(--text-accent)] pl-3' : 'bg-transparent border-l-[3px] border-l-transparent pl-3'}`}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
     >
-      {/* Header: title + match badge + action bar */}
       <div className="flex items-center justify-between gap-4 mb-1.5">
         <div 
           ref={titleRef}
           onClick={() => onSelect(item)}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className="relative flex items-center gap-2 cursor-pointer min-w-0 flex-1 group/title"
+          className="relative flex items-start justify-between gap-3 cursor-pointer min-w-0 flex-1 group/title pr-2"
         >
           <h4 className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
             {item.title}
           </h4>
+          
+          {createdLabel && (
+            <span className="shrink-0 whitespace-nowrap text-[11px] font-medium text-[var(--text-faint)] bg-[var(--bg-active)] px-1.5 py-0.5 rounded-[4px] border border-white/[0.05] mt-0.5">
+              {createdLabel}
+            </span>
+          )}
 
-          {/* NotebookLM-Style Wiki Hover Popover */}
           {showWikiHover && (
             <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} anchorRef={titleRef} />
           )}
         </div>
-
-
       </div>
 
-      {/* Created At timestamp */}
-      {createdLabel && (
-        <div className="mb-2 text-[12px] text-[var(--text-faint)] tracking-wide">
-          {createdLabel}
-        </div>
-      )}
-
-      {/* Content Chunk Body */}
       <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full text-left">
         {isEditing ? (
           <div className="flex flex-col gap-2 mt-2">
@@ -345,18 +339,21 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
                 )
               }
 
-              // Build highlight-aware markdown component overrides
+              const fallbackRender = (children, props) => (
+                <div className="mb-1.5 last:mb-0 text-justify whitespace-pre-wrap" {...props}>
+                  {typeof children === 'string'
+                    ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
+                    : children}
+                </div>
+              )
+
               const highlightComponents = {
                 ...cleanMarkdownComponents,
-                p: ({ node, children, ...props }) => (
-                  <div className="mb-1.5 last:mb-0 text-justify whitespace-pre-wrap" {...props}>
-                    {typeof children === 'string'
-                      ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
-                      : children}
-                  </div>
-                ),
+                p: ({ node, children, ...props }) => renderCalloutOrParagraph(children, props, fallbackRender),
+                ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-3 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
                 li: ({ node, children, ...props }) => (
-                  <li className="text-justify pl-1 font-normal break-words" {...props}>
+                  <li className="pl-1 leading-relaxed text-justify break-words" {...props}>
                     {typeof children === 'string'
                       ? <HighlightedText text={children} query={query} disabled={highlightsRemoved || selected} />
                       : children}
@@ -365,7 +362,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               }
 
               return (
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={highlightComponents}>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeRaw, rehypeKatex]} components={highlightComponents}>
                   {formatMarkdownText(localContent)}
                 </ReactMarkdown>
               )

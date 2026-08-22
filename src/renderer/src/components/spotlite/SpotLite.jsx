@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useTransition } from 'react'
 import { Search, Bot, FileText, ArrowRight, Sparkles } from 'lucide-react'
 import SpotLitePreview from './SpotLitePreview'
 import ChatBot from '../ChatBot'
+import PulseLoader from '../PulseLoader'
 
 const Highlight = ({ text, query }) => {
   if (!query || !text) return <span>{text || ''}</span>
@@ -29,7 +30,14 @@ const SpotLite = () => {
   const [hoveredDoc, setHoveredDoc] = useState(null)
   const [isSearching, setIsSearching] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [isPending, startTransition] = useTransition()
   const inputRef = useRef(null)
+
+  const handleModeSwitch = (newMode) => {
+    startTransition(() => {
+      setMode(newMode)
+    })
+  }
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -197,13 +205,13 @@ const SpotLite = () => {
           {/* Toggles - Plain text with background wrapper restored */}
           <div className="flex items-center gap-1 ml-4 bg-black/20 p-1 rounded-md border border-white/[0.05]">
             <button 
-              onClick={() => setMode('search')}
+              onClick={() => handleModeSwitch('search')}
               className={`px-2 py-0.5 rounded-[4px] text-[10px] font-medium transition-colors border-0 outline-none ${mode === 'search' ? 'bg-[var(--text-accent)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
             >
               Library
             </button>
             <button 
-              onClick={() => setMode('ai')}
+              onClick={() => handleModeSwitch('ai')}
               className={`px-2 py-0.5 rounded-[4px] text-[10px] font-medium transition-colors border-0 outline-none ${mode === 'ai' ? 'bg-[#10a37f] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
             >
               Ask AI
@@ -213,6 +221,13 @@ const SpotLite = () => {
 
         {/* Body */}
         <div className="flex-1 flex min-h-0 overflow-hidden bg-[var(--bg-app)] relative">
+          
+          {isPending && (
+            <div className="absolute inset-0 z-50 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center">
+              <PulseLoader text="Switching..." />
+            </div>
+          )}
+          
           <div className={`w-full h-full ${mode === 'search' ? 'flex' : 'hidden'}`}>
               {/* Left: Results List */}
               <div className="w-[280px] shrink-0 border-r border-white/[0.06] flex flex-col overflow-y-auto custom-scrollbar bg-[var(--bg-panel)]/30">
@@ -237,7 +252,11 @@ const SpotLite = () => {
                            
                            {/* Mini File Type Badge */}
                            {(doc.file_type || doc.category) && (
-                             <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/30 text-[var(--text-muted)] uppercase tracking-wider border border-white/5">
+                             <span className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
+                               (doc.file_type?.toLowerCase() === 'ai_response' || doc.file_type?.toLowerCase() === 'ai' || doc.category?.toLowerCase() === 'ai' || doc.category?.toLowerCase() === 'ai_response')
+                                 ? 'bg-[#a855f7]/20 text-[#c084fc] border-[#a855f7]/30'
+                                 : 'bg-black/30 text-[var(--text-muted)] border-white/5'
+                             }`}>
                                {doc.file_type || doc.category}
                              </span>
                            )}

@@ -6,6 +6,7 @@ import { Copy, Check, X } from 'lucide-react'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeRaw from 'rehype-raw'
 import 'katex/dist/katex.min.css'
 import './horizontal.css'
 const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
@@ -98,6 +99,20 @@ const formatMarkdownText = (text) => {
   result = result.replace(/`sourcecite:([^|`]+)(?:\|([^|`]*))?(?:\|([^|`]*))?`/g, (match, idx, title, existingNum) => {
     if (existingNum) return match // already numbered, leave as-is
     return assignCite(idx, title)
+  })
+
+  // Visually separate common RAG headers and fix AI-generated reference footers wrapped in emphasis like *References: Vault: [[page1]] | [[page2]]*
+  result = result.replace(/^\s*\*?\s*(?:References|Vault|Sources)(?:\s*:)?\s*(?:Vault\s*:)?\s*(.*?)\*?\s*$/gim, (match, content) => {
+    if (!content.trim()) return '\n### References\n'
+    
+    // Split by | if there are multiple items on one line
+    const items = content.split(/(?:\|)\s*/).filter(Boolean)
+    if (items.length > 1) {
+      // Put them separated by spaces so they render as a beautiful wrap-around tag cloud!
+      return '\n### References\n\n' + items.map(item => item.trim()).join(' ') + '\n'
+    }
+    
+    return `\n### References\n\n${content.trim()}\n`
   })
 
   // Clean up and normalize Markdown tables across chunks so they always render properly inside unified wrappers
@@ -268,7 +283,8 @@ const formatMarkdownText = (text) => {
   return endRefsParagraphs.join('\n')
 }
 
-const CodeCopyButton = ({ code, language }) => {
+
+const CodeCopyButton = ({ code }) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -280,14 +296,14 @@ const CodeCopyButton = ({ code, language }) => {
   return (
     <button
       onClick={handleCopy}
-      className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-[3px] transition-all duration-300 border-0 ${
+      className={`p-1.5 rounded-[4px] flex items-center justify-center transition-colors border-0 ${
         copied 
-          ? 'text-green-400 translate-x-1 bg-green-500/10' 
-          : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)]'
+          ? 'text-emerald-400 bg-emerald-500/10' 
+          : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.1]'
       }`}
-      title="Copy to clipboard"
+      title="Copy code"
     >
-      {copied ? 'Copied' : (language || 'Copy')}
+      {copied ? <Check size={14} /> : <Copy size={14} />}
     </button>
   )
 }
@@ -298,36 +314,48 @@ const fastJsonHighlight = (jsonString) => {
   const escaped = jsonString
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  return escaped.replace(
-    /("(?:\\\\|\\"|[^"])*")(\s*:)?|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
-    (match, str, colon, kw, num) => {
-      if (colon) return `<span style="color: #9cdcfe">${str}</span>${colon}`;
-      if (str) return `<span style="color: #ce9178">${str}</span>`;
-      if (kw) return `<span style="color: #569cd6">${kw}</span>`;
-      if (num) return `<span style="color: #b5cea8">${num}</span>`;
-      return match;
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+  
+  return escaped.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+    let cls = 'text-[#ce9178]' // string color
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) {
+        cls = 'text-[#9cdcfe]' // key color
+      }
+    } else if (/true|false/.test(match)) {
+      cls = 'text-[#569cd6]' // boolean
+    } else if (/null/.test(match)) {
+      cls = 'text-[#569cd6]' // null
+    } else {
+      cls = 'text-[#b5cea8]' // number
     }
-  );
-};
+    return `<span class="${cls}">${match}</span>`
+  })
+}
 
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
-    <div className="my-5 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] border border-[var(--border-dim)] shadow-sm relative group/code">
-      {/* Persistent Small Header - Ultra Subtle & Compact */}
-      <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
-        <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
-          {title || ''}
+    <div className="my-5 rounded-[8px] overflow-hidden bg-[#1e1e1e] border border-white/[0.05] shadow-sm relative group/code">
+      {/* Persistent Header */}
+      <div className="flex items-center justify-between px-3 py-2 bg-black/40 select-none border-b border-black/20">
+        <div className="flex items-center gap-2">
+          <span className="bg-white/10 text-[var(--text-main)] text-[10px] font-bold px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+            {language || title || 'TEXT'}
+          </span>
         </div>
         <div className="flex items-center transition-opacity h-full">
-          <CodeCopyButton code={code} language={language} />
+          <CodeCopyButton code={code} />
         </div>
       </div>
-      <div className="overflow-x-auto bg-transparent custom-scrollbar pb-2">
+      <div className="overflow-x-auto bg-transparent custom-scrollbar pb-2 relative">
+        {/* Right edge fade indicator for horizontal scroll */}
+        <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[#1e1e1e] to-transparent pointer-events-none" />
+        
         {language === 'json' ? (
           <pre 
-            className="m-0 bg-transparent text-[var(--text-main)] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
+            className="m-0 bg-transparent text-[#d4d4d4] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
             dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
           />
         ) : (
@@ -340,7 +368,7 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
             customStyle={{
               margin: 0,
               background: 'transparent',
-              color: 'var(--text-main)',
+              color: '#d4d4d4',
               fontSize: '13px',
               padding: '1rem 1.75rem',
               overflowX: 'auto',
@@ -373,7 +401,7 @@ const cleanCalloutChildren = (children, regex) => {
   })
 }
 
-const renderCalloutOrParagraph = (children, props) => {
+export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
   const rawText = Array.isArray(children)
     ? children.map(c => (typeof c === 'string' ? c : '')).join('')
     : typeof children === 'string'
@@ -382,7 +410,7 @@ const renderCalloutOrParagraph = (children, props) => {
 
   if (/^\[!TIP\]/i.test(rawText)) {
     return (
-      <div className="my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-emerald-500 border-0 bg-[var(--bg-panel)] text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm">
+      <div className="callout-box my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-emerald-500 bg-emerald-500/10 text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm not-italic">
         <div className="font-semibold tracking-wider text-[12px] text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1.5">
           💡 TIP
         </div>
@@ -392,7 +420,7 @@ const renderCalloutOrParagraph = (children, props) => {
   }
   if (/^\[!NOTE\]/i.test(rawText)) {
     return (
-      <div className="my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-blue-500 border-0 bg-[var(--bg-panel)] text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm">
+      <div className="callout-box my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-blue-500 bg-blue-500/10 text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm not-italic">
         <div className="font-semibold tracking-wider text-[12px] text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1.5">
           ℹ️ NOTE
         </div>
@@ -402,7 +430,7 @@ const renderCalloutOrParagraph = (children, props) => {
   }
   if (/^\[!(IMPORTANT|WARNING|CAUTION)\]/i.test(rawText)) {
     return (
-      <div className="my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-amber-500 border-0 bg-[var(--bg-panel)] text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm">
+      <div className="callout-box my-4 p-3.5 pl-4 rounded-[5px] border-l-[3.5px] border-amber-500 bg-amber-500/10 text-[var(--text-main)] text-[13.5px] leading-relaxed flex flex-col gap-1 shadow-sm not-italic">
         <div className="font-semibold tracking-wider text-[12px] text-amber-600 dark:text-amber-400 uppercase flex items-center gap-1.5">
           ⚠️ ATTENTION
         </div>
@@ -412,20 +440,24 @@ const renderCalloutOrParagraph = (children, props) => {
   }
 
   // ── Wikilink tag cloud ──────────────────────────────────────────────────
-  // When a paragraph contains only WikiTag pills (no plain text between them),
+  // When a paragraph contains only WikiTag or WikiHoverCite pills (no plain text between them),
   // render it as a flex-wrap cloud so tags flow naturally across multiple lines.
   const childArray = React.Children.toArray(children)
   const allWikiTags = childArray.length > 0 && childArray.every(child => {
     if (typeof child === 'string') return /^\s*$/.test(child) // allow whitespace-only strings
-    return child?.type === WikiTag
+    return child?.type === WikiTag || child?.type === WikiHoverCite
   })
 
   if (allWikiTags) {
     return (
-      <div className="flex flex-wrap gap-1 my-3" {...props}>
+      <div className="flex flex-wrap items-center gap-1.5 my-3" {...props}>
         {childArray}
       </div>
     )
+  }
+
+  if (fallbackRenderer) {
+    return fallbackRenderer(children, props)
   }
 
   return (
@@ -536,14 +568,14 @@ const WikiHoverCite = ({ idx, title, displayNum }) => {
 }
 
 const cleanMarkdownComponents = {
-  h1: ({node, ...props}) => <h1 className="text-base font-bold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
-  h2: ({node, ...props}) => <h2 className="text-sm font-bold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
-  h3: ({node, ...props}) => <h3 className="text-xs font-semibold text-[var(--text-main)] mt-3 mb-1.5 uppercase tracking-wide break-words" {...props} />,
-  h4: ({node, ...props}) => <h4 className="text-xs font-semibold text-[var(--text-main)] mt-2 mb-1 break-words" {...props} />,
+  h1: ({node, ...props}) => <h1 className="text-[18px] font-bold text-[var(--text-main)] mt-6 mb-3 break-words" {...props} />,
+  h2: ({node, ...props}) => <h2 className="text-[16px] font-bold text-[var(--text-main)] mt-6 mb-3 break-words" {...props} />,
+  h3: ({node, ...props}) => <h3 className="text-[15px] font-semibold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
+  h4: ({node, ...props}) => <h4 className="text-[14px] font-semibold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
   p: ({node, children, ...props}) => renderCalloutOrParagraph(children, props),
-  ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
-  ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
-  li: ({node, ...props}) => <li className="mb-2 leading-relaxed" {...props} />,
+  ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+  ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+  li: ({node, ...props}) => <li className="pl-1.5 leading-relaxed" {...props} />,
   img: ({node, src, alt, ...props}) => (
     <Suspense fallback={<div className="w-full h-[200px] my-6 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[12px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
       <MarkdownImage src={src} alt={alt} {...props} />
@@ -615,27 +647,50 @@ const cleanMarkdownComponents = {
     )
   },
   blockquote: ({node, ...props}) => (
-    <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-transparent pl-4 py-1 text-[var(--text-muted)] italic my-4 break-words" {...props} />
+    <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-[var(--text-accent)]/10 pl-4 py-2 pr-4 rounded-r-[4px] text-[var(--text-main)] italic my-4 break-words shadow-sm has-[.callout-box]:border-0 has-[.callout-box]:bg-transparent has-[.callout-box]:p-0 has-[.callout-box]:m-0 has-[.callout-box]:shadow-none" {...props} />
   ),
-  a: ({node, href, children, ...props}) => (
-    <a
-      href={href}
-      onClick={(e) => {
-        e.preventDefault()
-        if (!href) return
-        if (window.api?.system?.openExternal) {
-          window.api.system.openExternal(href)
-        } else {
-          window.open(href, '_blank')
-        }
-      }}
-      className="text-[var(--text-accent)] underline underline-offset-2 hover:opacity-80 cursor-pointer transition-opacity break-words font-medium"
-      title={href}
-      {...props}
-    >
-      {children}
-    </a>
-  ),
+  a: ({node, href, children, ...props}) => {
+    const isFileLink = href && (!href.startsWith('http') || href.includes('system-design') || href.includes('Vault'))
+    if (isFileLink) {
+      return (
+        <a
+          href={href}
+          onClick={(e) => {
+            e.preventDefault()
+            if (!href) return
+            if (window.api?.system?.openExternal) window.api.system.openExternal(href)
+            else window.open(href, '_blank')
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1 my-1 rounded-full bg-[var(--bg-active)] border border-white/[0.08] hover:bg-white/[0.12] transition-colors text-[12px] font-medium text-[var(--text-main)] max-w-full no-underline align-middle shadow-sm"
+          title={href}
+          {...props}
+        >
+          <svg className="w-3.5 h-3.5 text-[var(--text-accent)] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <span className="truncate break-all">{children}</span>
+        </a>
+      )
+    }
+
+    return (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault()
+          if (!href) return
+          if (window.api?.system?.openExternal) {
+            window.api.system.openExternal(href)
+          } else {
+            window.open(href, '_blank')
+          }
+        }}
+        className="text-[var(--text-accent)] underline underline-offset-2 hover:opacity-80 cursor-pointer transition-opacity break-words font-medium"
+        title={href}
+        {...props}
+      >
+        {children}
+      </a>
+    )
+  },
   hr: ({node, ...props}) => <div className="horizontal-divider my-6" {...props} />,
   table: ({node, ...props}) => (
     <div className="my-3 w-full overflow-x-auto bg-transparent border-0 shadow-none">
@@ -647,7 +702,16 @@ const cleanMarkdownComponents = {
   tr: ({node, ...props}) => <tr className="bg-transparent transition-none border-0" {...props} />,
   th: ({node, ...props}) => <th className="py-2 px-3 text-xs font-semibold text-[var(--text-main)] whitespace-nowrap select-text bg-transparent border-0" {...props} />,
   td: ({node, ...props}) => <td className="py-2 px-3 text-xs text-[var(--text-main)]/90 leading-relaxed break-words select-text border-0" {...props} />,
-  em: ({node, ...props}) => <em className="italic text-[var(--text-accent)] font-normal" {...props} />
+  em: ({node, ...props}) => <em className="italic text-[var(--text-accent)] font-normal" {...props} />,
+  details: ({node, ...props}) => (
+    <details className="my-3 border border-white/[0.08] bg-[var(--bg-panel)] rounded-[6px] overflow-hidden group shadow-sm [&>*:not(summary)]:px-4 [&>*:not(summary)]:pb-3 [&>*:not(summary)]:pt-1.5 [&>*:not(summary)]:last:mb-0" {...props} />
+  ),
+  summary: ({node, ...props}) => (
+    <summary className="px-4 py-2.5 bg-[var(--bg-active)]/40 cursor-pointer text-[13.5px] font-semibold text-[var(--text-main)] list-none flex items-center justify-between hover:bg-white/[0.06] transition-colors" {...props}>
+      <span className="flex-1">{props.children}</span>
+      <span className="shrink-0 ml-3 opacity-50 group-open:rotate-180 transition-transform">▼</span>
+    </summary>
+  )
 }
 
 const formatJsonContent = (content, maxLength = 150000) => {
@@ -729,7 +793,7 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', resu
   return (
     <div className={className || "text-[var(--text-main)] text-[14.5px] leading-relaxed max-w-full overflow-visible"}>
       <Suspense fallback={<div className="flex items-center justify-center py-10 text-[var(--text-muted)] animate-pulse text-sm">Loading document...</div>}>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={cleanMarkdownComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeRaw, rehypeKatex]} components={cleanMarkdownComponents}>
           {formattedContent}
         </ReactMarkdown>
       </Suspense>

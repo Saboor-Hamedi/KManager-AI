@@ -353,6 +353,24 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
   const [dbStats, setDbStats] = useState({})
   const [isDragging, setIsDragging] = useState(false)
   const [attachedFile, setAttachedFile] = useState(null)
+  
+  const allPrompts = useMemo(() => [
+    'Summarize key insights across documents',
+    'Find core concepts and definitions',
+    'Compare two related topics',
+    'What are the main themes in my library?',
+    'Find actionable items in recent notes',
+    'Explain the most complex topic simply',
+    'Generate a study guide from my notes',
+    'List all unresolved questions in my documents'
+  ], [])
+  
+  const [randomSuggestions, setRandomSuggestions] = useState([])
+  
+  useEffect(() => {
+    setRandomSuggestions([...allPrompts].sort(() => 0.5 - Math.random()).slice(0, 3))
+  }, [allPrompts])
+
   const messagesEndRef = useRef(null)
   const scrollRef = useRef(null)
   const textareaRef = useRef(null)
@@ -590,6 +608,12 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
 
 
 
+  const [scope, setScope] = useState('All Files')
+  const toggleScope = () => {
+    const scopes = ['All Files', 'Recent Files', 'Current Folder']
+    setScope(scopes[(scopes.indexOf(scope) + 1) % scopes.length])
+  }
+
   const ChatUI = (
     <div
       className={cn(
@@ -646,9 +670,9 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
                   : 'Ask me about your knowledge base or features.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md relative z-10">
-                {['Summarize key insights across documents', 'Find core concepts and definitions', 'Compare two related topics'].map((s) => (
+                {randomSuggestions.map((s) => (
                   <button key={s} onClick={() => sendQuickPrompt(s)}
-                    className="flex-1 text-left px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] bg-white/[0.03] hover:bg-white/[0.06] rounded-[5px] border-0 transition-colors">
+                    className="flex-1 text-left px-3 py-2 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-main)] bg-white/[0.03] hover:bg-white/[0.06] rounded-[5px] border-0 transition-colors shadow-sm">
                     {s}
                   </button>
                 ))}
@@ -721,9 +745,12 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
 
             {/* Scope Indicator */}
             <div className="flex items-center gap-1.5 pt-1.5 px-4 pb-0 overflow-x-auto custom-scrollbar">
-              <span className="flex items-center gap-1 text-[8.5px] font-bold tracking-wider uppercase text-[var(--text-accent)] bg-[var(--text-accent)]/15 px-1.5 py-0.5 rounded-sm shadow-sm shrink-0 border-0">
-                <Database size={9} /> Scope: All Files
-              </span>
+              <button 
+                onClick={toggleScope}
+                className="flex items-center gap-1 text-[8.5px] font-bold tracking-wider uppercase text-[var(--text-accent)] bg-[var(--text-accent)]/15 hover:bg-[var(--text-accent)]/25 hover:scale-105 px-1.5 py-0.5 rounded-sm shadow-sm shrink-0 border-0 transition-all cursor-pointer"
+              >
+                <Database size={9} /> Scope: {scope}
+              </button>
             </div>
 
             {/* Top Row: Auto-growing Textarea */}

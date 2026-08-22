@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, Home, SquarePen } from 'lucide-react'
 import DocumentRenderer from '../search/DocumentRenderer'
-import PulseLoader from '../PulseLoader'
+
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'
 
@@ -217,12 +217,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-hidden relative select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
           
-          {/* Shared Loader Overlay (Visible while loadingText or !isReady is true) */}
-          {(loadingText || !isReady) && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm animate-in fade-in duration-300">
-              <PulseLoader text="Loading Document" size="md" />
-            </div>
-          )}
+
 
           {/* ── PDF: render directly via file:// ── */}
           {isPdf && fileExists && fileSrc ? (
