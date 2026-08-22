@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
 import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus, Edit } from 'lucide-react'
 import HoverWikilink from './HoverWikilink'
-import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex, renderCalloutOrParagraph } from './DocumentRenderer'
+import DocumentRenderer, { cleanMarkdownComponents, formatMarkdownText, remarkMath, rehypeKatex, renderCalloutOrParagraph, resolveRelativeMedia } from './DocumentRenderer'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import Wrapper from '../code/Wrapper'
@@ -262,7 +262,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   return (
     <div 
       onClick={handleCardClick} 
-      className={`group relative transition-all duration-200 overflow-visible py-4 shadow-none ${selected ? 'bg-[var(--bg-active)]/50 border-l-[3px] border-l-[var(--text-accent)] pl-3' : 'bg-transparent border-l-[3px] border-l-transparent pl-3'}`}
+      className={`group relative transition-all duration-200 overflow-visible py-4 px-2 -mx-2 rounded-[8px] shadow-none ${selected ? 'bg-[var(--bg-active)]/60' : 'bg-transparent'}`}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
     >
       <div className="flex items-center justify-between gap-4 mb-1.5">
@@ -335,6 +335,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
                     content={localContent}
                     category={item.category || ext.toUpperCase()}
                     fileTitle={item.title}
+                    vaultPath={item.vault_path}
                   />
                 )
               }
@@ -349,6 +350,8 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
 
               const highlightComponents = {
                 ...cleanMarkdownComponents,
+                img: ({node, src, alt, ...props}) => cleanMarkdownComponents.img({node, src: resolveRelativeMedia(src, item.vault_path), alt, ...props}),
+                a: ({node, href, children, ...props}) => cleanMarkdownComponents.a({node, href: resolveRelativeMedia(href, item.vault_path), children, ...props}),
                 p: ({ node, children, ...props }) => renderCalloutOrParagraph(children, props, fallbackRender),
                 ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
                 ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,

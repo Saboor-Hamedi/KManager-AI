@@ -15,6 +15,21 @@ const MarkdownImage = lazy(() => import('./MarkdownImage'))
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
+export const resolveRelativeMedia = (src, vaultPath) => {
+  if (!src || src.startsWith('http') || src.startsWith('data:') || src.startsWith('file://') || src.startsWith('blob:')) return src
+  if (!vaultPath) return src
+  
+  // Normalize slashes and remove the file name to get the directory
+  const normalizedVault = vaultPath.replace(/\\/g, '/')
+  const vaultDir = normalizedVault.includes('/') ? normalizedVault.substring(0, normalizedVault.lastIndexOf('/')) : ''
+  
+  // Clean the relative path
+  let cleanSrc = src
+  if (cleanSrc.startsWith('./')) cleanSrc = cleanSrc.substring(2)
+  
+  return `file:///${vaultDir}/${cleanSrc}`
+}
+
 const formatMarkdownText = (text) => {
   if (!text || typeof text !== 'string') return ''
 
@@ -752,12 +767,21 @@ const formatJsonContent = (content, maxLength = 150000) => {
   }
 }
 
-const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', results = null, className, maxLength = 150000 }) => {
+const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaultPath = '', results = null, className, maxLength = 150000 }) => {
   React.useEffect(() => {
     if (results && Array.isArray(results) && results.length > 0) {
       window.__currentSearchMappedResults = results
     }
   }, [results])
+
+  const components = React.useMemo(() => {
+    if (!vaultPath) return cleanMarkdownComponents
+    return {
+      ...cleanMarkdownComponents,
+      img: ({node, src, alt, ...props}) => cleanMarkdownComponents.img({node, src: resolveRelativeMedia(src, vaultPath), alt, ...props}),
+      a: ({node, href, children, ...props}) => cleanMarkdownComponents.a({node, href: resolveRelativeMedia(href, vaultPath), children, ...props})
+    }
+  }, [vaultPath])
 
   if (!content) return null
   const safeContent = typeof content !== 'string' && category !== 'JSON' ? String(content) : content
@@ -790,7 +814,7 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', resu
   return (
     <div className={className || "text-[var(--text-main)] text-[14.5px] leading-relaxed max-w-full overflow-visible"}>
       <Suspense fallback={<div className="flex items-center justify-center py-10 text-[var(--text-muted)] animate-pulse text-sm">Loading document...</div>}>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeRaw, rehypeKatex]} components={cleanMarkdownComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeRaw, rehypeKatex]} components={components}>
           {formattedContent}
         </ReactMarkdown>
       </Suspense>

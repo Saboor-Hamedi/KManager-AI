@@ -261,6 +261,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                     content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
                     category={selectedPdf.category}
                     fileTitle={localTitle !== null ? localTitle : selectedPdf.title}
+                    vaultPath={currentVaultPath}
                   />
                 ) : (
                   <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No archived content available.</div>
@@ -288,6 +289,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                     content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
                     category={selectedPdf.category}
                     fileTitle={localTitle !== null ? localTitle : selectedPdf.title}
+                    vaultPath={currentVaultPath}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center mt-20 opacity-50">
