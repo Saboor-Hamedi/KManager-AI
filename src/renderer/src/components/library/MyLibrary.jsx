@@ -72,12 +72,31 @@ const MyLibrary = () => {
   const [isDeepSearching, setIsDeepSearching] = useState(false)
   const [visibleCount, setVisibleCount] = useState(50)
   const [sortOrder, setSortOrder] = useState('newest')
+  const [layout, setLayout] = useState('grid-large') // 'grid-large', 'grid-small', 'list'
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [activeFileType, setActiveFileType] = useState('all')
   const [recentSearches, setRecentSearches] = useState([])
   const [isFocused, setIsFocused] = useState(false)
   const searchInputRef = React.useRef(null)
   const [loading, setLoading] = useState(true)
+
+  // Load preferences
+  useEffect(() => {
+    if (window.api?.config?.get) {
+      window.api.config.get('librarySortOrder', 'newest').then(v => setSortOrder(v))
+      window.api.config.get('libraryLayout', 'grid-large').then(v => setLayout(v))
+    }
+  }, [])
+
+  const handleSetSortOrder = (val) => {
+    setSortOrder(val)
+    if (window.api?.config?.set) window.api.config.set('librarySortOrder', val)
+  }
+
+  const handleSetLayout = (val) => {
+    setLayout(val)
+    if (window.api?.config?.set) window.api.config.set('libraryLayout', val)
+  }
 
   const fileTypes = React.useMemo(() => {
     const types = new Set(documents.map(d => (d.file_type || '').toLowerCase()).filter(Boolean))
@@ -450,18 +469,18 @@ const MyLibrary = () => {
                 fetchRecentSearches(e.target.value)
               }}
               onKeyDown={handleKeyDown}
-              className="relative z-10 w-full pl-10 pr-16 py-2.5 bg-[var(--bg-panel)] border border-white/[0.02] focus:border-transparent focus:ring-0 rounded-[5px] text-[13px] font-medium text-[var(--text-main)] placeholder-[var(--text-muted)]/50 outline-none transition-all duration-300 shadow-[0_4px_15px_-5px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.3)]"
+              className="relative z-10 w-full pl-10 pr-16 py-2.5 bg-[var(--bg-panel)] border-0 border-transparent focus:ring-0 focus:outline-none rounded-none text-[13px] font-medium text-[var(--text-main)] placeholder-[var(--text-muted)]/50 transition-all duration-300 shadow-[0_4px_15px_-5px_rgba(0,0,0,0.2)]"
             />
             <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1.5 z-10">
               {search ? (
                 <button
                   onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
-                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[5px] transition-colors"
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-none transition-colors border-0"
                 >
                   <X size={13} />
                 </button>
               ) : (
-                <kbd className="hidden sm:inline-block px-2 py-1 rounded-[5px] bg-[var(--text-muted)]/10 text-[9px] font-bold text-[var(--text-muted)]/70 tracking-widest font-mono uppercase shadow-none pointer-events-none border-0 mr-2">
+                <kbd className="hidden sm:inline-block px-2 py-1 bg-[var(--text-muted)]/10 text-[9px] font-bold text-[var(--text-muted)]/70 tracking-widest font-mono uppercase border-0 pointer-events-none mr-2 rounded-none">
                   Ctrl F
                 </kbd>
               )}
@@ -561,8 +580,34 @@ const MyLibrary = () => {
               ))}
             </div>
 
-            {/* Sort Options (Right Aligned) */}
-            <div className="shrink-0 flex items-center relative">
+            {/* Sort Options & Layout Toggler (Right Aligned) */}
+            <div className="shrink-0 flex items-center gap-2 relative">
+              
+              {/* Layout Toggles */}
+              <div className="flex items-center bg-[var(--bg-panel)] rounded-[5px] p-0.5 shadow-sm">
+                <button
+                  onClick={() => handleSetLayout('grid-large')}
+                  className={`p-1.5 rounded-[4px] transition-colors ${layout === 'grid-large' ? 'bg-[var(--bg-active)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                  title="Large Grid"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                </button>
+                <button
+                  onClick={() => handleSetLayout('grid-small')}
+                  className={`p-1.5 rounded-[4px] transition-colors ${layout === 'grid-small' ? 'bg-[var(--bg-active)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                  title="Small Grid"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="4" height="4" x="3" y="3" rx="1"/><rect width="4" height="4" x="10" y="3" rx="1"/><rect width="4" height="4" x="17" y="3" rx="1"/><rect width="4" height="4" x="3" y="10" rx="1"/><rect width="4" height="4" x="10" y="10" rx="1"/><rect width="4" height="4" x="17" y="10" rx="1"/><rect width="4" height="4" x="3" y="17" rx="1"/><rect width="4" height="4" x="10" y="17" rx="1"/><rect width="4" height="4" x="17" y="17" rx="1"/></svg>
+                </button>
+                <button
+                  onClick={() => handleSetLayout('list')}
+                  className={`p-1.5 rounded-[4px] transition-colors ${layout === 'list' ? 'bg-[var(--bg-active)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                  title="List View"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                </button>
+              </div>
+
               <button
                 onClick={() => !searchResults && setIsSortOpen(!isSortOpen)}
                 disabled={searchResults !== null}
@@ -582,7 +627,7 @@ const MyLibrary = () => {
                       <button
                         key={opt.id}
                         onClick={() => {
-                          setSortOrder(opt.id)
+                          handleSetSortOrder(opt.id)
                           setIsSortOpen(false)
                         }}
                         className={`w-full text-left px-4 py-2 text-[11px] font-bold transition-colors ${
@@ -623,7 +668,13 @@ const MyLibrary = () => {
           ) : (
             <>
               <div 
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-opacity duration-200"
+                className={`grid transition-opacity duration-200 ${
+                  layout === 'grid-large' 
+                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
+                    : layout === 'grid-small'
+                    ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+                    : 'grid-cols-1 gap-2'
+                }`}
                 style={{ opacity: deferredSearch !== search ? 0.6 : 1 }}
               >
                 {filteredDocs.slice(0, visibleCount).map((doc, idx) => {
@@ -631,7 +682,9 @@ const MyLibrary = () => {
                     <div
                       key={doc.id || idx}
                       onClick={() => handleOpenDoc(doc)}
-                      className="group relative flex flex-col bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_2px_15px_-3px_rgba(0,0,0,0.1),0_10px_20px_-2px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] border-0"
+                      className={`group relative flex bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[5px] transition-all duration-300 cursor-pointer overflow-hidden shadow-sm hover:shadow-md border border-white/[0.02] ${
+                        layout === 'list' ? 'flex-row items-center p-3 gap-4' : 'flex-col'
+                      }`}
                     >
                       {/* Delete Button (Hover) */}
                       <button
@@ -639,23 +692,40 @@ const MyLibrary = () => {
                           e.stopPropagation()
                           setDocToDelete(doc)
                         }}
-                        className="absolute top-2 right-2 p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-red-400 hover:bg-red-500/20 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 border-0 shadow-lg"
+                        className={`absolute p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-red-400 hover:bg-red-500/20 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 border-0 shadow-lg ${
+                           layout === 'list' ? 'right-4 top-1/2 -translate-y-1/2' : 'top-2 right-2'
+                        }`}
                         title="Remove from database"
                       >
                         <Trash2 size={13} />
                       </button>
 
                       {/* Thumbnail Preview Area */}
-                      <div className="h-[120px] w-full border-b border-black/10 bg-black/30 overflow-hidden relative">
-                        {renderThumbnail(doc)}
-                      </div>
+                      {layout === 'grid-large' && (
+                        <div className="h-[140px] w-full border-b border-black/10 bg-black/30 overflow-hidden relative">
+                          {renderThumbnail(doc)}
+                        </div>
+                      )}
+                      
+                      {layout === 'grid-small' && (
+                        <div className="h-[70px] w-full border-b border-black/10 bg-black/30 overflow-hidden relative opacity-70">
+                          {renderThumbnail(doc)}
+                        </div>
+                      )}
+
+                      {/* List View Icon */}
+                      {layout === 'list' && (
+                        <div className="h-10 w-10 shrink-0 bg-white/5 rounded-[5px] flex items-center justify-center border border-white/5">
+                           <FileText size={18} className="text-[var(--text-muted)]" />
+                        </div>
+                      )}
                       
                       {/* Metadata Footer */}
-                      <div className="p-3.5 flex flex-col gap-1.5 bg-transparent">
-                        <h3 className="text-[12.5px] font-semibold text-[var(--text-main)] truncate" title={doc.file_name}>
+                      <div className={`flex flex-col bg-transparent ${layout === 'list' ? 'flex-1 min-w-0 pr-12' : 'p-3 gap-1.5'}`}>
+                        <h3 className="text-[12.5px] font-medium text-[var(--text-main)] truncate" title={doc.file_name}>
                           {doc.file_name}
                         </h3>
-                        <div className="flex justify-between items-center text-[10.5px] font-medium text-[var(--text-muted)]/70">
+                        <div className={`flex text-[10.5px] font-medium text-[var(--text-muted)]/70 ${layout === 'list' ? 'gap-4 mt-0.5' : 'justify-between items-center'}`}>
                           <span className="tracking-wider">{formatDate(doc.created_at)}</span>
                           {doc.file_size > 0 && <span className="font-mono">{formatBytes(doc.file_size)}</span>}
                         </div>
