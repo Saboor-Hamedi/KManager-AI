@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, memo } from 'react'
+import { createPortal } from 'react-dom'
 import mermaid from 'mermaid'
 import { Copy, Check, ZoomIn, ZoomOut, Maximize, Download, X } from 'lucide-react'
 
@@ -204,7 +205,7 @@ const MermaidDiagram = memo(({ chart }) => {
         })
 
         // Fix internal block keywords that Mermaid expects to be mostly lowercase, allowing for leading whitespace/indentation
-        sanitizedChart = sanitizedChart.replace(/^(\s*)(Participant|Activate|Deactivate|Opt|Alt|Else|End|Rect|Note over|Note left of|Note right of|Note|Autonumber)\b/gmi, (_, space, match) => {
+        sanitizedChart = sanitizedChart.replace(/^(\s*)(Participant|Activate|Deactivate|Opt|Alt|Else|End|Rect|Note over|Note left of|Note right of|Note|Autonumber|Class|Subgraph|Direction)\b/gmi, (_, space, match) => {
           const m = match.toLowerCase()
           if (m.startsWith('note')) {
             // Mermaid accepts 'note over', 'Note over', etc., but standardizing to Capital N is safe
@@ -213,7 +214,27 @@ const MermaidDiagram = memo(({ chart }) => {
           return space + m
         })
 
-        const { svg } = await mermaid.render(renderId, sanitizedChart)
+        // Provide a hidden, fixed-width container to prevent Mermaid v11 from throwing NaN 
+        // on text measurements for Gantt and Git graphs when rendered off-DOM
+        const measureContainer = document.createElement('div')
+        measureContainer.style.width = '1200px'
+        measureContainer.style.height = '1200px'
+        measureContainer.style.position = 'fixed'
+        measureContainer.style.top = '0'
+        measureContainer.style.left = '0'
+        measureContainer.style.opacity = '0'
+        measureContainer.style.pointerEvents = 'none'
+        measureContainer.style.zIndex = '-9999'
+        document.body.appendChild(measureContainer)
+
+        let svg = ''
+        try {
+          const result = await mermaid.render(renderId, sanitizedChart, measureContainer)
+          svg = result.svg
+        } finally {
+          document.body.removeChild(measureContainer)
+        }
+        
         if (isMounted) {
           setError(null)
           setSvgContent(svg)
@@ -332,43 +353,48 @@ const MermaidDiagram = memo(({ chart }) => {
       </div>
 
       {/* Modal Overlay */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
-          <div className="absolute top-4 right-4 flex items-center gap-0.5 bg-[var(--bg-panel)]/80 backdrop-blur-md p-1 rounded-[5px] border border-[var(--border-dim)] shadow-2xl z-50">
-             <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><ZoomIn size={14} /></button>
-             <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><ZoomOut size={14} /></button>
-             <button onClick={handleDownload} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><Download size={14} /></button>
-             <div className="w-px h-4 bg-[var(--border-subtle)] mx-0.5" />
-             <button onClick={() => { setIsModalOpen(false); setZoom(1); setPan({x:0, y:0}) }} className="p-1.5 text-[var(--text-muted)] hover:text-white hover:bg-red-500/80 rounded-[3px] transition-colors"><X size={14} /></button>
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="relative w-full max-w-6xl h-[85vh] mx-4 bg-[var(--bg-app)]/40 rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl flex flex-col">
+            
+            <div className="absolute top-4 right-4 flex items-center gap-0.5 bg-[var(--bg-panel)]/90 backdrop-blur-md p-1 rounded-[5px] border border-[var(--border-dim)] shadow-2xl z-50">
+               <button onClick={() => setZoom(z => Math.min(z + 0.25, 6))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><ZoomIn size={14} /></button>
+               <button onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><ZoomOut size={14} /></button>
+               <button onClick={handleDownload} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10 rounded-[3px] transition-colors"><Download size={14} /></button>
+               <div className="w-px h-4 bg-[var(--border-subtle)] mx-0.5" />
+               <button onClick={() => { setIsModalOpen(false); setZoom(1); setPan({x:0, y:0}) }} className="p-1.5 text-[var(--text-muted)] hover:text-white hover:bg-red-500/80 rounded-[3px] transition-colors"><X size={14} /></button>
+            </div>
+            
+            <div 
+              className="w-full h-full overflow-hidden flex items-center justify-center relative cursor-move" 
+              onWheel={(e) => {
+                if (e.deltaY < 0) setZoom(z => Math.min(z + 0.1, 6))
+                else setZoom(z => Math.max(z - 0.1, 0.25))
+              }}
+              onMouseDown={(e) => {
+                if (e.target.closest('button')) return
+                isDragging.current = true
+                lastPan.current = { x: e.clientX, y: e.clientY }
+              }}
+              onMouseMove={(e) => {
+                if (!isDragging.current) return
+                const dx = e.clientX - lastPan.current.x
+                const dy = e.clientY - lastPan.current.y
+                setPan(p => ({ x: p.x + dx, y: p.y + dy }))
+                lastPan.current = { x: e.clientX, y: e.clientY }
+              }}
+              onMouseUp={() => isDragging.current = false}
+              onMouseLeave={() => isDragging.current = false}
+            >
+               <div
+                  className="bg-[var(--bg-card)] p-6 rounded-[5px] ring-1 ring-white/5 shadow-2xl transition-none [&_svg]:max-w-none [&_svg]:!bg-transparent [&_svg_rect]:!stroke-transparent [&>svg>rect]:!fill-transparent"
+                  style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
+                  dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
+            </div>
           </div>
-          <div 
-            className="w-full h-full overflow-hidden flex items-center justify-center relative cursor-move" 
-            onWheel={(e) => {
-              if (e.deltaY < 0) setZoom(z => Math.min(z + 0.1, 6))
-              else setZoom(z => Math.max(z - 0.1, 0.25))
-            }}
-            onMouseDown={(e) => {
-              if (e.target.closest('button')) return
-              isDragging.current = true
-              lastPan.current = { x: e.clientX, y: e.clientY }
-            }}
-            onMouseMove={(e) => {
-              if (!isDragging.current) return
-              const dx = e.clientX - lastPan.current.x
-              const dy = e.clientY - lastPan.current.y
-              setPan(p => ({ x: p.x + dx, y: p.y + dy }))
-              lastPan.current = { x: e.clientX, y: e.clientY }
-            }}
-            onMouseUp={() => isDragging.current = false}
-            onMouseLeave={() => isDragging.current = false}
-          >
-             <div
-                className="bg-[var(--bg-card)] p-6 rounded-[5px] ring-1 ring-white/5 shadow-2xl transition-none [&_svg]:max-w-none [&_svg]:!bg-transparent [&_svg_rect]:!stroke-transparent [&>svg>rect]:!fill-transparent"
-                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
-                dangerouslySetInnerHTML={{ __html: svgContent }}
-              />
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

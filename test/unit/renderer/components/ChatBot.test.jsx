@@ -1,9 +1,18 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import React from 'react'
 import ChatBot from '../../../../src/renderer/src/components/ChatBot'
 
 describe('ChatBot', () => {
+  beforeEach(() => {
+    // Suggestions are picked randomly (3 of 8); stabilize selection for assertions
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   async function openChat() {
     await act(async () => render(<ChatBot />))
     fireEvent.click(screen.getByTitle('Open Assistant'))
@@ -14,10 +23,13 @@ describe('ChatBot', () => {
     expect(screen.getByText('KManager AI')).toBeInTheDocument()
   })
 
-  it('renders suggestion buttons', async () => {
+  it('renders three suggestion buttons', async () => {
     await openChat()
-    expect(screen.getByRole('button', { name: 'Summarize key insights across documents' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Find core concepts and definitions' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Compare two related topics' })).toBeInTheDocument()
+    expect(screen.getAllByText(/Summarize|Find core|Compare two/).length).toBe(3)
+  })
+
+  it('renders suggestion prompt text', async () => {
+    await openChat()
+    expect(screen.getByText('Summarize key insights across documents')).toBeInTheDocument()
   })
 })

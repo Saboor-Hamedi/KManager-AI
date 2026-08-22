@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Database, RefreshCw, Layers, FileText, HardDrive, CheckCircle2, AlertCircle, Trash2, Cpu, AlertTriangle, Code, Terminal, FileSpreadsheet } from 'lucide-react'
 import ConfirmModal from '../layout/ConfirmModal'
+import { cn } from '../../lib/utils'
 
 const SettingDBPropertiesPanel = () => {
   const [dbStats, setDbStats] = useState(null)
@@ -142,12 +143,29 @@ const SettingDBPropertiesPanel = () => {
   const totalDbSize = formatBytes(dbStats?.total_db_bytes || 0)
   const rawFileSize = formatBytes(dbStats?.raw_file_bytes || 0)
 
+  const [sortField, setSortField] = useState('count')
+  const [sortDir, setSortDir] = useState('desc')
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('desc')
+    }
+  }
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <span className="opacity-0 group-hover:opacity-30">↓</span>
+    return <span>{sortDir === 'desc' ? '↓' : '↑'}</span>
+  }
+
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h3 className="text-[13px] font-black tracking-tight text-[var(--text-main)] mb-0.5">DB Properties & Storage</h3>
-          <p className="text-[12px] font-bold text-[var(--text-muted)]">Live statistics, format distributions, and maintenance tools for your Knowledge Hub.</p>
+          <h3 className="text-[13px] font-black tracking-tight text-[var(--text-main)] mb-1">DB Properties & Storage</h3>
+          <p className="text-[12px] font-bold text-[var(--text-muted)] mb-4">Live statistics, format distributions, and maintenance tools for your Knowledge Hub.</p>
         </div>
         
         <div className="flex items-center gap-2 shrink-0">
@@ -190,7 +208,6 @@ const SettingDBPropertiesPanel = () => {
       )}
 
       {/* Action Progress / Notification Banner */}
-      {/* Action Progress / Notification Banner */}
       {actionState && (
         <div className={`px-3.5 h-[56px] rounded-md border flex flex-col justify-center gap-1.5 transition-all duration-200 ${
           actionState.status === 'error'
@@ -230,48 +247,48 @@ const SettingDBPropertiesPanel = () => {
 
       {/* Top Metrics Cards - 4 Column Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Documents</span>
-            <FileText size={14} className="text-[#a855f7]" />
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Total Documents</span>
+            <FileText size={16} className="text-[#a855f7] opacity-80" />
           </div>
-          <div className="text-[16px] font-semibold text-[var(--text-main)] font-mono tracking-normal">
+          <div className="text-3xl font-black text-[var(--text-main)] font-mono tracking-normal mb-1">
             {totalDocs.toLocaleString()}
           </div>
-          <div className="text-[12px] font-medium text-[var(--text-muted)] mt-1">Archived in PostgreSQL</div>
+          <div className="text-[12px] font-medium text-[var(--text-faint)] truncate">Archived in PostgreSQL</div>
         </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Vector Chunks</span>
-            <Layers size={14} className="text-[#a855f7]" />
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Vector Chunks</span>
+            <Layers size={16} className="text-[#a855f7] opacity-80" />
           </div>
-          <div className="text-[16px] font-semibold text-[#a855f7] font-mono tracking-normal">
+          <div className="text-3xl font-black text-[#a855f7] font-mono tracking-normal mb-1">
             {totalChunks.toLocaleString()}
           </div>
-          <div className="text-[12px] font-medium text-[var(--text-muted)] mt-1">Indexed via pgvector</div>
+          <div className="text-[12px] font-medium text-[var(--text-faint)] truncate">Indexed via pgvector</div>
         </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">DB Storage Size</span>
-            <Database size={14} className="text-[#a855f7]" />
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">DB Storage Size</span>
+            <Database size={16} className="text-[#a855f7] opacity-80" />
           </div>
-          <div className="text-[16px] font-semibold text-[#61afef] font-mono tracking-normal">
+          <div className="text-3xl font-black text-[#61afef] font-mono tracking-normal mb-1 truncate">
             {totalDbSize}
           </div>
-          <div className="text-[12px] font-medium text-[var(--text-muted)] mt-1">Tables & pgvector indexes</div>
+          <div className="text-[12px] font-medium text-[var(--text-faint)] truncate">Tables & pgvector indexes</div>
         </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Avg Chunks / Doc</span>
-            <HardDrive size={14} className="text-[#a855f7]" />
+        <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-md p-5 shadow-sm relative overflow-hidden flex flex-col justify-between" title={`Raw text size: ${rawFileSize}`}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Avg Chunks / Doc</span>
+            <HardDrive size={16} className="text-[#a855f7] opacity-80" />
           </div>
-          <div className="text-[16px] font-semibold text-[var(--text-main)] font-mono tracking-normal">
+          <div className="text-3xl font-black text-[var(--text-main)] font-mono tracking-normal mb-1">
             {avgChunks}
           </div>
-          <div className="text-[12px] font-medium text-[var(--text-muted)] mt-1">Raw text size: {rawFileSize}</div>
+          <div className="text-[12px] font-medium text-[var(--text-faint)] truncate">Raw text: {rawFileSize}</div>
         </div>
       </div>
 
@@ -283,7 +300,7 @@ const SettingDBPropertiesPanel = () => {
             <h4 className="text-[12px] font-bold uppercase tracking-wider text-[var(--text-main)]">Ingested File Formats</h4>
           </div>
           <span className="text-[12px] font-semibold text-[var(--text-muted)]">
-            {dbStats?.by_type ? Object.keys(dbStats.by_type).length : 0} format(s)
+            {dbStats?.by_type ? Object.values(dbStats.by_type).filter(c => Number(c) > 0).length : 0} active format(s)
           </span>
         </div>
 
@@ -291,17 +308,51 @@ const SettingDBPropertiesPanel = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse mt-1">
               <thead>
-                <tr className="border-b border-[var(--border-subtle)]/40 text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  <th className="py-2.5 pl-2">File Type</th>
-                  <th className="py-2.5 pl-4">Count</th>
-                  <th className="py-2.5 pl-4">Total Size (MB)</th>
-                  <th className="py-2.5 pl-4">Avg Size/File (KB)</th>
-                  <th className="py-2.5 pl-4 pr-2">Distribution</th>
+                <tr className="border-b-2 border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                  <th className="py-2.5 pl-4 w-1/4">File Type</th>
+                  <th 
+                    className="py-2.5 pl-4 cursor-pointer hover:text-[var(--text-main)] transition-colors group w-1/6"
+                    onClick={() => handleSort('count')}
+                  >
+                    Count <SortIcon field="count" />
+                  </th>
+                  <th 
+                    className="py-2.5 pl-4 cursor-pointer hover:text-[var(--text-main)] transition-colors group w-1/4"
+                    onClick={() => handleSort('size')}
+                  >
+                    Total Size <SortIcon field="size" />
+                  </th>
+                  <th 
+                    className="py-2.5 pl-4 cursor-pointer hover:text-[var(--text-main)] transition-colors group w-1/6"
+                    onClick={() => handleSort('avg')}
+                  >
+                    Avg / File <SortIcon field="avg" />
+                  </th>
+                  <th className="py-2.5 pl-4 pr-4 text-right">Distribution</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]/20">
+              <tbody className="mt-2">
                 {Object.entries(dbStats.by_type)
-                  .sort(([, a], [, b]) => Number(b) - Number(a))
+                  .filter(([, count]) => Number(count) > 0)
+                  .sort((a, b) => {
+                    const formatA = a[0]
+                    const formatB = b[0]
+                    const countA = Number(a[1])
+                    const countB = Number(b[1])
+                    const typeDetailsA = dbStats.by_type_details?.[formatA] || dbStats.by_type_details?.[`.${formatA}`] || dbStats.by_type_details?.[formatA.replace('.', '')]
+                    const typeDetailsB = dbStats.by_type_details?.[formatB] || dbStats.by_type_details?.[`.${formatB}`] || dbStats.by_type_details?.[formatB.replace('.', '')]
+                    const sizeA = typeDetailsA?.bytes || 0
+                    const sizeB = typeDetailsB?.bytes || 0
+                    const avgA = countA > 0 ? sizeA / countA : 0
+                    const avgB = countB > 0 ? sizeB / countB : 0
+                    
+                    let valA, valB
+                    if (sortField === 'count') { valA = countA; valB = countB }
+                    else if (sortField === 'size') { valA = sizeA; valB = sizeB }
+                    else { valA = avgA; valB = avgB }
+
+                    return sortDir === 'desc' ? valB - valA : valA - valB
+                  })
                   .map(([format, count]) => {
                     const num = Number(count)
                     const percentage = totalDocs > 0 ? Math.round((num / totalDocs) * 100) : 0
@@ -314,7 +365,7 @@ const SettingDBPropertiesPanel = () => {
                     if (format === 'md' || format === '.md') {
                       iconBadge = <span className={`${baseBadgeClass} bg-[#a855f7]/15 text-[#c084fc]`}><FileText size={11}/>.md</span>
                     } else if (format === 'ai_response' || format === 'AI' || format === 'ai') {
-                      iconBadge = <span className={`${baseBadgeClass} bg-purple-500/15 text-purple-300`}><Cpu size={11}/>AI</span>
+                      iconBadge = <span className={`${baseBadgeClass} bg-teal-500/15 text-teal-400`}><Cpu size={11}/>AI</span>
                     } else if (format === 'pdf' || format === '.pdf') {
                       iconBadge = <span className={`${baseBadgeClass} bg-red-500/15 text-red-400`}><FileText size={11}/>.pdf</span>
                     } else if (format === 'json' || format === '.json') {
@@ -326,34 +377,43 @@ const SettingDBPropertiesPanel = () => {
                     }
 
                     const isAiFormat = format === 'ai_response' || format === 'ai' || format === 'AI';
-                    const displayFormatName = isAiFormat ? 'AI' : format.startsWith('.') ? format : `.${format}`
+                    const displayFormatName = isAiFormat ? 'AI Response' : format.startsWith('.') ? format : `.${format}`
 
                     return (
-                      <tr key={format} className="hover:bg-[var(--bg-panel)]/50 transition-colors text-[12px] text-[var(--text-main)] font-semibold">
-                        <td className="py-3 pl-2">
+                      <tr 
+                        key={format} 
+                        className="hover:bg-[#a855f7]/5 transition-colors text-[12px] text-[var(--text-main)] font-semibold group rounded-md"
+                      >
+                        <td className="py-2.5 pl-3">
                           <div className="flex items-center gap-3 font-mono">
                             {iconBadge}
                             <span className="font-bold text-[12px]">{displayFormatName}</span>
                           </div>
                         </td>
-                        <td className="py-3 pl-4 font-mono font-bold">
+                        <td className="py-2.5 pl-4 font-mono font-bold">
                           {num.toLocaleString()}
                         </td>
-                        <td className="py-3 pl-4 text-[var(--text-muted)] font-mono font-bold">
+                        <td className="py-2.5 pl-4 text-[var(--text-muted)] font-mono font-bold group-hover:text-[var(--text-main)] transition-colors">
                           ~{formatBytes(typeBytes)}
                         </td>
-                        <td className="py-3 pl-4 text-[var(--text-muted)] font-mono">
-                          ~{formatBytes(avgBytes)}/file
+                        <td className="py-2.5 pl-4 text-[var(--text-muted)] font-mono group-hover:text-[var(--text-main)] transition-colors">
+                          ~{formatBytes(avgBytes)}
                         </td>
-                        <td className="py-3 pl-4 pr-2">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 h-1.5 bg-[#202020] rounded-full overflow-hidden max-w-[200px]">
+                        <td className="py-2.5 pl-4 pr-4">
+                          <div 
+                            className="flex items-center justify-end gap-3 w-[160px] ml-auto"
+                            aria-label={`${displayFormatName} files represent ${percentage}% of total`}
+                          >
+                            <div className="flex-1 h-1.5 bg-[#202020] rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-gradient-to-r from-purple-500 to-[#a855f7] rounded-full transition-all duration-500"
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-500",
+                                  isAiFormat ? "bg-gradient-to-r from-teal-500 to-teal-400" : "bg-gradient-to-r from-purple-500 to-[#a855f7]"
+                                )}
                                 style={{ width: `${Math.max(percentage, 2)}%` }}
                               />
                             </div>
-                            <span className="font-mono text-[12px] text-[var(--text-muted)] font-bold w-10 text-right">{percentage}%</span>
+                            <span className="font-mono text-[12px] text-[var(--text-muted)] font-bold w-[34px] text-right inline-block">{percentage}%</span>
                           </div>
                         </td>
                       </tr>

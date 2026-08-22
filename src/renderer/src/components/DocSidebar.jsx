@@ -41,28 +41,28 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
 
   return (
     <div className={`
-      flex flex-col h-full bg-[var(--bg-panel)]/30 border-r border-[var(--border-dim)] shrink-0 transition-all duration-300 ease-in-out z-20 overflow-hidden
-      ${isSidebarOpen ? 'w-56' : 'w-0 border-r-0'}
+      flex flex-col h-full bg-[var(--bg-panel)]/40 border-r border-white/[0.04] shrink-0 transition-all duration-300 ease-in-out z-20 overflow-hidden
+      ${isSidebarOpen ? 'w-[240px]' : 'w-0 border-r-0'}
     `}>
       {/* Search Input in Sidebar */}
-      <div className="p-3 border-b border-[var(--border-dim)] shrink-0 w-56">
+      <div className="p-4 shrink-0 w-[240px]">
         <div className="relative group w-full">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-accent)] transition-colors" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-accent)] transition-colors" />
           <input 
             type="text" 
-            placeholder="Search docs..." 
+            placeholder="Search documentation..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-[var(--border-subtle)] focus:border-[var(--text-accent)]/50 focus:bg-[var(--bg-active)] rounded-md pl-8 pr-2 py-1.5 text-xs text-[var(--text-main)] placeholder-[var(--text-faint)] outline-none transition-all"
+            className="w-full bg-black/20 hover:bg-black/40 border border-white/[0.06] focus:border-[var(--text-accent)]/50 focus:bg-black/60 rounded-[6px] pl-9 pr-3 py-1.5 text-[12px] text-[var(--text-main)] placeholder-[var(--text-faint)] outline-none transition-all shadow-inner"
           />
         </div>
       </div>
 
       {/* Navigation Tree */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar py-3 space-y-1 w-56">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-4 space-y-4 w-[240px]">
         {Object.keys(filteredDocs).length === 0 ? (
-          <div className="text-center text-xs text-[var(--text-muted)] mt-10 px-4">
-            No documents found. Please ensure the app has been restarted so the backend IPC endpoints are registered!
+          <div className="text-center text-[11.5px] text-[var(--text-muted)] mt-10 px-4">
+            No documents found.
           </div>
         ) : null}
         {Object.keys(filteredDocs).length > 0 && Object.keys(filteredDocs).sort((a, b) => {
@@ -81,16 +81,16 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
           const isCollapsed = !searchQuery && collapsedCategories[category]
 
           return (
-            <div key={category} className="px-2.5 mb-2">
+            <div key={category} className="mb-1">
               <button 
                 onClick={() => toggleCategory(category)}
-                className="w-full flex items-center justify-between text-[12px] font-bold text-[var(--text-main)] hover:text-[var(--text-accent)] py-1.5 px-2.5 rounded-md uppercase tracking-widest hover:bg-[var(--bg-active)] transition-colors outline-none"
+                className="w-full flex items-center justify-between py-1.5 px-3 rounded-[6px] group transition-colors outline-none hover:bg-white/[0.04]"
                 >
-                  <span>{category}</span>
-                  <ChevronDown size={11} className={`text-[var(--text-muted)] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                  <span className="text-[10.5px] font-bold text-[var(--text-muted)] group-hover:text-[var(--text-main)] tracking-[0.08em] uppercase transition-colors">{category}</span>
+                  <ChevronDown size={12} className={`text-[var(--text-faint)] group-hover:text-[var(--text-muted)] transition-all duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
               </button>
-              <div className={`overflow-hidden transition-all duration-200 ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
-                <div className="space-y-0.5 pt-0.5 ml-1 pl-2 border-l border-[var(--border-subtle)]">
+              <div className={`overflow-hidden transition-all duration-200 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
+                <div className="space-y-0.5 pt-1">
                   {sortedDocs.map(doc => {
                     const isActive = activeDoc?.path === doc.path
                     return (
@@ -99,11 +99,10 @@ const DocSidebar = ({ docs, activeDoc, setActiveDoc, searchQuery, setSearchQuery
                           setActiveDoc(doc)
                           if (window.innerWidth < 768) setIsSidebarOpen(false)
                         }}
-                        className={`w-full flex items-center gap-2 pl-3 pr-2 py-1.5 text-xs transition-colors relative ${isActive ? 'bg-[var(--bg-active)] text-[var(--text-accent)] font-semibold' : 'text-[var(--text-muted)] hover:bg-[var(--bg-panel)] hover:text-[var(--text-main)]'}`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] rounded-[6px] transition-all relative ${isActive ? 'bg-[var(--text-accent)]/10 text-[var(--text-accent)] font-medium shadow-sm' : 'text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-main)]'}`}
                       >
-                        {isActive && <div className="absolute left-0 top-0.5 bottom-0.5 w-0.5 bg-[var(--text-accent)] rounded-full" />}
-                        <FileText size={13} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
-                        <span className="truncate text-left">{doc.title}</span>
+                        <FileText size={13} className={`${isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-faint)]'} shrink-0`} strokeWidth={isActive ? 2.5 : 2} />
+                        <span className="truncate text-left leading-tight mt-0.5">{doc.title}</span>
                       </button>
                     )
                     })}

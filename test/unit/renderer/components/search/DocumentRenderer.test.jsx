@@ -16,7 +16,21 @@ describe('DocumentRenderer', () => {
   })
 
   it('renders JSON content with formatting', () => {
-    render(<DocumentRenderer content='{"name":"test","value":42}' category="JSON" />)
-    expect(screen.getByText('"name"')).toBeInTheDocument()
+    const { container } = render(<DocumentRenderer content='{"name":"test","value":42}' category="JSON" />)
+    const pre = container.querySelector('pre')
+    expect(pre).toBeInTheDocument()
+    expect(pre.textContent).toContain('"name"')
+    expect(pre.textContent).toContain('"test"')
+    expect(pre.textContent).toContain('42')
+  })
+
+  it('renders callout TIP paragraph', async () => {
+    render(<DocumentRenderer content="[!TIP] Always back up your vault." />)
+    expect(await screen.findByText('💡 TIP', {}, { timeout: 5000 })).toBeInTheDocument()
+  })
+
+  it('renders markdown headings', async () => {
+    render(<DocumentRenderer content="# My Heading" />)
+    expect(await screen.findByRole('heading', { level: 1, name: /My Heading/i })).toBeInTheDocument()
   })
 })

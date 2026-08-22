@@ -23,10 +23,10 @@ test.describe('Search & Input', () => {
 })
 
 test.describe('RAG Toggle', () => {
-  test('RAG toggle button is visible and toggles on click', async () => {
+  test('AI Answers toggle button is visible and toggles on click', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    const ragButton = window.locator('button:has-text("RAG:")')
+    const ragButton = window.locator('button:has-text("AI Answers:")')
     await expect(ragButton).toBeVisible()
     const initialText = await ragButton.textContent()
     await ragButton.click()
@@ -36,19 +36,19 @@ test.describe('RAG Toggle', () => {
     await electronApp.close()
   })
 
-  test('RAG toggle shows ON/OFF text', async () => {
+  test('AI Answers toggle shows On/Off text', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    const ragButton = window.locator('button:has-text("RAG:")')
+    const ragButton = window.locator('button:has-text("AI Answers:")')
     const text = await ragButton.textContent()
-    expect(text).toMatch(/RAG: (ON|OFF)/)
+    expect(text).toMatch(/AI Answers: (On|Off)/)
     await electronApp.close()
   })
 
-  test('RAG toggle has status indicator dot', async () => {
+  test('AI Answers toggle has status indicator dot', async () => {
     const electronApp = await electron.launch({ args: ['.'] })
     const window = await electronApp.firstWindow()
-    const ragButton = window.locator('button:has-text("RAG:")')
+    const ragButton = window.locator('button:has-text("AI Answers:")')
     const dot = ragButton.locator('span.rounded-full')
     await expect(dot).toBeVisible()
     await electronApp.close()

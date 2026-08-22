@@ -4,10 +4,9 @@ import React from 'react'
 import Header from '../../../../src/renderer/src/components/Header'
 
 describe('Header', () => {
-  it('renders breadcrumb', () => {
+  it('renders sidebar toggle button', () => {
     render(<Header toggleSidebar={() => {}} collapsed={false} />)
-    expect(screen.getByText('Knowledge Base')).toBeInTheDocument()
-    expect(screen.getByText('Search & Explore')).toBeInTheDocument()
+    expect(screen.getByTitle('Toggle sidebar (Ctrl+B)')).toBeInTheDocument()
   })
 
   it('calls toggleSidebar when sidebar button clicked', () => {
@@ -15,5 +14,10 @@ describe('Header', () => {
     render(<Header toggleSidebar={toggle} collapsed={false} />)
     fireEvent.click(screen.getByTitle('Toggle sidebar (Ctrl+B)'))
     expect(toggle).toHaveBeenCalledOnce()
+  })
+
+  it('renders the library dropzone', () => {
+    render(<Header toggleSidebar={() => {}} collapsed={false} />)
+    expect(screen.getByText('Insert')).toBeInTheDocument()
   })
 })

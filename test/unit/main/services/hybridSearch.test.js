@@ -1,4 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('../../../../src/main/db/reranker.js', () => ({
+  default: {
+    rerank: vi.fn().mockImplementation(async (query, documents) => documents)
+  }
+}))
+
 import { expandQuery, computeBM25Scores, computeReciprocalRankFusion, performHybridSearchService } from '../../../../src/main/services/hybridSearch'
 
 describe('expandQuery', () => {
@@ -10,8 +17,16 @@ describe('expandQuery', () => {
     expect(expandQuery('prostate cancer biomarkers')).toBe('prostate cancer biomarkers')
   })
 
-  it('returns multi-word queries unchanged regardless of length', () => {
-    expect(expandQuery('hi there')).toBe('hi there')
+  it('returns multi-word queries unchanged when high information', () => {
+    expect(expandQuery('prostate cancer biomarkers')).toBe('prostate cancer biomarkers')
+  })
+
+  it('expands low-information multi-word queries with a hint', () => {
+    expect(expandQuery('hi there')).toBe('hi there (overview concept introduction example basic tutorial)')
+  })
+
+  it('expands questions into definition-oriented phrasing', () => {
+    expect(expandQuery('what is photosynthesis')).toContain('|')
   })
 
   it('appends concept hint for short queries under 6 chars', () => {
@@ -103,13 +118,14 @@ describe('computeReciprocalRankFusion', () => {
     expect(result[0].combinedScore).toBeGreaterThanOrEqual(result[1].combinedScore)
   })
 
-  it('filters out rows with low cosine similarity and no keyword hit', () => {
+  it('filters out rows with very low cosine similarity and no keyword hit', () => {
     const rows = [
       { id: '1', content: 'test', cosine_similarity: 0.5, similarity: 0.5, bm25Score: 1, bm25Normalized: 0.1 },
-      { id: '2', content: 'test2', cosine_similarity: 0.2, similarity: 0.2, bm25Score: 0, bm25Normalized: 0 }
+      { id: '2', content: 'test2', cosine_similarity: 0.05, similarity: 0.05, bm25Score: 0, bm25Normalized: 0 }
     ]
     const result = computeReciprocalRankFusion(rows)
     expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('1')
   })
 })
 

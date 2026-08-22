@@ -140,7 +140,7 @@ const Documentation = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={onClose}>
       <div 
-        className="bg-[var(--bg-app)] rounded-[5px] shadow-[var(--shadow-modal)] flex flex-col overflow-hidden w-[90vw] h-[85vh] max-w-[1200px] animate-in zoom-in-95 duration-200" 
+        className="bg-[var(--bg-app)] rounded-[5px] ring-1 ring-white/10 shadow-2xl flex flex-col overflow-hidden w-[85vw] h-[90vh] max-w-[1400px] animate-in zoom-in-95 duration-150" 
         onClick={(e) => e.stopPropagation()}
       >
         <DocHeader 

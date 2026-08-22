@@ -28,8 +28,8 @@ describe('Preview', () => {
     expect(screen.getByText('test.pdf')).toBeInTheDocument()
   })
 
-  it('shows archived badge when file missing', () => {
+  it('shows archived notice when file missing', () => {
     render(<Preview selectedPdf={pdfItem} onClose={vi.fn()} fileExists={false} />)
-    expect(screen.getByText('Archived (disk file removed)')).toBeInTheDocument()
+    expect(screen.getByText(/Original file no longer on disk/)).toBeInTheDocument()
   })
 })

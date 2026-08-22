@@ -24,12 +24,14 @@ describe('SettingAIPanel', () => {
 
   it('renders embedding model field', async () => {
     await act(async () => render(<SettingAIPanel />))
-    expect(screen.getByText('Embedding Model')).toBeInTheDocument()
+    expect(screen.getByText('Reading Engine')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Xenova/paraphrase-multilingual-MiniLM-L12-v2')).toBeInTheDocument()
   })
 
   it('renders RAG toggle', async () => {
     await act(async () => render(<SettingAIPanel />))
-    expect(screen.getByText('Enable RAG Answer Synthesis')).toBeInTheDocument()
+    expect(screen.getByText('Enable AI Answers')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox')).toBeInTheDocument()
   })
 
   it('does not render Save button', async () => {

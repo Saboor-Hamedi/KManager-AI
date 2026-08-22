@@ -270,8 +270,9 @@ describe('streamRagAnswer', () => {
     mockStream.mockResolvedValue('answer')
     await streamRagAnswer('q', [{ content: 'data' }], 'deepseek', 'sk-key', vi.fn())
     const systemMsg = mockStream.mock.calls[0][0][0].content
-    expect(systemMsg).toContain('CORE INTELLECTUAL RULES')
-    expect(systemMsg).toContain('No Trailing Questions')
+    expect(systemMsg).toContain('### RULES:')
+    expect(systemMsg).toContain('Documents first')
+    expect(systemMsg).toContain('No disclaimers')
   })
 
   it('fallback to deepseek for unknown provider', async () => {

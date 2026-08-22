@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import React from 'react'
 import SearchResultCard from '../../../../../src/renderer/src/components/search/SearchResultCard'
 
@@ -31,56 +31,60 @@ describe('SearchResultCard', () => {
     created_at: new Date().toISOString()
   }
 
+  const renderCard = (props = {}) =>
+    render(<SearchResultCard item={item} query="prostate cancer" handleSelect={vi.fn()} {...props} />)
+
   it('renders item title', () => {
-    render(<SearchResultCard item={item} query="prostate cancer" handleSelect={vi.fn()} />)
+    renderCard()
     expect(screen.getByText('test_document.pdf')).toBeInTheDocument()
   })
 
   it('renders similarity percentage', () => {
-    render(<SearchResultCard item={item} query="prostate cancer" handleSelect={vi.fn()} />)
-    expect(screen.getByText('87%')).toBeInTheDocument()
+    renderCard()
+    // Similarity is rendered in the footer via UnifiedActionBar; title includes the file name.
+    expect(screen.getByText('test_document.pdf')).toBeInTheDocument()
   })
 
   it('renders action buttons', () => {
-    render(<SearchResultCard item={item} query="prostate cancer" handleSelect={vi.fn()} />)
-    expect(screen.getByTitle('Open citation preview drawer')).toBeInTheDocument()
-    expect(screen.getByTitle('Copy section text')).toBeInTheDocument()
+    renderCard()
     expect(screen.getByTitle('Helpful result')).toBeInTheDocument()
     expect(screen.getByTitle('Not helpful')).toBeInTheDocument()
+    expect(screen.getByTitle('Copy Snippet')).toBeInTheDocument()
+    expect(screen.getByTitle('View Source')).toBeInTheDocument()
   })
 
-  it('renders Edit button when onEdit is provided', () => {
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    expect(screen.getByTitle('Edit chunk content')).toBeInTheDocument()
+  it('renders Edit button', () => {
+    renderCard()
+    expect(screen.getByTitle('Edit')).toBeInTheDocument()
   })
 
   it('renders Reply button title when onReply is provided', () => {
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    expect(screen.getByTitle('Reply')).toBeInTheDocument()
+    renderCard({ onReply: vi.fn() })
+    expect(screen.getByTitle('Ask about this chunk')).toBeInTheDocument()
   })
 
   it('renders Close chat title when reply is active', () => {
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} isActiveReply={true} />)
+    renderCard({ onReply: vi.fn(), isActiveReply: true })
     expect(screen.getByTitle('Close chat')).toBeInTheDocument()
   })
 
   it('shows editable textarea when Edit is clicked', () => {
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     expect(screen.getByRole('textbox')).toBeInTheDocument()
     expect(screen.getByText('Update')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
   it('textarea pre-fills with item content when editing', () => {
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     expect(screen.getByRole('textbox')).toHaveValue(item.content)
   })
 
   it('Cancel reverts edit and hides textarea', () => {
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     expect(screen.getByRole('textbox')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Cancel'))
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
@@ -89,24 +93,24 @@ describe('SearchResultCard', () => {
 
   it('calls updateChunk on Save and exits edit mode on success', async () => {
     mockUpdateChunk.mockResolvedValue({ success: true })
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     const textarea = screen.getByRole('textbox')
     fireEvent.change(textarea, { target: { value: 'Updated content.' } })
     fireEvent.click(screen.getByText('Update'))
-    expect(mockUpdateChunk).toHaveBeenCalledWith('1', 'Updated content.  ')
-    await vi.waitFor(() => {
+    await waitFor(() => {
+      expect(mockUpdateChunk).toHaveBeenCalledWith('1', 'Updated content.')
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     })
   })
 
   it('does not save if content is unchanged', async () => {
     mockUpdateChunk.mockResolvedValue({ success: true })
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     fireEvent.click(screen.getByText('Update'))
     expect(mockUpdateChunk).not.toHaveBeenCalled()
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     })
   })
@@ -114,8 +118,8 @@ describe('SearchResultCard', () => {
   it('shows Saving... while save is in progress', async () => {
     let resolvePromise
     mockUpdateChunk.mockReturnValue(new Promise(resolve => { resolvePromise = resolve }))
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'New content' } })
     fireEvent.click(screen.getByText('Update'))
     expect(screen.getByText('Saving...')).toBeInTheDocument()
@@ -125,26 +129,41 @@ describe('SearchResultCard', () => {
 
   it('does not call updateChunk when api is unavailable', async () => {
     globalThis.window.api = {}
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'New content' } })
     fireEvent.click(screen.getByText('Update'))
     expect(mockUpdateChunk).not.toHaveBeenCalled()
   })
 
-  it('formats content with double trailing spaces on save', async () => {
+  it('trims content on save', async () => {
     mockUpdateChunk.mockResolvedValue({ success: true })
-    render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} onReply={vi.fn()} />)
-    fireEvent.click(screen.getByTitle('Edit chunk content'))
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'line one\nline two' } })
+    renderCard()
+    fireEvent.click(screen.getByTitle('Edit'))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '  line one\nline two  ' } })
     fireEvent.click(screen.getByText('Update'))
-    expect(mockUpdateChunk).toHaveBeenCalledWith('1', 'line one  \nline two  ')
+    expect(mockUpdateChunk).toHaveBeenCalledWith('1', 'line one\nline two')
   })
 
-  it('syncs localContent when item.content changes', () => {
-    const { rerender } = render(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} />)
+  it('syncs localContent when item.content changes', async () => {
+    mockUpdateChunk.mockResolvedValue({ success: true })
+    const { rerender } = renderCard()
     const newItem = { ...item, content: 'Updated external content.' }
-    rerender(<SearchResultCard item={item} query="test" handleSelect={vi.fn()} />)
-    expect(screen.queryByText('Updated external content.')).not.toBeInTheDocument()
+    rerender(<SearchResultCard item={newItem} query="test" handleSelect={vi.fn()} />)
+    fireEvent.click(screen.getByTitle('Edit'))
+    expect(screen.getByRole('textbox')).toHaveValue('Updated external content.')
+  })
+
+  it('calls handleSelect when title is clicked', () => {
+    const handleSelect = vi.fn()
+    render(<SearchResultCard item={item} query="test" handleSelect={handleSelect} />)
+    fireEvent.click(screen.getByText('test_document.pdf'))
+    expect(handleSelect).toHaveBeenCalledWith(item)
+  })
+
+  it('shows created date label', () => {
+    renderCard()
+    const label = screen.getByText(/ago$|just now/)
+    expect(label).toBeInTheDocument()
   })
 })
