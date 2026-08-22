@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, memo, useCallback, useMemo } from 'react'
-import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy, Search, ArrowRight, Trash2, FileText, Paperclip } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, User, Plus, Check, ArrowUp, ThumbsUp, ThumbsDown, Copy, Search, ArrowRight, Trash2, FileText, Paperclip, RefreshCw, Database } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -63,9 +63,30 @@ const ChatCodeBlock = memo(({ lang, codeString }) => {
   )
 })
 
-const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPrompt }) => {
+const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPrompt, isLatest }) => {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState(null)
+  const [displayedText, setDisplayedText] = useState(isLatest ? '' : text)
+
+  useEffect(() => {
+    if (!isLatest) {
+      setDisplayedText(text)
+      return
+    }
+    let i = displayedText.length
+    if (i >= text.length) return
+
+    const interval = setInterval(() => {
+      i += Math.max(2, Math.floor(text.length / 50)) // scale speed with length
+      if (i >= text.length) {
+        setDisplayedText(text)
+        clearInterval(interval)
+      } else {
+        setDisplayedText(text.slice(0, i))
+      }
+    }, 15)
+    return () => clearInterval(interval)
+  }, [text, isLatest])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text)
@@ -82,6 +103,9 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
         .catch(err => console.error('Chat feedback error:', err))
     }
   }
+
+  // Pre-process citations [1], [2], etc. to make them targetable links
+  const formattedText = displayedText.replace(/\[(\d+)\]/g, ' [^$1^](#citation-$1) ')
 
   return (
     <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
@@ -181,6 +205,16 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 return <ChatCodeBlock lang={lang} codeString={codeString} />
               },
               a: ({node, href, children, ...props}) => {
+                if (href?.startsWith('#citation-')) {
+                  return (
+                    <span 
+                      className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-sm bg-[var(--text-accent)]/20 text-[var(--text-accent)] text-[9px] font-bold mx-0.5 cursor-help hover:bg-[var(--text-accent)] hover:text-white transition-colors"
+                      title="Source Document Citation"
+                    >
+                      {children}
+                    </span>
+                  )
+                }
                 if (href === '#search') {
                   return (
                     <button
@@ -212,12 +246,12 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
               th: ({node, ...props}) => <th className="py-2.5 pr-6 pl-0 first:pl-0 font-semibold text-[var(--text-main)] normal-case tracking-normal whitespace-nowrap" {...props} />,
               td: ({node, ...props}) => <td className="py-2.5 pr-6 pl-0 first:pl-0 text-[var(--text-main)]/80 leading-relaxed break-words" {...props} />
             }}>
-              {formatMarkdownText(text)}
+              {formatMarkdownText(formattedText)}
             </ReactMarkdown>
           </div>
         </div>
-        {idx > 0 && (
-          <div className="flex flex-col gap-2 mt-1.5 w-full">
+        {idx > 0 && displayedText === text && (
+          <div className="flex flex-col gap-2 mt-1.5 w-full animate-in fade-in duration-300">
             <div className="flex items-center gap-1.5 mt-1">
               <div className="flex items-center gap-1 shrink-0 select-none">
                 <button
@@ -244,6 +278,13 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                   title="Copy response text"
                 >
                   {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                </button>
+                <button
+                  onClick={() => queryText && onSelectPrompt(queryText)}
+                  className="p-1.5 rounded-[4px] hover:bg-[var(--bg-active)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center border-0"
+                  title="Regenerate response"
+                >
+                  <RefreshCw size={13} />
                 </button>
               </div>
 
@@ -285,26 +326,21 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
 })
 
 const UserMessage = memo(({ text, attachedFile }) => (
-  <div className="flex flex-col items-end w-full py-1 animate-in fade-in duration-200">
+  <div className="flex flex-col items-end w-full py-2 animate-in fade-in duration-200">
     {attachedFile && (
-      <div className="relative flex flex-col mb-3 w-[140px] h-[140px] bg-[var(--bg-active)] border border-white/[0.05] rounded-[24px] opacity-90 transition-colors shadow-sm self-end">
-        <div className="p-4 pb-2">
-          <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[var(--bg-panel)] mb-1 shadow-sm">
-            <FileText size={20} className="text-[#10a37f] dark:text-[#2dd4bf]" />
-          </div>
-        </div>
-        <div className="px-4 pb-4 flex-1 overflow-hidden flex items-start">
-          <span className="text-[12px] font-semibold text-[var(--text-main)] leading-[1.3] line-clamp-3 break-words uppercase tracking-wide opacity-90">
-            {attachedFile.name}
-          </span>
-        </div>
+      <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[#2b313a]/50 border border-white/[0.05] rounded-lg shadow-sm self-end">
+        <FileText size={14} className="text-[#10a37f] dark:text-[#2dd4bf]" />
+        <span className="text-[11px] font-semibold text-[var(--text-main)] truncate max-w-[200px]">
+          {attachedFile.name}
+        </span>
       </div>
     )}
-    <div className="bg-[var(--bg-panel)] px-4 py-3 max-w-[90%] rounded-2xl rounded-tr-sm border border-white/[0.05] shadow-sm">
+    <div className="bg-[#2b313a] px-4 py-3 max-w-[90%] rounded-2xl rounded-tr-sm border border-white/[0.05] shadow-sm">
       <p className="text-[13.5px] leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words">{text}</p>
     </div>
   </div>
 ))
+
 
 const EMPTY_STATE = {}
 
@@ -590,20 +626,26 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 custom-scrollbar">
-        <div className="max-w-3xl mx-auto flex flex-col gap-3 min-h-full pb-16">
-          {messages.length === 0 && !isTyping && !inline && (
-            <div className="flex flex-col items-center justify-center text-center py-12 px-4 h-full animate-in fade-in duration-300">
-              <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)]">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 pt-6 pb-2 md:px-10 custom-scrollbar">
+        <div className="max-w-3xl mx-auto flex flex-col gap-3 h-full min-h-full">
+          {messages.length === 0 && !isTyping && (
+            <div className="flex flex-col items-center justify-center text-center py-6 px-4 h-full flex-1 animate-in fade-in duration-300 relative">
+              
+              {/* Subtle Background Watermark */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] select-none">
+                <div className="text-[200px] font-black tracking-tighter text-white">KM</div>
+              </div>
+
+              <div className="w-12 h-12 rounded-xl bg-[var(--bg-active)] flex items-center justify-center mb-4 shadow-sm border border-[var(--border-subtle)] relative z-10">
                 <kbd className="font-mono font-bold text-base text-[var(--text-accent)]">KM</kbd>
               </div>
-              <h3 className="text-base font-semibold text-[var(--text-main)] mb-1.5">KManager AI</h3>
-              <p className="text-xs text-[var(--text-muted)] mb-8 max-w-[320px] leading-relaxed">
+              <h3 className="text-base font-semibold text-[var(--text-main)] mb-1.5 relative z-10">KManager AI</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-6 max-w-[320px] leading-relaxed relative z-10">
                 {dbStats.totalDocuments
                   ? `Your knowledge base has ${dbStats.totalDocuments} documents. Ask me anything.`
                   : 'Ask me about your knowledge base or features.'}
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
+              <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md relative z-10">
                 {['Summarize key insights across documents', 'Find core concepts and definitions', 'Compare two related topics'].map((s) => (
                   <button key={s} onClick={() => sendQuickPrompt(s)}
                     className="flex-1 text-left px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] bg-white/[0.03] hover:bg-white/[0.06] rounded-[5px] border-0 transition-colors">
@@ -624,18 +666,18 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
                   savedState={savedResponses[idx]}
                   queryText={idx > 0 ? messages[idx - 1]?.text || '' : ''}
                   onSelectPrompt={sendQuickPrompt}
+                  isLatest={idx === messages.length - 1}
                 />
           ))}
           {isTyping && (
             <div className="flex items-start w-full animate-in fade-in duration-200">
-              <div className="px-4 py-3 rounded-[5px] bg-[var(--bg-panel)]/90 shadow-sm flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" />
-                <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                <span className="w-1.5 h-1.5 bg-[var(--text-accent)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+              <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[var(--bg-panel)] shadow-sm flex items-center gap-2 border border-white/[0.05]">
+                <Bot size={14} className="text-[#10a37f] animate-pulse" />
+                <span className="text-[12px] font-medium text-[var(--text-muted)] animate-pulse">Thinking...</span>
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} className="h-16 shrink-0" />
+          {(messages.length > 0 || isTyping) && <div ref={messagesEndRef} className="h-6 shrink-0" />}
         </div>
       </div>
 
@@ -677,6 +719,13 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
               </div>
             )}
 
+            {/* Scope Indicator */}
+            <div className="flex items-center gap-1.5 pt-1.5 px-4 pb-0 overflow-x-auto custom-scrollbar">
+              <span className="flex items-center gap-1 text-[8.5px] font-bold tracking-wider uppercase text-[var(--text-accent)] bg-[var(--text-accent)]/15 px-1.5 py-0.5 rounded-sm shadow-sm shrink-0 border-0">
+                <Database size={9} /> Scope: All Files
+              </span>
+            </div>
+
             {/* Top Row: Auto-growing Textarea */}
             <textarea 
               ref={textareaRef}
@@ -715,7 +764,11 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && !attachedFile) || isTyping}
-                className="w-7 h-7 rounded-[8px] bg-[var(--text-accent)] hover:opacity-90 text-white disabled:opacity-30 transition-all duration-150 flex items-center justify-center border-0 shrink-0"
+                className={cn("w-7 h-7 rounded-[8px] transition-all duration-200 flex items-center justify-center border-0 shrink-0", 
+                  (input.trim() || attachedFile) && !isTyping
+                    ? "bg-[#10a37f] hover:bg-[#0d8a6b] text-white shadow-[0_0_12px_rgba(16,163,127,0.4)]"
+                    : "bg-white/[0.05] text-[var(--text-muted)] opacity-50"
+                )}
                 title="Send message"
               >
                 <ArrowUp size={16} strokeWidth={2.5} />

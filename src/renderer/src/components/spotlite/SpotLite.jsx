@@ -1,7 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, Bot, FileText, ArrowRight } from 'lucide-react'
+import { Search, Bot, FileText, ArrowRight, Sparkles } from 'lucide-react'
 import SpotLitePreview from './SpotLitePreview'
 import ChatBot from '../ChatBot'
+
+const Highlight = ({ text, query }) => {
+  if (!query || !text) return <span>{text || ''}</span>
+  try {
+    const parts = text.split(new RegExp(`(${query})`, 'gi'))
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() 
+            ? <mark key={i} className="bg-[var(--text-accent)]/20 text-[var(--text-accent)] rounded-[2px] px-0.5 font-bold">{part}</mark> 
+            : <span key={i}>{part}</span>
+        )}
+      </span>
+    )
+  } catch (e) {
+    return <span>{text}</span>
+  }
+}
 
 const SpotLite = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -150,7 +168,7 @@ const SpotLite = () => {
   return (
     <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[12vh] animate-in fade-in duration-150 ease-out" onClick={() => setIsOpen(false)}>
       <div 
-        className="bg-[var(--bg-app)] rounded-[5px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[760px] h-[480px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
+        className="bg-[var(--bg-app)] rounded-[5px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[760px] h-[485px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
         onClick={e => e.stopPropagation()}
       >
         {/* Top Input Bar */}
@@ -195,8 +213,7 @@ const SpotLite = () => {
 
         {/* Body */}
         <div className="flex-1 flex min-h-0 overflow-hidden bg-[var(--bg-app)] relative">
-          {mode === 'search' ? (
-            <div className="flex w-full h-full">
+          <div className={`w-full h-full ${mode === 'search' ? 'flex' : 'hidden'}`}>
               {/* Left: Results List */}
               <div className="w-[280px] shrink-0 border-r border-white/[0.06] flex flex-col overflow-y-auto custom-scrollbar bg-[var(--bg-panel)]/30">
                 {results.length > 0 ? (
@@ -208,20 +225,54 @@ const SpotLite = () => {
                           setSelectedIndex(idx)
                           setHoveredDoc(doc)
                         }}
-                        className={`px-3 py-2.5 rounded-md cursor-pointer transition-colors flex flex-col gap-1 border border-transparent ${selectedIndex === idx ? 'bg-[var(--bg-active)] shadow-sm' : 'hover:bg-white/[0.03]'}`}
+                        className={`group px-3 py-2.5 rounded-md cursor-pointer transition-colors flex flex-col gap-1.5 border border-transparent ${selectedIndex === idx ? 'bg-[var(--bg-active)] shadow-sm' : 'hover:bg-white/[0.03]'}`}
                       >
-                         <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-2 overflow-hidden w-full">
                            <FileText size={14} className={`shrink-0 ${selectedIndex === idx ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} />
-                           <span className="text-[12px] font-semibold text-[var(--text-main)] truncate leading-none">{doc.title}</span>
+                           <div className="flex-1 min-w-0 pr-2">
+                             <div className="text-[12px] font-semibold text-[var(--text-main)] truncate">
+                               <Highlight text={doc.title} query={query} />
+                             </div>
+                           </div>
+                           
+                           {/* Mini File Type Badge */}
+                           {(doc.file_type || doc.category) && (
+                             <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/30 text-[var(--text-muted)] uppercase tracking-wider border border-white/5">
+                               {doc.file_type || doc.category}
+                             </span>
+                           )}
                          </div>
-                         <div className="flex flex-col gap-1 pl-6 mt-0.5">
-                           <span className="text-[10px] text-[var(--text-faint)] truncate font-mono leading-none">
-                             {doc.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
+                          <div className="flex flex-col pl-6 relative">
+                           {/* Hover Actions (Copy) */}
+                           <div className={`absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all z-10 bg-[var(--bg-panel)] shadow-sm rounded flex items-center p-0.5 border border-white/5`}>
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation()
+                                 navigator.clipboard.writeText(doc.vault_path)
+                                 const btn = e.currentTarget
+                                 const icon = btn.querySelector('svg')
+                                 btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+                                 setTimeout(() => {
+                                   btn.innerHTML = icon.outerHTML
+                                 }, 2000)
+                               }}
+                               className="p-1 text-[var(--text-muted)] hover:text-white transition-colors"
+                               title="Copy File Path"
+                             >
+                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                             </button>
+                           </div>
+
+                           {/* Breadcrumbs Context */}
+                           <span className="text-[9px] opacity-40 truncate font-mono mb-1.5 pr-6" title={doc.vault_path}>
+                             {doc.vault_path ? doc.vault_path.split(/[\\/]/).slice(-3, -1).join(' > ') : ''}
                            </span>
+                           
+                           {/* Metadata */}
                            <span className="text-[9.5px] text-[var(--text-faint)]/60 leading-none flex items-center gap-1.5">
-                             {doc.file_size ? <span>{formatBytes(doc.file_size)}</span> : null}
+                             {doc.file_size ? <span className="font-mono">{formatBytes(doc.file_size)}</span> : null}
                              {doc.file_size && doc.created_at ? <span>•</span> : null}
-                             {doc.created_at ? <span>{new Date(doc.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span> : null}
+                             {doc.created_at ? <span className="tracking-wider">{new Date(doc.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span> : null}
                            </span>
                          </div>
                       </div>
@@ -269,18 +320,27 @@ const SpotLite = () => {
                     />
                   </div>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-[var(--text-faint)] text-[12px] gap-2">
-                    <FileText size={20} className="opacity-20" />
-                    {results.length > 0 ? 'Hover a document to preview' : 'Type a query to begin searching'}
+                  <div className="w-full h-full flex flex-col items-center justify-center text-center py-6 px-4 h-full animate-in fade-in duration-300 relative">
+                    {/* Subtle Background Watermark */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] select-none">
+                      <div className="text-[250px] font-black tracking-tighter text-white">KM</div>
+                    </div>
+                    
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.03] flex items-center justify-center mb-4 shadow-sm border border-white/[0.05] relative z-10">
+                      <Search size={20} className="text-[var(--text-muted)]" />
+                    </div>
+                    <h3 className="text-base font-semibold text-[var(--text-main)] mb-1.5 relative z-10">KManager SpotLite</h3>
+                    <p className="text-xs text-[var(--text-muted)] max-w-[320px] leading-relaxed relative z-10">
+                      {results.length > 0 ? 'Hover a document to preview' : 'Start typing to search through your entire knowledge base instantly.'}
+                    </p>
                   </div>
                 )}
               </div>
-            </div>
-          ) : (
-            <div className="w-full h-full relative">
-              <ChatBot inline={true} initialQuery={query} />
-            </div>
-          )}
+          </div>
+          
+          <div className={`w-full h-full relative ${mode === 'ai' ? 'block' : 'hidden'}`}>
+             <ChatBot inline={true} initialQuery={query} />
+          </div>
         </div>
       </div>
     </div>

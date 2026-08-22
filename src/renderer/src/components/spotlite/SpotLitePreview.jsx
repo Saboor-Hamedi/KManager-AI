@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FileText, Home } from 'lucide-react'
+import { FileText, Home, SquarePen } from 'lucide-react'
 import DocumentRenderer from '../search/DocumentRenderer'
 import PulseLoader from '../PulseLoader'
 import ScrollToTopButton from '../ScrollToTopButton'
@@ -204,8 +204,9 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
               ) : (
                 <button
                   onClick={handleEditToggle}
-                  className="h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-transparent text-[var(--text-muted)] hover:bg-white/[0.05] hover:text-[var(--text-main)]"
+                  className="flex items-center gap-1.5 h-[22px] px-2.5 rounded-[5px] text-[10.5px] font-semibold tracking-wide border-0 transition-colors bg-transparent text-[var(--text-muted)] hover:bg-white/[0.05] hover:text-[var(--text-main)]"
                 >
+                  <SquarePen size={12} />
                   Edit
                 </button>
               )
