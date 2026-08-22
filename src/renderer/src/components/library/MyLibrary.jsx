@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Book, FileText, Code, Database, Search, Library as LibraryIcon, X, FileSpreadsheet, FileJson, File, Calendar, Clock, Trash2, History } from 'lucide-react'
+import { Book, FileText, Code, Database, Search, Library as LibraryIcon, X, FileSpreadsheet, FileJson, File, Calendar, Clock, Trash2, History, Copy, Check, Sparkles, Star } from 'lucide-react'
 import Preview from '../search/Preview'
 import PulseLoader from '../PulseLoader'
 import ConfirmModal from '../layout/ConfirmModal'
@@ -79,6 +79,7 @@ const MyLibrary = () => {
   const [isFocused, setIsFocused] = useState(false)
   const searchInputRef = React.useRef(null)
   const [loading, setLoading] = useState(true)
+  const [copiedId, setCopiedId] = useState(null)
 
   // Load preferences
   useEffect(() => {
@@ -98,10 +99,24 @@ const MyLibrary = () => {
     if (window.api?.config?.set) window.api.config.set('libraryLayout', val)
   }
 
-  const fileTypes = React.useMemo(() => {
-    const types = new Set(documents.map(d => (d.file_type || '').toLowerCase()).filter(Boolean))
-    return ['all', ...Array.from(types).sort()]
+  const fileTypeCounts = React.useMemo(() => {
+    const counts = { all: documents.length }
+    documents.forEach(d => {
+      const t = (d.file_type || '').toLowerCase()
+      if (t) {
+        counts[t] = (counts[t] || 0) + 1
+      }
+    })
+    return counts
   }, [documents])
+
+  const fileTypes = React.useMemo(() => {
+    return Object.keys(fileTypeCounts).sort((a, b) => {
+      if (a === 'all') return -1
+      if (b === 'all') return 1
+      return a.localeCompare(b)
+    })
+  }, [fileTypeCounts])
 
   // Deletion State
   const [docToDelete, setDocToDelete] = useState(null)
@@ -303,34 +318,28 @@ const MyLibrary = () => {
   const renderThumbnail = (doc) => {
     const type = (doc.file_type || '').toLowerCase()
     const snippet = cleanSnippetText(doc.snippet, type)
+    const isCode = ['json', 'py', 'js', 'html', 'css', 'ts', 'jsx', 'tsx'].includes(type)
 
-    if (type === 'json') {
-      return (
-        <div className="w-full h-full bg-[#1e1e1e] flex flex-col p-3 relative overflow-hidden">
-          <div className="text-[6px] text-yellow-500/60 font-mono leading-[1.6] whitespace-pre-wrap break-words">
-            {snippet || '{}'}
-          </div>
-          <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#1e1e1e] to-transparent pointer-events-none" />
-        </div>
-      )
-    }
-
-    // Default text preview for MD, TXT, CSV, or any file that has text content
     if (snippet) {
       return (
-        <div className="w-full h-full bg-[var(--bg-app)] flex flex-col p-3 relative overflow-hidden">
-          <div className="text-[5.5px] text-[var(--text-muted)]/70 font-mono leading-[1.6] whitespace-pre-wrap break-words">
-            {snippet}
+        <div className={`w-full h-full flex flex-col p-4 relative overflow-hidden ${isCode ? 'bg-[#1e1e1e]' : 'bg-[var(--bg-app)]'}`}>
+          {/* File Type Badge */}
+          <div className="absolute top-2 left-2 bg-black/40 text-white/90 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10 uppercase tracking-wider backdrop-blur-md border border-white/10">
+            {type || 'TXT'}
           </div>
-          <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[var(--bg-app)] to-transparent pointer-events-none" />
+          
+          <div className={`text-[10px] leading-[1.6] whitespace-pre-wrap break-words line-clamp-4 ${isCode ? 'text-[#d4d4d4]/80 font-mono' : 'text-[var(--text-muted)] font-sans'}`}>
+            <Highlight text={snippet} query={search} />
+          </div>
+          <div className={`absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t ${isCode ? 'from-[#1e1e1e]' : 'from-[var(--bg-app)]'} to-transparent pointer-events-none`} />
         </div>
       )
     }
 
-    // Absolute fallback if the document truly has no text content
     return (
-      <div className="w-full h-full bg-[var(--bg-app)] flex items-center justify-center">
-        <span className="text-[12px] font-mono text-[var(--text-muted)]/30 uppercase tracking-widest">{type || 'DOC'}</span>
+      <div className="w-full h-full bg-[var(--bg-app)] flex flex-col items-center justify-center p-3 relative text-[var(--text-faint)]">
+        <File size={24} className="mb-2 opacity-20" />
+        <span className="text-[10px] font-medium opacity-50 uppercase tracking-wider">{type || 'Document'}</span>
       </div>
     )
   }
@@ -563,19 +572,21 @@ const MyLibrary = () => {
           {/* Filters Row */}
           <div className="flex items-center justify-between w-full max-w-4xl mx-auto gap-4">
             
-            {/* Horizontal Scrollable Types */}
             <div className="flex-1 overflow-x-auto flex items-center gap-1.5 pr-4 mask-image-right [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {fileTypes.map(type => (
                 <button
                   key={type}
                   onClick={() => setActiveFileType(type)}
-                  className={`shrink-0 px-3 py-1.5 rounded-[5px] text-[11px] font-bold tracking-wide capitalize transition-all duration-300 border-0 ${
+                  className={`shrink-0 px-3 py-1.5 rounded-[5px] text-[11px] font-bold tracking-wide capitalize transition-all duration-300 border-0 flex items-center gap-1.5 ${
                     activeFileType === type
-                      ? 'bg-[var(--text-accent)]/15 text-[var(--text-accent)] shadow-[0_2px_10px_rgba(0,0,0,0.15)]'
-                      : 'bg-[var(--bg-panel)] text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] shadow-sm hover:shadow-md'
+                      ? 'bg-[var(--text-accent)]/15 text-[var(--text-accent)] shadow-[0_2px_10px_rgba(0,0,0,0.15)] opacity-100'
+                      : 'bg-[var(--bg-panel)] text-[var(--text-muted)] hover:bg-[var(--bg-active)] hover:text-[var(--text-main)] hover:opacity-100 opacity-60 shadow-sm hover:shadow-md'
                   }`}
                 >
-                  {type === 'all' ? 'All Files' : type}
+                  <span>{type === 'all' ? 'All Files' : type}</span>
+                  <span className={`text-[9px] px-1.5 rounded-full ${activeFileType === type ? 'bg-[var(--text-accent)]/20 text-[var(--text-accent)]' : 'bg-black/10 text-[var(--text-muted)]'}`}>
+                    {fileTypeCounts[type]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -686,32 +697,47 @@ const MyLibrary = () => {
                         layout === 'list' ? 'flex-row items-center p-3 gap-4' : 'flex-col'
                       }`}
                     >
-                      {/* Delete Button (Hover) */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDocToDelete(doc)
-                        }}
-                        className={`absolute p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-red-400 hover:bg-red-500/20 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 border-0 shadow-lg ${
-                           layout === 'list' ? 'right-4 top-1/2 -translate-y-1/2' : 'top-2 right-2'
+                      {/* Hover Actions */}
+                      <div
+                        className={`absolute flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all z-20 ${
+                           layout === 'list' ? 'right-4 top-1/2 -translate-y-1/2' : 'bottom-2 right-2'
                         }`}
-                        title="Remove from database"
                       >
-                        <Trash2 size={13} />
-                      </button>
-
-                      {/* Thumbnail Preview Area */}
-                      {layout === 'grid-large' && (
-                        <div className="h-[140px] w-full border-b border-black/10 bg-black/30 overflow-hidden relative">
-                          {renderThumbnail(doc)}
-                        </div>
-                      )}
-                      
-                      {layout === 'grid-small' && (
-                        <div className="h-[70px] w-full border-b border-black/10 bg-black/30 overflow-hidden relative opacity-70">
-                          {renderThumbnail(doc)}
-                        </div>
-                      )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // Toggle local star (dummy UI state)
+                            e.currentTarget.classList.toggle('text-yellow-400')
+                            e.currentTarget.classList.toggle('text-white/50')
+                          }}
+                          className="p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-yellow-400 hover:bg-black/60 rounded-md border-0 shadow-lg transition-colors"
+                          title="Star / Bookmark"
+                        >
+                          <Star size={13} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigator.clipboard.writeText(doc.vault_path)
+                            setCopiedId(doc.id)
+                            setTimeout(() => setCopiedId(null), 2000)
+                          }}
+                          className="p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-white hover:bg-black/60 rounded-md border-0 shadow-lg transition-colors"
+                          title="Copy File Path"
+                        >
+                          {copiedId === doc.id ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDocToDelete(doc)
+                          }}
+                          className="p-1.5 bg-black/40 backdrop-blur-md text-white/50 hover:text-red-400 hover:bg-red-500/20 rounded-md border-0 shadow-lg transition-colors"
+                          title="Remove from database"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
 
                       {/* List View Icon */}
                       {layout === 'list' && (
@@ -719,17 +745,43 @@ const MyLibrary = () => {
                            <FileText size={18} className="text-[var(--text-muted)]" />
                         </div>
                       )}
-                      
-                      {/* Metadata Footer */}
-                      <div className={`flex flex-col bg-transparent ${layout === 'list' ? 'flex-1 min-w-0 pr-12' : 'p-3 gap-1.5'}`}>
-                        <h3 className="text-[12.5px] font-medium text-[var(--text-main)] truncate" title={doc.file_name}>
-                          {doc.file_name}
-                        </h3>
-                        <div className={`flex text-[10.5px] font-medium text-[var(--text-muted)]/70 ${layout === 'list' ? 'gap-4 mt-0.5' : 'justify-between items-center'}`}>
-                          <span className="tracking-wider">{formatDate(doc.created_at)}</span>
-                          {doc.file_size > 0 && <span className="font-mono">{formatBytes(doc.file_size)}</span>}
+
+                      {/* Metadata Top */}
+                      <div className={`flex flex-col bg-transparent ${layout === 'list' ? 'flex-1 min-w-0 pr-24' : 'p-3 gap-1.5 z-10'}`}>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <h3 className="text-[13px] font-bold text-[var(--text-main)] truncate" title={doc.file_name}>
+                            {doc.file_name}
+                          </h3>
+                          {doc.vault_path?.includes('ai-response') && (
+                            <Sparkles size={11} className="text-yellow-400 shrink-0" title="AI Summary / Deep Match" />
+                          )}
+                        </div>
+                        <div className={`flex text-[10px] font-medium text-[var(--text-muted)]/70 ${layout === 'list' ? 'gap-4 mt-0.5 items-center' : 'justify-between items-center'}`}>
+                          <span className="tracking-wider shrink-0">{formatDate(doc.created_at)}</span>
+                          
+                          {/* Breadcrumb Path */}
+                          {layout !== 'list' && doc.vault_path && (
+                            <span className="font-mono text-[9px] opacity-40 truncate mx-2 min-w-0 flex-1 text-center" title={doc.vault_path}>
+                              {doc.vault_path.split(/[/\\]/).slice(-2).join(' > ')}
+                            </span>
+                          )}
+
+                          {doc.file_size > 0 && <span className="font-mono shrink-0 ml-auto">{formatBytes(doc.file_size)}</span>}
                         </div>
                       </div>
+
+                      {/* Thumbnail Preview Area */}
+                      {layout === 'grid-large' && (
+                        <div className="h-[140px] w-full border-t border-black/10 bg-black/30 overflow-hidden relative">
+                          {renderThumbnail(doc)}
+                        </div>
+                      )}
+                      
+                      {layout === 'grid-small' && (
+                        <div className="h-[70px] w-full border-t border-black/10 bg-black/30 overflow-hidden relative opacity-70">
+                          {renderThumbnail(doc)}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
