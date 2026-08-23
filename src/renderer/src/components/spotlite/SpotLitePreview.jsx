@@ -228,8 +228,8 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
             />
           ) : isPdf && !fileExists ? (
             /* ── PDF but file missing: fallback to stored text ── */
-            <div className="w-full h-full overflow-y-auto px-3 py-2 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
-              <div className="w-full pb-8">
+            <div className="w-full h-full overflow-y-auto p-6 lg:p-10 custom-scrollbar bg-[var(--bg-app)] text-justify select-text" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
+              <div className="max-w-3xl mx-auto pb-8">
                 <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
                   Original file no longer on disk — showing archived text from database.
                 </div>
@@ -248,10 +248,10 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
           ) : (
             /* ── Non-PDF (MD, TXT, JSON, CSV, etc.) ── */
             <div
-              className="w-full h-full overflow-y-auto px-3 py-2 custom-scrollbar bg-[var(--bg-app)] text-justify select-text"
+              className="w-full h-full overflow-y-auto p-6 lg:p-10 custom-scrollbar bg-[var(--bg-app)] text-justify select-text"
               style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
             >
-              <div className={`w-full ${isEditing ? 'h-full flex flex-col' : 'pb-4'}`}>
+              <div className={`max-w-3xl mx-auto ${isEditing ? 'h-full flex flex-col' : 'pb-6'}`}>
                 {isEditing ? (
                   <textarea
                     value={editContent}

@@ -106,7 +106,9 @@ globalThis.window.api = {
     resolvePaths: () => Promise.resolve([]),
     selectFolder: () => Promise.resolve([]),
     registerEscape: () => Promise.resolve(),
-    unregisterEscape: () => Promise.resolve()
+    unregisterEscape: () => Promise.resolve(),
+    getAutoLaunch: () => Promise.resolve(false),
+    toggleAutoLaunch: () => Promise.resolve({ success: true })
   },
   windowControls: {
     minimize: () => {},

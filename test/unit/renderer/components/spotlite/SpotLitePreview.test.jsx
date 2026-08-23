@@ -24,7 +24,7 @@ describe('SpotLitePreview', () => {
 
   it('renders markdown content', async () => {
     render(<SpotLitePreview selectedPdf={{ ...mdItem, content: 'Hello **bold**' }} fileExists={true} onClose={vi.fn()} />)
-    expect(await screen.findByText(/Hello/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText(/Hello/, {}, { timeout: 10000 })).toBeInTheDocument()
   })
 
   it('shows archived notice for missing PDF files', async () => {

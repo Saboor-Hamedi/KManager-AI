@@ -182,31 +182,21 @@ const MermaidDiagram = memo(({ chart }) => {
         const existingNode = document.getElementById(renderId)
         if (existingNode) existingNode.remove()
 
-        // Fix common AI capitalization typos for the root diagram type and internal blocks
         let sanitizedChart = chart.trim()
         
         // Strip backend search highlight markers that may be present if the diagram was returned from a search query
         sanitizedChart = sanitizedChart.replace(/ﬂ°|¶ß/g, '')
 
-        // Fix Root nodes
-        sanitizedChart = sanitizedChart.replace(/^(\s*)(Graph|Flowchart|SequenceDiagram|ClassDiagram|StateDiagram|ErDiagram|Gantt|Pie|GitGraph)/i, (_, space, match) => {
-          const m = match.toLowerCase()
-          if (m === 'sequencediagram') return space + 'sequenceDiagram'
-          if (m === 'classdiagram') return space + 'classDiagram'
-          if (m === 'statediagram') return space + 'stateDiagram'
-          if (m === 'erdiagram') return space + 'erDiagram'
-          if (m === 'gitgraph') return space + 'gitGraph'
-          return space + m // graph, flowchart, gantt, pie
-        })
-
-        // Fix internal block keywords that Mermaid expects to be mostly lowercase, allowing for leading whitespace/indentation
-        sanitizedChart = sanitizedChart.replace(/^(\s*)(Participant|Activate|Deactivate|Opt|Alt|Else|End|Rect|Note over|Note left of|Note right of|Note|Autonumber|Class|Subgraph|Direction)\b/gmi, (_, space, match) => {
-          const m = match.toLowerCase()
-          if (m.startsWith('note')) {
-            // Mermaid accepts 'note over', 'Note over', etc., but standardizing to Capital N is safe
-            return space + match.charAt(0).toUpperCase() + match.slice(1).toLowerCase() 
-          }
-          return space + m
+        // Mermaid strictly requires specific casing for keywords. 
+        // Force these keywords to their correct case to prevent UnknownDiagramError if the markdown contains "Graph TD" or "Subgraph"
+        sanitizedChart = sanitizedChart.replace(/^(\s*)(Graph|Flowchart|SequenceDiagram|ClassDiagram|StateDiagram|ErDiagram|Gantt|Pie|GitGraph|Subgraph|End|Participant|Activate|Deactivate|Opt|Alt|Else|Rect|Style)\b/gmi, (_, space, match) => {
+          const lower = match.toLowerCase()
+          if (lower === 'sequencediagram') return space + 'sequenceDiagram'
+          if (lower === 'classdiagram') return space + 'classDiagram'
+          if (lower === 'statediagram') return space + 'stateDiagram'
+          if (lower === 'erdiagram') return space + 'erDiagram'
+          if (lower === 'gitgraph') return space + 'gitGraph'
+          return space + lower
         })
 
         // Provide a hidden, fixed-width container to prevent Mermaid v11 from throwing NaN 

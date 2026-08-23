@@ -209,7 +209,8 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
     setIsSaving(true)
     try {
       if (window.api && window.api.db && window.api.db.updateChunk) {
-        const res = await window.api.db.updateChunk(item.id, formattedValue)
+        const targetId = item.chunk_id || item.id
+        const res = await window.api.db.updateChunk(targetId, formattedValue)
         if (res.success) {
           setLocalContent(formattedValue)
           item.content = formattedValue // prevent reversion on re-render

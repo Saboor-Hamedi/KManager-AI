@@ -71,18 +71,60 @@ const fastJsonHighlight = (jsonString) => {
 }
 
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
+  const [expanded, setExpanded] = useState(false)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const [contentHeight, setContentHeight] = useState(0)
+  const contentRef = useRef(null)
+  const maxHeight = 400
+
+  useEffect(() => {
+    if (!contentRef.current) return
+    const checkOverflow = () => {
+      if (!contentRef.current) return
+      const sh = contentRef.current.scrollHeight
+      setContentHeight(prev => prev !== sh ? sh : prev)
+      setIsOverflowing(sh > maxHeight + 20)
+    }
+    checkOverflow()
+    const ro = new ResizeObserver(() => checkOverflow())
+    if (contentRef.current) {
+      ro.observe(contentRef.current)
+      if (contentRef.current.firstElementChild) ro.observe(contentRef.current.firstElementChild)
+    }
+    return () => ro.disconnect()
+  }, [code])
+
   return (
-    <Wrapper maxHeight={400}>
-      <div className="my-6 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] shadow-sm max-w-full border border-[var(--border-dim)] relative group/code">
-        {/* Persistent Small Header - Ultra Subtle */}
-        <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
-          <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
-            {language || title || 'TEXT'}
-          </div>
-          <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity h-full">
-            <CodeCopyButton code={code} />
-          </div>
+    <div className="my-6 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] shadow-sm max-w-full border border-[var(--border-dim)] relative group/code">
+      {/* Persistent Small Header - Ultra Subtle */}
+      <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
+        <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
+          {language || title || 'TEXT'}
         </div>
+        <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity h-full gap-3">
+          {isOverflowing && (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setExpanded(!expanded)
+              }}
+              className="text-[10px] font-semibold text-[var(--text-accent)] uppercase tracking-wide hover:text-white transition-colors border-0 bg-transparent flex items-center gap-1"
+            >
+              {expanded ? 'Show Less' : 'Show More'}
+            </button>
+          )}
+          <CodeCopyButton code={code} />
+        </div>
+      </div>
+      
+      <div 
+        ref={contentRef}
+        className="transition-[max-height] duration-500 ease-in-out overflow-hidden relative"
+        style={{ 
+          maxHeight: expanded ? `${Math.max(contentHeight, maxHeight + 20)}px` : (isOverflowing ? `${maxHeight}px` : 'none') 
+        }}
+      >
         <div className="overflow-x-auto bg-transparent custom-scrollbar relative">
           {/* Right edge fade indicator for horizontal scroll */}
           <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[var(--bg-panel)] to-transparent pointer-events-none" />
@@ -114,8 +156,12 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
             />
           )}
         </div>
+        {/* Gradient Fade (Only when overflowing and collapsed) */}
+        {isOverflowing && !expanded && (
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-panel)] to-transparent pointer-events-none" />
+        )}
       </div>
-    </Wrapper>
+    </div>
   )
 }
 

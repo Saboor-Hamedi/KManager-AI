@@ -105,6 +105,9 @@ class IngestionService {
       message: `🧠 Embedding ${totalChunks} chunks (chunked in ${chunkTime})...`
     })
 
+    // Normalize path to prevent duplicate documents due to case variations on Windows
+    const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
+
     return await db.transaction(async (client) => {
       const t3 = startTimer()
 
@@ -113,7 +116,7 @@ class IngestionService {
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (vault_path) DO UPDATE SET content = EXCLUDED.content, metadata = EXCLUDED.metadata, updated_at = NOW()
          RETURNING id`,
-        [filePath, fileName, fileType, fileSize, sanitizedText, contentHash, metadataStr]
+        [normalizedPath, fileName, fileType, fileSize, sanitizedText, contentHash, metadataStr]
       )
 
       const documentId    = docInsertRes.rows[0].id
@@ -342,7 +345,7 @@ class IngestionService {
   async truncateAll(db) {
     if (!db || !db.isConnected()) throw new Error('Database not connected')
     const t = startTimer()
-    await db.query('TRUNCATE TABLE search_feedback, embedding_documents, documents RESTART IDENTITY CASCADE')
+    await db.query('TRUNCATE TABLE search_logs, search_feedback, embedding_documents, documents RESTART IDENTITY CASCADE')
     if (pdfIngestionService && typeof pdfIngestionService.clearCache === 'function') {
       pdfIngestionService.clearCache()
     }

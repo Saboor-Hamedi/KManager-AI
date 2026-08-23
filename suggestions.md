@@ -1,643 +1,210 @@
-Here is a clear, non-technical description you can give to your agent to fix the spacing issue in the Spotlight AI modal:
+## 🎯 Mermaid Diagram Regex Issues & Fixes
 
-***
+### Problem Summary
 
-"The current layout of the Spotlight AI window feels unbalanced. The bottom section—containing the 'SCOPE' label, the text input area, and the footer hints—is taking up too much vertical space. This pushes everything up and leaves very little room in the center for the actual AI responses or content to appear.
+Your `formatMarkdownText` function has **4 regex patterns** that corrupt Mermaid diagrams:
 
-Please adjust the layout to prioritize the main content area:
-
-1.  **Compact the Input Section:** Reduce the padding and margins around the 'SCOPE: ALL FILES' label and the text input box. They don't need to be so tall or spaced out.
-2.  **Shrink the Footer:** The navigation hints at the very bottom ('Navigate', 'ESC Close') can be smaller or have less padding. They are secondary information.
-3.  **Expand the Response Area:** By tightening up the bottom controls, please allow the central area (where the 'KM' logo, welcome text, suggestions, and future chat responses live) to expand and take up the majority of the window's height.
-
-The goal is to make the input bar feel like a compact toolbar at the bottom, rather than a large panel that competes with the main content for space."
-
-
-
-Also, this :
-# Text Embedding Models
-
-Text embeddings convert words, sentences, or documents into dense vector representations that capture semantic meaning. They are fundamental to modern NLP, search, and RAG systems.
+1. **Code block isolation** (lines 61-64) - Adds extra newlines inside Mermaid diagrams
+2. **Table detection** (lines 88-151) - Misinterprets Mermaid arrows (`-->`) and pipes (`|` in node labels) as markdown tables
+3. **Wikilink conversion** (line 71, 75) - Interprets `[[` inside Mermaid labels as wikilinks
+4. **Paragraph joining** (lines 163-183) - Merges Mermaid code block lines into paragraphs
 
 ---
 
-## 📚 Table of Contents
+### ⚠️ Critical: Know Your Code's Dependencies
 
-- [Types](#types)
-- [Dimensionality](#dimensionality)
-- [Use Cases](#use-cases)
-- [Static Embeddings](#static-embeddings)
-- [Contextual Embeddings](#contextual-embeddings)
-- [Sentence Embeddings](#sentence-embeddings)
-- [Matryoshka Embeddings](#matryoshka-embeddings)
-- [MTEB Benchmark](#mteb-benchmark-deep-dive)
-- [Embedding Quantization](#embedding-quantization)
-- [Caching and Storage](#embedding-caching-and-storage)
-- [Similarity Measures](#similarity-measures)
-- [Fine-Tuning](#fine-tuning-embeddings-for-domain-specific-tasks)
-- [Model Selection](#embedding-model-selection)
-- [Practical Checklist](#practical-checklist)
+**Before making changes, understand these relationships:**
+
+1. **Your `formatMarkdownText` is called by `formatJsonContent`** - Changes here affect JSON rendering too
+2. **The table detection (lines 88-151) expects specific markdown table formats** - Your Mermaid diagrams might have `|` in node labels or arrow syntax that looks like tables
+3. **The paragraph joining logic (lines 163-183) reassembles text into paragraphs** - It treats code blocks as "special lines" that shouldn't be merged, but Mermaid diagrams need special handling
+4. **Your `resolveRelativeMedia` handles image paths** - If Mermaid diagrams contain image references, this function might be affected
+5. **The wikilink conversion happens at line 71 and 75** - It converts `[[page]]` to inline wikilink tokens that your UI renders differently
 
 ---
 
-## Types
+### 🔧 The Fix: Preserve Mermaid Blocks First
 
-| Type | Examples | Characteristics |
-|------|----------|-----------------|
-| **Static** | Word2Vec, GloVe, FastText | One vector per word, no context |
-| **Contextual** | BERT, RoBERTa, DeBERTa | Context-dependent vectors |
-| **Sentence** | Sentence-BERT, Instructor, UAE | Whole-sentence embeddings |
+**Strategy:** Extract all Mermaid diagrams BEFORE any regex processing, then restore them AFTER all transformations.
 
----
+```javascript
+// STEP 1: Extract and store all mermaid blocks with placeholders
+const mermaidBlocks = []
+let mermaidIndex = 0
 
-## Dimensionality
+let result = text.replace(/```mermaid([\s\S]*?)```/g, (match) => {
+  const placeholder = `__MERMAID_BLOCK_${mermaidIndex}__`
+  mermaidBlocks.push(match)
+  mermaidIndex++
+  return placeholder
+})
 
-| Model | Dimensions |
-|-------|-----------|
-| Word2Vec | 100–300 |
-| BERT Base | 768 |
-| BERT Large | 1024 |
-| text-embedding-3-small | 1536 |
-| text-embedding-3-large | 3072 |
+// STEP 2: Run ALL your existing regex transformations on `result`
+// (The mermaid blocks are now safe as placeholders)
 
----
-
-## Use Cases
-
-- 🔍 Semantic search
-- 📂 Document clustering
-- 🎯 Recommendation systems
-- 🤖 Retrieval-Augmented Generation (RAG)
-- 🚨 Anomaly detection
-
-**See also**: [[NLP Pipeline Design]], [[LLM Agents Framework]], [[Database Engines Compared]]
+// STEP 3: Restore the mermaid blocks
+mermaidBlocks.forEach((block, i) => {
+  result = result.replace(`__MERMAID_BLOCK_${i}__`, block)
+})
+```
 
 ---
 
-## Embedding Space Visualization
+### 📝 Where to Apply This Fix
+
+| Function Section | What to Change | Why Careful |
+|------------------|----------------|-------------|
+| **Start of function** | Add mermaid extraction before any processing | Your other transformations (math, wikilinks, citations) should NOT run on mermaid blocks |
+| **Line 61-64** (code block formatting) | These can stay as-is since mermaid blocks are now placeholders | The ```` ``` ```` detection will now see placeholders instead of actual code blocks |
+| **Line 88-151** (table processing) | Add `if (line.includes('__MERMAID_BLOCK_')) continue;` before table detection | This section has `inTable` state that could get confused by placeholders |
+| **Line 163-183** (paragraph joining) | Add `if (trimmed.includes('__MERMAID_BLOCK_')) { cleanedParagraphs.push(line); continue; }` | This section's `insideBlock` state and paragraph merging would break on placeholders |
+| **End of function** | Add mermaid restoration before returning | This must happen AFTER all transformations but BEFORE the final capitalization and punctuation cleanups |
+
+---
+
+### 🔍 Alternative: Conditional Processing with State Tracking
+
+If preserving blocks is too heavy, use a state-based approach:
+
+```javascript
+// At the start of the function:
+let inMermaid = false
+
+// Before any regex operation:
+if (text.includes('```mermaid') && !text.includes('__MERMAID_BLOCK_')) {
+  // Skip this transformation for lines containing mermaid blocks
+  // Or use negative lookbehind: (?<!```mermaid)
+}
+
+// In the table detection loop (lines 88-151):
+if (trimmed.includes('```mermaid') || trimmed.includes('-->')) continue;
+
+// In the paragraph joining loop (lines 163-183):
+if (trimmed.includes('```mermaid')) {
+  inMermaid = true
+  cleanedParagraphs.push(line)
+  continue
+}
+if (inMermaid && trimmed.includes('```')) {
+  inMermaid = false
+  cleanedParagraphs.push(line)
+  continue
+}
+if (inMermaid) {
+  cleanedParagraphs.push(line)
+  continue
+}
+```
+
+---
+
+### ⚠️ Critical Dependencies to Consider
+
+1. **Your `formatJsonContent` function** - It calls `formatMarkdownText` and expects the output to be properly formatted. If you break Mermaid diagrams, JSON content rendering will fail.
+
+2. **Your table normalization logic** - The table detection (lines 88-151) has complex logic to fix malformed tables. This logic relies on detecting pipes (`|`). Mermaid diagrams with pipes in labels will trigger this logic incorrectly.
+
+3. **Your paragraph joining logic** - This reassembles paragraphs from extracted PDF text. It uses the `isSpecialLine` flag to detect code blocks. Mermaid diagrams will not be detected correctly without special handling.
+
+4. **Your citation and wikilink handling** - The citation extraction (lines 83-97) and wikilink conversion (lines 71, 75) run BEFORE the paragraph joining. If Mermaid diagrams contain `[[` or citation patterns, they'll be incorrectly converted.
+
+5. **Your final capitalization logic** - The last steps of the function (lines 160-184) apply capitalization and formatting to the entire text. If a Mermaid diagram's placeholder gets capitalized, it will be corrupted when restored.
+
+---
+
+### ✅ Priority Fixes (Quick Wins)
+
+1. **Table detection fix** (most critical):
+   ```javascript
+   // Add this at the start of table detection loop:
+   if (trimmed.includes('-->') || trimmed.includes('->>')) continue;
+   // Add this for pipe detection:
+   if (trimmed.includes('__MERMAID_BLOCK_')) continue;
+   ```
+
+2. **Wikilink fix**:
+   ```javascript
+   // Only convert wikilinks if NOT inside a mermaid block:
+   // Move the wikilink conversion to AFTER mermaid extraction
+   // Use the placeholder approach instead of trying to detect in-line
+   ```
+
+3. **Paragraph joining fix**:
+   ```javascript
+   // Add a variable at function start:
+   let insideMermaid = false
+   
+   // In the loop (lines 163-183):
+   if (trimmed.startsWith('```mermaid')) {
+     insideMermaid = true
+     cleanedParagraphs.push(line)
+     continue
+   }
+   if (insideMermaid && trimmed.startsWith('```')) {
+     insideMermaid = false
+     cleanedParagraphs.push(line)
+     continue
+   }
+   if (insideMermaid) {
+     cleanedParagraphs.push(line)
+     continue
+   }
+   ```
+
+---
+
+### 🧪 Test Cases to Verify
+
+After applying fixes, test these Mermaid diagrams:
 
 ```mermaid
 graph LR
-    subgraph "2D Projection of Embedding Space"
-        A[king] --> |"vector"| V1["(0.8, 0.6)"]
-        B[man] --> V2["(0.7, 0.3)"]
-        C[woman] --> V3["(0.5, 0.7)"]
-        D[queen] --> V4["(0.6, 0.9)"]
-    end
-    V1 -.-> |"king - man + woman"| V4
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style D fill:#9cf,stroke:#333,stroke-width:2px
+    A[king] --> V1["(0.8, 0.6)"]
+    B[man] --> V2["(0.7, 0.3)"]
+    V1 -.-> V4
 ```
 
-### Semantic Arithmetic
-
-The classic analogy: **king - man + woman ≈ queen**
-
-```python
-import numpy as np
-from gensim.models import KeyedVectors
-
-# Load pre-trained Word2Vec
-wv = KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin", binary=True)
-
-def analogy(a, b, c, wv, topn=5):
-    """Returns d such that a : b :: c : d"""
-    result = wv.most_similar(positive=[c, b], negative=[a], topn=topn)
-    return result
-
-# king - man + woman = ?
-print(analogy("king", "man", "woman", wv))
-# [('queen', 0.852), ...]
-
-def vector_arithmetic(words_positive, words_negative, wv, topn=5):
-    result = wv.most_similar(positive=words_positive, negative=words_negative, topn=topn)
-    return result
+```mermaid
+sequenceDiagram
+    Client->>API: Request
+    API-->>Client: Response
 ```
 
 ```mermaid
 graph TD
-    A[king] -->|"vector: (0.8, 0.6)"| B[+ woman]
-    B --> C[- man]
-    C --> D["≈ queen (0.6, 0.9)"]
-    E[Paris] -->|": Rome"| F[+ Italy]
-    F --> G[- France]
-    G --> H["≈ Rome → Italy → Paris → France"]
+    A[Node with | pipe | in label] --> B[Another node]
 ```
+
+**Expected:** All render correctly without parsing errors.
 
 ---
 
-## Static Embeddings — Deep Dive
+### 📋 Agent Checklist
 
-### Word2Vec: CBOW vs Skip-gram
-
-```mermaid
-graph LR
-    subgraph CBOW
-        A1["w(t-2)"] --> H1[Hidden]
-        A2["w(t-1)"] --> H1
-        A3["w(t+1)"] --> H1
-        A4["w(t+2)"] --> H1
-        H1 --> O1["Predict w(t)"]
-    end
-    subgraph Skip-gram
-        I1["Input w(t)"] --> H2[Hidden]
-        H2 --> O2["Predict w(t-2)"]
-        H2 --> O3["Predict w(t-1)"]
-        H2 --> O4["Predict w(t+1)"]
-        H2 --> O5["Predict w(t+2)"]
-    end
-```
-
-| Aspect | CBOW | Skip-gram |
-|--------|------|-----------|
-| Task | Predict target from context | Predict context from target |
-| Speed | Faster | Slower (more predictions) |
-| Rare words | Poorer | Better |
-| Training efficiency | Higher per epoch | Lower per epoch |
-| Best for | Frequent words, large corpus | Small corpus, rare words |
-
-```python
-from gensim.models import Word2Vec
-
-# Skip-gram
-model_sg = Word2Vec(sentences, vector_size=300, window=5, sg=1, min_count=5, workers=4)
-
-# CBOW
-model_cbow = Word2Vec(sentences, vector_size=300, window=5, sg=0, min_count=5, workers=4)
-
-# Inspect embeddings
-word_vec = model_sg.wv["king"]
-similar = model_sg.wv.most_similar("king", topn=10)
-```
-
-### GloVe — Global Vectors
-
-GloVe (Global Vectors for Word Representation) captures global corpus statistics by factorizing the word co-occurrence matrix.
-
-```python
-import numpy as np
-from glove import Corpus, Glove
-
-# Build co-occurrence matrix
-corpus = Corpus()
-corpus.fit(sentences, window=10)
-
-# Train GloVe
-glove = Glove(no_components=300, learning_rate=0.05)
-glove.fit(corpus.matrix, epochs=30, no_threads=4, verbose=True)
-glove.add_dictionary(corpus.dictionary)
-
-embeddings = glove.word_vectors  # shape: (vocab_size, 300)
-```
-
-| Property | Word2Vec | GloVe | FastText |
-|----------|----------|-------|----------|
-| Architecture | Predictive | Count-based | Predictive |
-| Context window | Local | Global + Local | Local |
-| Subword info | No | No | Yes (character n-grams) |
-| OOV handling | None | None | Character n-gram fallback |
-| Training data | 100B tokens | 840B tokens | 600B tokens |
-
-### FastText — Subword Information
-
-```python
-from gensim.models import FastText
-
-ft_model = FastText(
-    sentences=sentences,
-    vector_size=300,
-    window=5,
-    min_count=5,
-    min_n=3,  # min character n-gram length
-    max_n=6,  # max character n-gram length
-    workers=4
-)
-
-# OOV handling — FastText can embed unseen words
-oov_vector = ft_model.wv["novelword123"]  # works!
-```
+- [ ] Extract mermaid blocks with placeholders at function START (before any processing)
+- [ ] Skip ALL transformations on placeholder text
+- [ ] In table detection (lines 88-151): add `if (trimmed.includes('__MERMAID_BLOCK_')) continue;`
+- [ ] In paragraph joining (lines 163-183): add `if (trimmed.includes('__MERMAID_BLOCK_')) { cleanedParagraphs.push(line); continue; }`
+- [ ] In wikilink conversion (lines 71, 75): move to after mermaid extraction
+- [ ] In citation extraction (lines 83-97): add `if (!line.includes('__MERMAID_BLOCK_'))`
+- [ ] Restore mermaid blocks at function END (after all transformations but before final cleanup)
+- [ ] Test with at least 3 different mermaid diagram types
+- [ ] Test with diagrams containing pipes (`|`) in labels
+- [ ] Test with diagrams containing `-->` arrows
+- [ ] Test with diagrams containing `[[` wikilink-like syntax
+- [ ] Verify `formatJsonContent` still works with JSON data
+- [ ] Verify table detection still works with markdown tables
 
 ---
 
-## Contextual Embeddings
+### 🔑 Key Insight
 
-### BERT Family Comparison
+**The most important thing to understand is that your `formatMarkdownText` function is trying to be too clever.** It's making assumptions about the text structure (PDF extraction, markdown, JSON) and applying transformations that work for those formats but break Mermaid diagrams.
 
-| Model | Parameters | Layers | Hidden Dim | Heads | Pretraining Data | Key Innovation |
-|-------|-----------|--------|------------|-------|-----------------|----------------|
-| BERT Base | 110M | 12 | 768 | 12 | 3.3B words | Masked LM + NSP |
-| BERT Large | 340M | 24 | 1024 | 16 | 3.3B words | Larger = better |
-| RoBERTa | 355M | 24 | 1024 | 16 | 160GB | Removed NSP, dynamic masking |
-| ALBERT | 12M-235M | 12 | 768 | 12 | 160GB | Parameter sharing |
-| DeBERTa | 1.5B | 48 | 1600 | 25 | 160GB | Disentangled attention |
-| ELECTRA | 335M | 24 | 1024 | 16 | 160GB | Replaced token detection |
+**The safest approach is the placeholder extraction method** because it:
+1. Preserves Mermaid diagrams exactly as they are
+2. Allows all your other transformations to work on non-Mermaid content
+3. Restores the diagrams at the end without corruption
+4. Doesn't require modifying your existing regex logic (which works for markdown/PDF content)
 
-```python
-from transformers import AutoTokenizer, AutoModel
-import torch
-
-def get_bert_embeddings(text: str, model_name: str = "bert-base-uncased"):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
-
-    inputs = tokenizer(text, return_tensors="pt")
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    # Last hidden state: [batch, seq_len, hidden_dim]
-    last_hidden = outputs.last_hidden_state
-
-    # CLS token embedding (pooled representation)
-    cls_embedding = last_hidden[:, 0, :]
-
-    # Mean pooling over all tokens
-    mean_embedding = last_hidden.mean(dim=1)
-
-    return {
-        "cls": cls_embedding.squeeze().numpy(),
-        "mean": mean_embedding.squeeze().numpy(),
-        "tokens": tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
-    }
-```
-
-### How Contextual Embeddings Differ
-
-```mermaid
-graph TD
-    A["Input: I bank at the river bank"] --> B["BERT Tokenizer"]
-    B --> C["bank → token 1"]
-    B --> D["bank → token 2"]
-    C --> E["Self-Attention"]
-    D --> E
-    E --> F["bank1 vector"]
-    E --> G["bank2 vector"]
-    F -.->|"Different!"| G
-    subgraph Static
-        H["bank vector"]
-        H --> I["Always the same"]
-    end
-    style F fill:#f96
-    style G fill:#9cf
-    style H fill:#ccc
-```
-
-### DeBERTa — Disentangled Attention
-
-```python
-from transformers import DebertaModel, DebertaTokenizer
-
-tokenizer = DebertaTokenizer.from_pretrained("microsoft/deberta-large")
-model = DebertaModel.from_pretrained("microsoft/deberta-large")
-
-inputs = tokenizer("The bank manager went to the bank of the river.", return_tensors="pt")
-outputs = model(**inputs)
-```
-
----
-
-## Sentence Embeddings
-
-### Sentence-BERT (SBERT)
-
-```python
-from sentence_transformers import SentenceTransformer, util
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-sentences = [
-    "A man is eating food.",
-    "A man is eating a piece of bread.",
-    "A woman is eating a sandwich.",
-]
-
-embeddings = model.encode(sentences)
-similarities = util.cos_sim(embeddings, embeddings)
-# similarity[0][1] ≈ 0.92 (same topic)
-# similarity[0][2] ≈ 0.78 (different subject)
-```
-
-| SBERT Model | Dim | Speed (sent/s) | NLI Acc | STS Benchmark |
-|-------------|-----|----------------|---------|---------------|
-| all-MiniLM-L6-v2 | 384 | 14,200 | 84.2 | 82.6 |
-| all-mpnet-base-v2 | 768 | 2,800 | 86.3 | 85.7 |
-| multi-qa-MiniLM-L6-cos-v1 | 384 | 14,200 | — | 83.4 (QA) |
-| gtr-t5-large | 768 | 1,200 | — | 89.0 |
-
-### Instructor Model
-
-```python
-from sentence_transformers import SentenceTransformer
-
-# Instructor uses instruction prefixes for task-specific embeddings
-model = SentenceTransformer("hkunlp/instructor-base")
-
-# For classification tasks
-emb = model.encode(
-    sentences=["Represent the sentence for classification: ", "This product is amazing!"],
-)
-
-# For retrieval tasks
-query_emb = model.encode("Represent the query for retrieval: ", "How to fix a leaky faucet?")
-doc_emb = model.encode("Represent the document for retrieval: ", "Step 1: Turn off the water supply.")
-```
-
-### Angle-Optimized Embeddings
-
-```python
-from anglesent import AngleModel
-
-model = AngleModel.from_pretrained("WhereIsAI/UAE-Large-V1")
-embeddings = model.encode(sentences)
-```
-
----
-
-## Matryoshka Embeddings
-
-Matryoshka embeddings support flexible dimensionality — you can truncate the vector and still get useful representations.
-
-```python
-from sentence_transformers import SentenceTransformer
-
-model = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5")
-
-full_embedding = model.encode("Example text")
-# Full dim = 768
-
-# Use subset of dimensions
-small_embed = full_embedding[:256]   # 256-dim
-medium_embed = full_embedding[:512]  # 512-dim
-full = full_embedding                # 768-dim
-
-# Trade-off: dim vs speed vs accuracy
-# At dim=64: 95% of full accuracy, 10x faster search
-```
-
-| Dim | Relative Accuracy | Search Speed | Storage |
-|-----|------------------|--------------|---------|
-| 768 | 100% | 1x | 3 KB/vec |
-| 512 | 99.2% | 1.5x | 2 KB/vec |
-| 256 | 97.8% | 3x | 1 KB/vec |
-| 128 | 95.1% | 6x | 0.5 KB/vec |
-| 64 | 90.3% | 12x | 0.25 KB/vec |
-
----
-
-## MTEB Benchmark Deep Dive
-
-The Massive Text Embedding Benchmark evaluates embeddings across 8 tasks.
-
-```mermaid
-graph TD
-    A[MTEB] --> B[Classification]
-    A --> C[Clustering]
-    A --> D["Pair Classification"]
-    A --> E[Reranking]
-    A --> F[Retrieval]
-    A --> G[STS]
-    A --> H[Summarization]
-    A --> I["Bitext classification"]
-    B --> J["Average across 12 datasets"]
-    F --> K["Recall@k, MAP, nDCG"]
-    G --> L["Sentence similarity correlation"]
-```
-
-| Rank | Model | Dim | Avg | Classification | Clustering | PairClass | Reranking | Retrieval | STS | Summarization |
-|------|-------|-----|-----|---------------|------------|-----------|-----------|-----------|-----|---------------|
-| 1 | intfloat/e5-mistral-7b-instruct | 4096 | 66.63 | 73.36 | 54.91 | 87.70 | 58.73 | 50.43 | 84.82 | 31.26 |
-| 2 | BAAI/bge-large-en-v1.5 | 1024 | 64.23 | 75.08 | 48.67 | 87.26 | 60.04 | 53.25 | 83.03 | 31.11 |
-| 3 | cohere-embed-v3-english | 1024 | 64.03 | 75.61 | 49.40 | 87.30 | 59.18 | 52.70 | 83.21 | 30.61 |
-| 4 | openai/text-embedding-3-large | 3072 | 64.00 | 73.12 | 51.34 | 86.99 | 59.16 | 52.12 | 82.51 | 28.91 |
-| 5 | sentence-transformers/all-mpnet-base-v2 | 768 | 61.88 | 71.94 | 46.84 | 86.83 | 58.50 | 48.90 | 82.38 | 31.78 |
-
----
-
-## Embedding Quantization
-
-### Binary Quantization
-
-```python
-import numpy as np
-
-def binary_quantize(embeddings: np.ndarray) -> np.ndarray:
-    """Convert float embeddings to binary (0/1)"""
-    median = np.median(embeddings, axis=1, keepdims=True)
-    return (embeddings > median).astype(np.uint8)
-
-def binary_to_float(binary: np.ndarray, original_float: np.ndarray) -> np.ndarray:
-    """Reconstruct approximate float from binary"""
-    return binary.astype(np.float32) * 2 - 1
-
-# Storage: float32 = 4 bytes per dim, binary = 0.125 bytes per dim
-# 768-dim: float = 3KB, binary = 96 bytes → 32x smaller
-```
-
-### Scalar Quantization
-
-```python
-def scalar_quantize(embeddings: np.ndarray, bits: int = 8) -> np.ndarray:
-    """Quantize to 8-bit integers"""
-    mins = embeddings.min(axis=1, keepdims=True)
-    maxs = embeddings.max(axis=1, keepdims=True)
-    scaled = (embeddings - mins) / (maxs - mins)  # [0, 1]
-    return (scaled * (2**bits - 1)).astype(np.uint8)
-```
-
-| Method | Compression | Accuracy Loss | Speed-up |
-|--------|-------------|---------------|----------|
-| Float32 | 1x | 0% | 1x |
-| Float16 | 2x | <0.1% | 1.5x |
-| Int8 | 4x | 0.5-1% | 2-3x |
-| Binary | 32x | 2-5% | 10-20x |
-
----
-
-## Embedding Caching and Storage
-
-### Cache Strategy
-
-```python
-from functools import lru_cache
-import hashlib
-import redis
-
-class EmbeddingCache:
-    def __init__(self, model, redis_url="redis://localhost:6379"):
-        self.model = model
-        self.redis = redis.from_url(redis_url)
-        self.lru = lru_cache(maxsize=10000)(self._compute)
-
-    def _hash_key(self, text: str) -> str:
-        return f"emb:{hashlib.md5(text.encode()).hexdigest()}"
-
-    def _compute(self, text: str):
-        return self.model.encode(text).tobytes()
-
-    def get_embedding(self, text: str):
-        key = self._hash_key(text)
-        cached = self.redis.get(key)
-        if cached:
-            return np.frombuffer(cached)
-        embedding = self.model.encode(text)
-        self.redis.setex(key, 86400, embedding.tobytes())  # TTL 24h
-        return embedding
-```
-
-### Storage Options
-
-| Storage | Latency | Capacity | Persistence | Best For |
-|---------|---------|----------|-------------|----------|
-| In-memory dict | 0.01ms | Limited | No | Small apps |
-| Redis | 1ms | RAM-bound | Optional | Production |
-| FAISS index | 10ms | 1B+ vectors | On disk | Similarity search |
-| PostgreSQL+pgvector | 5ms | 100M+ | Full ACID | Hybrid queries |
-| Pinecone | 5ms | Unlimited | Managed | Serverless |
-| Qdrant | 3ms | 1B+ | On disk | Self-hosted |
-
----
-
-## Similarity Measures
-
-```python
-import numpy as np
-from scipy.spatial.distance import cosine, euclidean, cityblock
-
-def cosine_similarity(a, b):
-    return 1 - cosine(a, b)
-
-def dot_product(a, b):
-    return np.dot(a, b)
-
-def euclidean_distance(a, b):
-    return np.linalg.norm(a - b)
-
-def manhattan_distance(a, b):
-    return np.sum(np.abs(a - b))
-
-# Comparison on normalized vs unnormalized vectors
-a = np.array([1, 2, 3])
-b = np.array([4, 5, 6])
-
-print(f"Cosine: {cosine_similarity(a, b):.4f}")
-print(f"Dot: {dot_product(a, b):.4f}")
-print(f"Euclidean: {euclidean_distance(a, b):.4f}")
-print(f"Manhattan: {cityblock(a, b):.4f}")
-```
-
-| Metric | Range | Normalized? | Speed | Use Case |
-|--------|-------|-------------|-------|----------|
-| Cosine | [-1, 1] | Yes | Fast | Semantic similarity |
-| Dot | (-∞, ∞) | No | Fastest | Embedding search |
-| Euclidean | [0, ∞) | Yes if normed | Fast | Clustering |
-| Manhattan | [0, ∞) | Yes if normed | Medium | Sparse vectors |
-| Hamming | [0, dim] | N/A | Fast | Binary embeddings |
-| Inner Product | (-∞, ∞) | No | Fastest | MaxSim in ColBERT |
-
----
-
-## Fine-Tuning Embeddings for Domain-Specific Tasks
-
-```python
-from sentence_transformers import SentenceTransformer, InputExample, losses, datasets
-from torch.utils.data import DataLoader
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Prepare training data (anchor, positive, negative)
-train_examples = [
-    InputExample(texts=["What is Python?", "Python is a programming language", "Python is a snake"]),
-    InputExample(texts=["How to bake cake?", "Mix flour and eggs", "The sky is blue"]),
-]
-
-# Create a dataloader
-train_dataset = datasets.NoDuplicatesDataLoader(train_examples, batch_size=16)
-
-# Use MultipleNegativesRankingLoss
-loss = losses.MultipleNegativesRankingLoss(model)
-
-# Fine-tune
-model.fit(
-    train_objectives=[(train_dataset, loss)],
-    epochs=5,
-    warmup_steps=100,
-    output_path="./domain-embedding-model"
-)
-```
-
-```mermaid
-graph LR
-    A[Domain Corpus] --> B[Generate Pairs]
-    B --> C[Anchor-Positive-Negative]
-    C --> D[Sentence Transformer]
-    D --> E[MultipleNegativesRankingLoss]
-    E --> F[Updated Embeddings]
-    F --> G[Domain-Specific Search]
-```
-
----
-
-## Embedding Model Selection
-
-```mermaid
-graph TD
-    A[Task] --> B{Need speed?}
-    B -->|Yes| C{Need accuracy?}
-    B -->|No| D{Need accuracy?}
-    C -->|High| E["all-MiniLM-L6-v2 (384d)"]
-    C -->|Medium| F["bge-small-en-v1.5 (384d)"]
-    D -->|High| G["text-embedding-3-large (3072d)"]
-    D -->|Medium| H["bge-large-en-v1.5 (1024d)"]
-    E --> I{Deployment target?}
-    F --> I
-    G --> I
-    H --> I
-    I -->|CPU| J["Quantize to int8"]
-    I -->|GPU| K["FP16 inference"]
-    I -->|Edge| L["DistilBERT + binary quant"]
-    J --> M[Production]
-    K --> M
-    L --> M
-```
-
----
-
-## Practical Checklist
-
-- [ ] Choose static vs contextual based on task requirements
-- [ ] For RAG, prefer sentence embeddings (SBERT, Instructor)
-- [ ] Normalize embeddings before storing (improves search)
-- [ ] Cache embeddings for repeated queries
-- [ ] Benchmark top-5 models on MTEB for your task
-- [ ] Quantize embeddings if latency is critical
-- [ ] Fine-tune on domain data for >5% accuracy gains
-- [ ] Monitor embedding drift in production
-- [ ] Use Matryoshka embeddings for flexible deployment
-
----
-
-## 🔗 Related Topics
-
-- [[Advanced Prompting Techniques]]
-- [[Context Window Strategies]]
-- [[Inference Optimization]]
-- [[LLM Agents Framework]]
-- [[LLM Alignment]]
-- [[LLM Evaluation and Benchmarks]]
-- [[LLM Safety and Guardrails]]
-- [[LLM]]
-- [[Machine Translation]]
-- [[Model Quantization]]
-- [[Named Entity Recognition]]
-- [[NLP Pipeline Design]]
-- [[Prompt Engineering]]
-- [[Quantization for LLMs]]
-- [[Sentiment Analysis]]
-- [[Structured Output and Grammar]]
-- [[Text Classification]]
-- [[Tokenization]]
-- [[Tool Use and Function Calling]]
-
----
-
-> [!TIP]
-> **Pro Tip**: For RAG systems, always benchmark at least 3 embedding models on your specific corpus before finalizing. A model that performs well on general benchmarks may underperform on domain-specific data.
+This approach is also **future-proof** - if you add more regex patterns later, they won't affect Mermaid diagrams because the placeholders won't match any regex patterns except the exact restoration logic.
