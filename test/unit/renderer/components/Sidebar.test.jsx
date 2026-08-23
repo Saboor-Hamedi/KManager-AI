@@ -9,6 +9,8 @@ describe('Sidebar', () => {
     setActiveTab: vi.fn(),
     onOpenSettings: vi.fn(),
     onOpenTheme: vi.fn(),
+    onOpenDocs: vi.fn(),
+    onOpenAnalytics: vi.fn(),
     collapsed: false,
     toggleCollapsed: vi.fn()
   }
@@ -32,7 +34,7 @@ describe('Sidebar', () => {
 
   it('hides labels when collapsed', () => {
     render(<Sidebar {...defaultProps} collapsed={true} />)
-    expect(screen.queryByText('Search')).not.toBeInTheDocument()
-    expect(screen.queryByText('Analytics')).not.toBeInTheDocument()
+    expect(screen.getByText('Search').closest('div')).toHaveClass('opacity-0')
+    expect(screen.getByText('Analytics').closest('div')).toHaveClass('opacity-0')
   })
 })

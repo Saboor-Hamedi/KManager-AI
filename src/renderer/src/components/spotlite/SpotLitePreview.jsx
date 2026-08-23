@@ -279,7 +279,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
         </div>
         
         {/* Scroll to Top Button */}
-        <ScrollToTopButton />
+        <ScrollToTopButton className="absolute bottom-6 right-6" />
     </div>
   )
 }

@@ -3,13 +3,13 @@
    useTheme.js will overwrite these async once the saved preference is loaded.
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg-app:            #0d1017;
-  --bg-sidebar:        #090b10;
-  --bg-activitybar:    #050609;
-  --bg-panel:          #141824;
-  --bg-editor:         #0d1017;
+  --bg-app:            #202329;
+  --bg-sidebar:        #1c1e23;
+  --bg-activitybar:    #19191c;
+  --bg-panel:          #262a35;
+  --bg-editor:         #202329;
   --bg-active:         rgba(56, 189, 248, 0.15);
-  --bg-card:           #1a1f2e;
+  --bg-card:           #2c303e;
   --bg-overlay:        rgba(5, 7, 12, 0.82);
   --bg-input:          #131722;
   --text-main:         #f8fafc;

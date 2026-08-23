@@ -141,6 +141,13 @@ export const useKeyboardShortcuts = (shortcuts) => {
         }
       }
 
+      // Toggle ChatBot: Ctrl+\
+      if (isCmd && !e.shiftKey && key === '\\' && shortcutsRef.current.onToggleChat) {
+        e.preventDefault()
+        e.stopPropagation()
+        shortcutsRef.current.onToggleChat()
+      }
+
       // Close Window: Ctrl+Shift+W
       if (isCmd && e.shiftKey && key === 'w') {
         if (shortcutsRef.current.onCloseWindow) {

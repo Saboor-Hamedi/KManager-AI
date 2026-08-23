@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { createPortal } from 'react-dom'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import Wrapper from '../code/Wrapper'
 import { Copy, Check, X } from 'lucide-react'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -71,49 +72,50 @@ const fastJsonHighlight = (jsonString) => {
 
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
-    <div className="my-5 rounded-[8px] overflow-hidden bg-[#1e1e1e] border border-white/[0.05] shadow-sm relative group/code">
-      {/* Persistent Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-black/40 select-none border-b border-black/20">
-        <div className="flex items-center gap-2">
-          <span className="bg-white/10 text-[var(--text-main)] text-[10px] font-bold px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+    <Wrapper maxHeight={400}>
+      <div className="my-4 rounded-t-[5px] rounded-b-none overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5 relative group/code">
+        {/* Persistent Small Header - Ultra Subtle */}
+        <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
+          <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1 leading-none mt-px">
             {language || title || 'TEXT'}
-          </span>
+          </div>
+          <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity">
+            <CodeCopyButton code={code} />
+          </div>
         </div>
-        <div className="flex items-center transition-opacity h-full">
-          <CodeCopyButton code={code} />
+        <div className="overflow-x-auto bg-transparent custom-scrollbar relative">
+          {/* Right edge fade indicator for horizontal scroll */}
+          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[#1e1e1e] to-transparent pointer-events-none" />
+          
+          {language === 'json' ? (
+            <pre 
+              className="m-0 bg-transparent text-[#d4d4d4] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
+              dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
+            />
+          ) : (
+            <SyntaxHighlighter
+              children={code}
+              style={vscDarkPlus}
+              language={language || 'text'}
+              showLineNumbers={showLineNumbers}
+              PreTag="div"
+              className="custom-scrollbar"
+              customStyle={{
+                margin: 0,
+                background: 'transparent',
+                color: '#d4d4d4',
+                fontSize: '13px',
+                padding: '1rem 1.75rem',
+                overflowX: 'auto',
+                lineHeight: '1.6'
+              }}
+              wrapLines={true}
+              wrapLongLines={false}
+            />
+          )}
         </div>
       </div>
-      <div className="overflow-x-auto bg-transparent custom-scrollbar pb-2 relative">
-        {/* Right edge fade indicator for horizontal scroll */}
-        <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[#1e1e1e] to-transparent pointer-events-none" />
-        
-        {language === 'json' ? (
-          <pre 
-            className="m-0 bg-transparent text-[#d4d4d4] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
-            dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
-          />
-        ) : (
-          <SyntaxHighlighter
-            children={code}
-            style={vscDarkPlus}
-            language={language || 'text'}
-            showLineNumbers={showLineNumbers}
-            PreTag="div"
-            customStyle={{
-              margin: 0,
-              background: 'transparent',
-              color: '#d4d4d4',
-              fontSize: '13px',
-              padding: '1rem 1.75rem',
-              overflowX: 'auto',
-              lineHeight: '1.6'
-            }}
-            wrapLines={true}
-            wrapLongLines={false}
-          />
-        )}
-      </div>
-    </div>
+    </Wrapper>
   )
 }
 
@@ -201,7 +203,7 @@ export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
   )
 }
 
-const WikiHoverCite = ({ idx, title, displayNum }) => {
+export const WikiHoverCite = ({ idx, title, displayNum }) => {
   const [showHover, setShowHover] = React.useState(false)
   const [chunkText, setChunkText] = React.useState('')
   const [itemTitle, setItemTitle] = React.useState(title || '')

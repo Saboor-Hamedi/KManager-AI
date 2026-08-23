@@ -6,22 +6,24 @@ const SidebarFooterItem = memo(({ icon: Icon, label, shortcut, collapsed, onClic
   <button
     onClick={onClick}
     className={cn(
-      "flex items-center w-full py-2 transition-all duration-200 group relative focus:outline-none outline-none border-0",
-      collapsed ? "justify-center px-0" : "px-5",
+      "flex items-center w-full py-2 transition-all duration-200 group relative focus:outline-none outline-none border-0 overflow-hidden px-5",
       "text-[var(--text-muted)] hover:bg-white/[0.03] hover:text-[var(--text-main)]"
     )}
   >
-    <Icon size={15} className="shrink-0 group-hover:text-[var(--text-accent)] transition-colors" />
-    {!collapsed && (
-      <>
-        <span className="ml-3.5 text-[12px] font-medium tracking-tight truncate">{label}</span>
-        {shortcut && (
-          <kbd className="ml-auto text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">
-            {shortcut}
-          </kbd>
-        )}
-      </>
-    )}
+    <Icon size={16} className="shrink-0 group-hover:text-[var(--text-accent)] transition-colors" />
+    <div
+      className={cn(
+        'flex items-center flex-1 ml-3.5 transition-opacity duration-200 min-w-0',
+        collapsed ? 'opacity-0' : 'opacity-100'
+      )}
+    >
+      <span className="text-[12px] font-medium tracking-tight truncate shrink-0">{label}</span>
+      {shortcut && (
+        <kbd className="ml-auto shrink-0 text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">
+          {shortcut}
+        </kbd>
+      )}
+    </div>
   </button>
 ))
 

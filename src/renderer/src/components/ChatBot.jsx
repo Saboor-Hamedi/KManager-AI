@@ -4,13 +4,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { formatMarkdownText, remarkMath, rehypeKatex } from './search/DocumentRenderer'
+import { formatMarkdownText, remarkMath, rehypeKatex, WikiHoverCite } from './search/DocumentRenderer'
 import SuggestedPrompts from './search/SuggestedPrompts'
 import { cn } from '../lib/utils'
 import { getSetting } from '../lib/settings'
 import { queryLLM } from '../lib/LLMProvider'
 import { useKeyboardShortcuts } from '../../../utils/useKeyboardShortcuts'
 import ConfirmModal from './layout/ConfirmModal'
+import Wrapper from './code/Wrapper'
 
 const MermaidDiagram = React.lazy(() => import('./search/MermaidDiagram'))
 const MarkdownImage = React.lazy(() => import('./search/MarkdownImage'))
@@ -25,41 +26,44 @@ const ChatCodeBlock = memo(({ lang, codeString }) => {
   }
 
   return (
-    <div className="my-4 rounded-[5px] overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
-      {/* Persistent Small Header - Ultra Subtle */}
-      <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
-        <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1">
-          {lang || 'Code'}
+    <Wrapper maxHeight={400}>
+      <div className="my-4 rounded-t-[5px] rounded-b-none overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5">
+        {/* Persistent Small Header - Ultra Subtle */}
+        <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
+          <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1 leading-none mt-px">
+            {lang || 'Code'}
+          </div>
+          <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity">
+            <button 
+              onClick={handleCopy}
+              className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors border-0"
+              title="Copy to clipboard"
+            >
+              {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity">
-          <button 
-            onClick={handleCopy}
-            className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors border-0"
-            title="Copy to clipboard"
-          >
-            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-          </button>
-        </div>
+        <SyntaxHighlighter
+          children={codeString}
+          style={vscDarkPlus}
+          language={lang || 'text'}
+          showLineNumbers={false}
+          PreTag="div"
+          className="custom-scrollbar"
+          customStyle={{
+            margin: 0,
+            background: '#1e1e1e',
+            color: '#d4d4d4',
+            fontSize: '11.5px',
+            padding: '1rem',
+            overflowX: 'auto',
+            lineHeight: '1.6'
+          }}
+          wrapLines={true}
+          wrapLongLines={false}
+        />
       </div>
-      <SyntaxHighlighter
-        children={codeString}
-        style={vscDarkPlus}
-        language={lang || 'text'}
-        showLineNumbers={false}
-        PreTag="div"
-        customStyle={{
-          margin: 0,
-          background: '#1e1e1e',
-          color: '#d4d4d4',
-          fontSize: '11.5px',
-          padding: '1rem',
-          overflowX: 'auto',
-          lineHeight: '1.6'
-        }}
-        wrapLines={true}
-        wrapLongLines={false}
-      />
-    </div>
+    </Wrapper>
   )
 })
 
@@ -104,8 +108,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
     }
   }
 
-  // Pre-process citations [1], [2], etc. to make them targetable links
-  const formattedText = displayedText.replace(/\[(\d+)\]/g, ' [^$1^](#citation-$1) ')
+  const formattedText = displayedText
 
   return (
     <div className="flex flex-col items-start w-full animate-in fade-in duration-200">
@@ -125,14 +128,14 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 
                 if (lineText.endsWith('?') && lineText.length > 5 && lineText.length < 250) {
                    const cleanText = lineText.replace(/^(\d+\.|-|\*)\s*/, '').trim()
-                   return (
-                      <div className="my-2">
+                    return (
+                      <div className="my-1">
                         <button
                           onClick={() => {
                             window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: cleanText } }))
                             window.dispatchEvent(new CustomEvent('close-chatbot'))
                           }}
-                          className="w-full group flex items-start gap-3 px-4 py-3 rounded-[8px] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-white/[0.04] hover:border-[var(--text-accent)]/50 text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 shadow-sm text-left max-w-full break-words"
+                          className="w-full group flex items-start gap-2.5 px-3 py-2 rounded-[6px] bg-transparent hover:bg-[var(--bg-active)] text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 text-left max-w-full break-words"
                         >
                           <span className="shrink-0 mt-0.5 text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">💡</span>
                           <span className="flex-1 transition-colors leading-relaxed">{cleanText}</span>
@@ -145,8 +148,11 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
               },
               strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
               em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
-              ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
-              ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 space-y-0.5 marker:text-[var(--text-muted)]" {...props} />,
+              h1: ({node, ...props}) => <h1 className="text-[15px] font-bold mt-5 mb-3 text-[var(--text-main)]" {...props} />,
+              h2: ({node, ...props}) => <h2 className="text-[14px] font-bold mt-4 mb-2.5 text-[var(--text-main)]" {...props} />,
+              h3: ({node, ...props}) => <h3 className="text-[13px] font-bold mt-4 mb-2 text-[var(--text-main)]" {...props} />,
+              ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-3 space-y-1.5 marker:text-[var(--text-muted)]" {...props} />,
+              ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-3 space-y-1.5 marker:text-[var(--text-muted)]" {...props} />,
               li: ({node, children, ...props}) => {
                 const extractText = (nodes) => {
                   return React.Children.toArray(nodes).map(child => {
@@ -159,14 +165,14 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 
                 if (lineText.endsWith('?') && lineText.length > 5 && lineText.length < 250) {
                    const cleanText = lineText.replace(/^(\d+\.|-|\*)\s*/, '').trim()
-                   return (
-                      <li className="my-2 list-none" {...props}>
+                    return (
+                      <li className="my-0.5 list-none" {...props}>
                         <button
                           onClick={() => {
                             window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: cleanText } }))
                             window.dispatchEvent(new CustomEvent('close-chatbot'))
                           }}
-                          className="w-full group flex items-start gap-3 px-4 py-3 rounded-[8px] bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] border border-white/[0.04] hover:border-[var(--text-accent)]/50 text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 shadow-sm text-left max-w-full break-words -ml-4"
+                          className="w-full group flex items-start gap-2.5 px-3 py-2 rounded-[6px] bg-transparent hover:bg-[var(--bg-active)] text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 text-left max-w-full break-words -ml-3"
                         >
                           <span className="shrink-0 mt-0.5 text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">💡</span>
                           <span className="flex-1 transition-colors leading-relaxed">{cleanText}</span>
@@ -187,6 +193,15 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 const lang = match ? match[1] : ''
                 const codeString = String(children).replace(/\n$/, '')
                 
+                if (codeString.startsWith('sourcecite:')) {
+                  const parts = codeString.slice('sourcecite:'.length).split('|')
+                  const rawIdx = parts[0]
+                  const idx = isNaN(Number(rawIdx)) ? rawIdx : Number(rawIdx)
+                  const title = parts[1] || `Source ${idx}`
+                  const displayNum = parts[2] || (isNaN(Number(idx)) ? '?' : idx)
+                  return <WikiHoverCite idx={idx} title={title} displayNum={displayNum} />
+                }
+
                 const isMultiLine = codeString.includes('\n')
                 const isBlock = isMultiLine || Boolean(lang)
 
@@ -205,16 +220,6 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
                 return <ChatCodeBlock lang={lang} codeString={codeString} />
               },
               a: ({node, href, children, ...props}) => {
-                if (href?.startsWith('#citation-')) {
-                  return (
-                    <span 
-                      className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-sm bg-[var(--text-accent)]/20 text-[var(--text-accent)] text-[9px] font-bold mx-0.5 cursor-help hover:bg-[var(--text-accent)] hover:text-white transition-colors"
-                      title="Source Document Citation"
-                    >
-                      {children}
-                    </span>
-                  )
-                }
                 if (href === '#search') {
                   return (
                     <button
@@ -380,9 +385,22 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
 
   useEffect(() => {
     const handleClose = () => setIsOpen(false)
+    const handleToggle = () => setIsOpen(prev => !prev)
     window.addEventListener('close-chatbot', handleClose)
-    return () => window.removeEventListener('close-chatbot', handleClose)
+    window.addEventListener('toggle-chatbot', handleToggle)
+    return () => {
+      window.removeEventListener('close-chatbot', handleClose)
+      window.removeEventListener('toggle-chatbot', handleToggle)
+    }
   }, [])
+
+  useKeyboardShortcuts({
+    onToggleChat: () => setIsOpen(prev => !prev),
+    onEscape: isOpen ? () => {
+      setIsOpen(false)
+      return true
+    } : undefined
+  })
 
   useLayoutEffect(() => {
     if (textareaRef.current) {
@@ -392,6 +410,13 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
       }
     }
   }, [input])
+
+  useEffect(() => {
+    if (isOpen && textareaRef.current && !inline) {
+      // Small timeout ensures the modal is visible before focusing
+      setTimeout(() => textareaRef.current.focus(), 50)
+    }
+  }, [isOpen, inline])
 
   const handleInput = useCallback((e) => {
     setInput(e.target.value)
@@ -486,12 +511,7 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
     setShowConfirm(false)
   }
 
-  useKeyboardShortcuts({
-    onEscape: isOpen ? () => {
-      setIsOpen(false)
-      return true
-    } : undefined
-  })
+
 
   // Fetch DB stats for system awareness
   useEffect(() => {
@@ -824,17 +844,6 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "fixed bottom-5 right-5 flex items-center justify-center w-8 h-8 rounded-[6px] bg-[var(--bg-panel)] border border-white/[0.05] text-[var(--text-accent)] shadow-none hover:bg-white/[0.04] hover:text-[var(--text-main)] transition-all duration-150 z-40",
-          isOpen ? "scale-75 opacity-0 pointer-events-none" : "scale-100 opacity-100"
-        )}
-        title="Open Assistant"
-      >
-        <MessageSquare size={15} />
-      </button>
-
       {isOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-[10000] animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
           {ChatUI}

@@ -23,8 +23,24 @@ const MetricCard = memo(({ title, value, trend, trendLabel }) => (
 const AnalyticsCards = memo(({ data }) => {
   if (!data) return null
 
+  const rawLocalRate = 100 - (data.hybridRate || 0)
+  const localRate = Number.isInteger(rawLocalRate) ? rawLocalRate : parseFloat(rawLocalRate.toFixed(1))
+  const localQueries = Math.round((data.totalQueries || 0) * (rawLocalRate / 100))
+  const estSavingsUsd = (localQueries * (data.avgTokens || 500) * 0.00001).toFixed(2)
+  const estTimeSavedMins = Math.round((localQueries * 1500) / 60000)
+
   return (
     <div className="space-y-6">
+      {/* Headline ROI */}
+      <div className="sticky top-[-24px] lg:top-[-32px] z-30 bg-[var(--bg-app)] pt-6 lg:pt-8 -mt-6 lg:-mt-8 pb-4 mb-2">
+        <div className="bg-[#a855f7]/10 border border-[#a855f7]/30 rounded-xl p-4 shadow-sm backdrop-blur-md">
+          <h2 className="text-[13px] font-black text-[#d8b4fe] tracking-wide mb-1.5">Local-First ROI & Token Economics</h2>
+          <p className="text-[12px] font-medium text-[var(--text-muted)] leading-relaxed">
+            By intelligently routing <strong className="text-white">{localRate}%</strong> of queries to local vector search instead of the cloud LLM, you have saved approximately <strong className="text-emerald-400">~${estSavingsUsd}</strong> in API costs and avoided <strong className="text-[#a855f7]">{estTimeSavedMins} minutes</strong> of cumulative network latency.
+          </p>
+        </div>
+      </div>
+
       {/* Tier 1: Real System Telemetry */}
       <div>
         <h2 className="text-xs font-semibold text-[var(--text-main)] mb-2.5">System Usage & Feedback</h2>

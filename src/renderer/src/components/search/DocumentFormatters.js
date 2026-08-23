@@ -97,7 +97,7 @@ export const formatMarkdownText = (text) => {
     return `\`sourcecite:${key}${title ? `|${title}` : ''}|${displayNum}\``
   }
 
-  result = result.replace(/\[(?:Source|Doc)\s*([0-9a-zA-Z-]+)(?:\s*:\s*([^\]]+))?\]/gi, (match, idx, title) => {
+  result = result.replace(/\[(?:Source|Doc)\s*#?\s*([0-9a-zA-Z-]+)(?:\s*:\s*([^\]]+))?\]/gi, (match, idx, title) => {
     return assignCite(idx, title)
   })
 

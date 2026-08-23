@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Minus, Square, X, Database, WifiOff, CodeXml, Download, RefreshCcw, Package } from 'lucide-react'
+import { Minus, Square, X, Database, WifiOff, CodeXml, Download, RefreshCcw, Package, MessageSquare } from 'lucide-react'
 
 const GlobalTitleBar = () => {
   const [dbConnected, setDbConnected] = useState(false)
@@ -230,6 +230,18 @@ const GlobalTitleBar = () => {
           </button>
         )}
 
+        <button
+          type="button"
+          onClick={(e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            setTimeout(() => window.dispatchEvent(new CustomEvent('toggle-chatbot')), 10);
+          }}
+          className="h-full px-3 flex items-center justify-center hover:bg-[var(--bg-active)] text-[var(--text-accent)] transition-colors border-0"
+          title="Open Assistant (Ctrl + \)"
+        >
+          <MessageSquare size={13} />
+        </button>
         <button
           type="button"
           onClick={handleMinimize}

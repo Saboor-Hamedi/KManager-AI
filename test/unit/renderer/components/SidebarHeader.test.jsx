@@ -11,7 +11,7 @@ describe('SidebarHeader', () => {
 
   it('renders only logo when collapsed', () => {
     const { container } = render(<SidebarHeader collapsed={true} />)
-    expect(screen.queryByText('KMANAGER')).not.toBeInTheDocument()
+    expect(screen.getByText('KMANAGER').closest('div')).toHaveClass('opacity-0')
     expect(container.querySelector('.rounded-md')).toBeInTheDocument()
   })
 })

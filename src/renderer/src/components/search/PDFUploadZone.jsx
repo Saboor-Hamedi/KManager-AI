@@ -309,24 +309,17 @@ const PDFUploadZone = ({ onIngestComplete }) => {
       />
       <div id="pdf-upload-zone-container" className="w-full h-full relative z-30 transition-all duration-200">
       {/* Flat Top Ingestion Bar - Always shows exact counts whether idle or busy */}
-      <div 
-        onClick={() => {
-          const next = !isExpanded
-          setIsExpanded(next)
-          userClosedRef.current = !next
-        }}
-        className="w-full h-full flex items-center justify-between px-2 border-0 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer select-none transition-all shadow-none"
-      >
-        <div className="flex items-center space-x-2.5 overflow-hidden">
+      <div className="w-full h-full flex items-center justify-between px-2 border-0 text-[12px] font-medium text-[var(--text-muted)] select-none transition-all shadow-none">
+        <div className="flex items-center space-x-2.5 overflow-hidden pointer-events-none">
           {isBusy && (
-            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[12px] animate-pulse shrink-0 border-0">
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-[4px] bg-[var(--text-accent)]/15 text-[var(--text-accent)] font-bold text-[12px] animate-pulse shrink-0 border-0 pointer-events-auto">
               <Loader2 size={10} className="animate-spin" />
               <span>{isReembedActive ? `Re-reading (${overallPercent}%)` : `Adding (${overallPercent}%)`}</span>
             </span>
           )}
 
           {!isBusy && totalFiles > 0 && (
-            <span className="inline-flex items-center space-x-1 text-[12px] shrink-0 font-semibold bg-white/[0.04] px-2 py-0.5 rounded-[4px] text-[var(--text-main)]">
+            <span className="inline-flex items-center space-x-1 text-[12px] shrink-0 font-semibold bg-white/[0.04] px-2 py-0.5 rounded-[4px] text-[var(--text-main)] pointer-events-auto">
               <span>{totalFiles} {totalFiles === 1 ? 'file' : 'files'} in queue</span>
             </span>
           )}
@@ -338,12 +331,19 @@ const PDFUploadZone = ({ onIngestComplete }) => {
           )}
         </div>
 
-        <div className="flex items-center space-x-1.5 shrink-0 ml-2">
-          <div className="flex items-center gap-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
+        <button 
+          onClick={() => {
+            const next = !isExpanded
+            setIsExpanded(next)
+            userClosedRef.current = !next
+          }}
+          className="flex items-center space-x-1.5 shrink-0 ml-2 cursor-pointer bg-transparent border-0 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors px-1 py-0.5 rounded"
+        >
+          <div className="flex items-center gap-1">
             <span className="text-[11px] font-semibold tracking-wide">Insert</span>
             {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Hidden File Input */}

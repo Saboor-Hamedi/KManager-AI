@@ -19,7 +19,7 @@ describe('AnalyticsTable', () => {
   it('renders title and record count', () => {
     render(<AnalyticsTable data={mockData} />)
     expect(screen.getByText('Raw Query Telemetry')).toBeInTheDocument()
-    expect(screen.getByText(/\(2 records\)/)).toBeInTheDocument()
+    expect(screen.getByText(/2 records/)).toBeInTheDocument()
   })
 
   it('renders query rows with latency and route', () => {
@@ -28,7 +28,7 @@ describe('AnalyticsTable', () => {
     expect(screen.getByText('explain economics')).toBeInTheDocument()
     expect(screen.getByText('400ms')).toBeInTheDocument()
     expect(screen.getByText('200ms')).toBeInTheDocument()
-    expect(screen.getByText('Conv')).toBeInTheDocument()
+    expect(screen.getAllByText('Conv').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Vector').length).toBeGreaterThanOrEqual(1)
   })
 
@@ -41,7 +41,7 @@ describe('AnalyticsTable', () => {
 
   it('filters rows by route', () => {
     render(<AnalyticsTable data={mockData} />)
-    fireEvent.click(screen.getByText('Conversational'))
+    fireEvent.click(screen.getAllByText('Conv')[0])
     expect(screen.getByText('search for cats')).toBeInTheDocument()
     expect(screen.queryByText('explain economics')).not.toBeInTheDocument()
   })

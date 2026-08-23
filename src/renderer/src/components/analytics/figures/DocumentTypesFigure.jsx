@@ -58,15 +58,15 @@ const DocumentTypesFigure = memo(({ data }) => {
         </p>
       </div>
 
-      <div className="w-full h-[240px]">
+      <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={chartData}
               cx="50%"
-              cy="50%"
-              innerRadius={40}
-              outerRadius={80}
+              cy="45%"
+              innerRadius={45}
+              outerRadius={75}
               paddingAngle={2}
               dataKey="value"
               stroke="none"
@@ -80,9 +80,9 @@ const DocumentTypesFigure = memo(({ data }) => {
             <Tooltip content={<CustomTooltip />} />
             <Legend 
               verticalAlign="bottom" 
-              height={36} 
+              height={40} 
               iconType="circle"
-              wrapperStyle={{ fontSize: '11px', color: 'var(--text-muted)' }}
+              wrapperStyle={{ fontSize: '11px', color: 'var(--text-main)', paddingTop: '10px' }}
             />
           </PieChart>
         </ResponsiveContainer>

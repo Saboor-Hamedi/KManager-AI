@@ -263,7 +263,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   return (
     <div 
       onClick={handleCardClick} 
-      className={`group relative transition-all duration-200 overflow-visible py-4 px-2 -mx-2 rounded-[8px] shadow-none ${selected ? 'bg-[var(--bg-active)]/60' : 'bg-transparent'}`}
+      className={`group relative transition-colors duration-200 overflow-visible py-4 px-2 -mx-2 rounded-[8px] shadow-none ${selected ? 'bg-[var(--bg-active)]/60' : 'bg-transparent'}`}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
     >
       <div className="flex items-center justify-between gap-4 mb-1.5">

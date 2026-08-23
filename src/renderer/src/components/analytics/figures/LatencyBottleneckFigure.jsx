@@ -97,6 +97,17 @@ const LatencyBottleneckFigure = memo(({ data }) => {
           </div>
         ))}
       </div>
+      
+      {llmTime > (routerTime + dbTime) * 2 && (
+        <div className="mt-4 p-3 rounded-lg border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-xs">
+          <div className="flex items-center gap-2 font-semibold text-[#fbbf24] mb-1">
+            <Zap size={14} /> Optimization Tip
+          </div>
+          <p className="text-[var(--text-muted)]">
+            LLM Synthesis is your primary bottleneck. Consider using a faster local model (e.g., Llama-3-8B-Instruct) or reducing max tokens for conversational queries.
+          </p>
+        </div>
+      )}
     </div>
   )
 })

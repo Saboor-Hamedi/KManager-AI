@@ -49,8 +49,14 @@ const SpotLite = () => {
         setIsOpen(false)
       }
     }
+    const handleOpen = () => setIsOpen(true)
+    
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('open-spotlite', handleOpen)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('open-spotlite', handleOpen)
+    }
   }, [isOpen])
 
   useEffect(() => {
@@ -359,6 +365,18 @@ const SpotLite = () => {
           
           <div className={`w-full h-full relative ${mode === 'ai' ? 'block' : 'hidden'}`}>
              <ChatBot inline={true} initialQuery={query} />
+          </div>
+        </div>
+
+        {/* Footer Shortcuts */}
+        <div className="h-[28px] shrink-0 border-t border-white/[0.04] bg-[var(--bg-panel)] flex items-center px-3 gap-4 select-none">
+          <div className="flex items-center gap-1.5 opacity-60">
+            <kbd className="text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">↑↓</kbd>
+            <span className="text-[10px] text-[var(--text-muted)] font-medium">Navigate</span>
+          </div>
+          <div className="flex items-center gap-1.5 opacity-60">
+            <kbd className="text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">Esc</kbd>
+            <span className="text-[10px] text-[var(--text-muted)] font-medium">Close</span>
           </div>
         </div>
       </div>

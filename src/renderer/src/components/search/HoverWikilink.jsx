@@ -93,9 +93,21 @@ const HoverWikilink = ({ item, setShowWikiHover, onSelect, anchorRef }) => {
   // Strip title if it appears at the very start of content (avoids showing it twice)
   if (item.title && typeof displayContent === 'string') {
     const titleClean = item.title.replace(/\.[^/.]+$/, '').trim().toLowerCase()
-    const contentStart = displayContent.slice(0, item.title.length + 5).toLowerCase()
-    if (contentStart.startsWith(titleClean) || contentStart.startsWith(item.title.toLowerCase())) {
-      displayContent = displayContent.slice(item.title.length).replace(/^[\s\-:#]+/, '').trim()
+    const rawTitle = item.title.trim().toLowerCase()
+    
+    // Check if content starts with the title, optionally preceded by markdown hashes/spaces
+    const contentToTest = displayContent.replace(/^[\s#]+/, '')
+    const contentStart = contentToTest.slice(0, item.title.length + 5).toLowerCase()
+    
+    if (contentStart.startsWith(titleClean) || contentStart.startsWith(rawTitle)) {
+      // Find where the title actually ends in the original string to slice it correctly
+      const matchPattern = new RegExp(`^[\\s#]*${item.title.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'i')
+      const matchPatternClean = new RegExp(`^[\\s#]*${titleClean.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'i')
+      
+      const match = displayContent.match(matchPattern) || displayContent.match(matchPatternClean)
+      if (match) {
+        displayContent = displayContent.slice(match[0].length).replace(/^[\s\-:#]+/, '').trim()
+      }
     }
   }
 

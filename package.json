@@ -22,6 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e",
+    "make:icon": "electron-icon-builder --input=./resources/icon.png --output=build --flatten",
     "workbench": "node scripts/workbench.js"
   },
   "dependencies": {
@@ -63,6 +64,7 @@
     "autoprefixer": "^10.5.0",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
+    "electron-icon-builder": "^2.0.1",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",

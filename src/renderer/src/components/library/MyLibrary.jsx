@@ -55,7 +55,8 @@ const cleanSnippetText = (snippet) => {
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Replace links with just text
       .replace(/^\s*[-*+]\s+/gm, '• ') // Make lists look nice
   }
-  return clean.trim()
+  clean = clean.trim()
+  return clean.length > 400 ? clean.slice(0, 400) + '...' : clean
 }
 
 const MyLibrary = () => {
@@ -240,7 +241,11 @@ const MyLibrary = () => {
       }
       setLoading(false)
     } catch (err) {
-      console.warn('Documents not ready yet, retrying...', err.message)
+      if (err.message === 'Not connected') {
+        console.log('Documents not ready yet, retrying... (Waiting for DB connection)')
+      } else {
+        console.warn('Documents not ready yet, retrying...', err.message)
+      }
       if (retryCount < 5) {
         setTimeout(() => fetchDocuments(retryCount + 1), 500)
       } else {
@@ -697,9 +702,10 @@ const MyLibrary = () => {
                     <div
                       key={doc.id || idx}
                       onClick={() => handleOpenDoc(doc)}
-                      className={`group relative flex bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[5px] transition-all duration-300 cursor-pointer overflow-hidden shadow-sm hover:shadow-md border border-white/[0.02] ${
+                      className={`group relative flex bg-[var(--bg-panel)] hover:bg-[var(--bg-active)] rounded-[5px] transition-colors duration-200 cursor-pointer overflow-hidden shadow-sm hover:shadow-md border border-white/[0.02] ${
                         layout === 'list' ? 'flex-row items-center p-3 gap-4' : 'flex-col'
                       }`}
+                      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px', contain: 'layout paint' }}
                     >
                       {/* Hover Actions */}
                       <div
@@ -776,13 +782,13 @@ const MyLibrary = () => {
 
                       {/* Thumbnail Preview Area */}
                       {layout === 'grid-large' && (
-                        <div className="h-[140px] w-full border-t border-black/10 bg-black/30 overflow-hidden relative">
+                        <div className="h-[140px] w-full border-t border-black/10 bg-black/30 overflow-hidden relative" style={{ contain: 'layout paint' }}>
                           {renderThumbnail(doc)}
                         </div>
                       )}
                       
                       {layout === 'grid-small' && (
-                        <div className="h-[70px] w-full border-t border-black/10 bg-black/30 overflow-hidden relative opacity-70">
+                        <div className="h-[70px] w-full border-t border-black/10 bg-black/30 overflow-hidden relative opacity-70" style={{ contain: 'layout paint' }}>
                           {renderThumbnail(doc)}
                         </div>
                       )}

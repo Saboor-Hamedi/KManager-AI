@@ -76,7 +76,7 @@ function createWindow() {
     titleBarStyle: 'hidden',
     title: 'Knowledge Management Studio — KManager AI',
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon: icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

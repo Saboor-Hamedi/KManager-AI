@@ -921,7 +921,7 @@ const DashboardSearch = () => {
 
       <ConfirmModal
         isOpen={showConfirmNewSession}
-        message="Start a new session? Your current chat will be cleared."
+        message="Your current chat will be cleared."
         onConfirm={() => {
           setShowConfirmNewSession(false)
           handleNewSession()

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronUp } from 'lucide-react'
 
-const ScrollToTopButton = () => {
+const ScrollToTopButton = ({ className }) => {
   const btnRef = useRef(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -32,11 +32,14 @@ const ScrollToTopButton = () => {
     }
   }
 
+  // Default position if no custom className is provided
+  const positionClass = className || 'absolute bottom-12 right-10'
+
   return (
     <button
       ref={btnRef}
       onClick={handleScrollToTop}
-      className={`absolute bottom-6 right-6 z-50 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.08] transition-all duration-300 border-0 shadow-md ${isVisible ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none translate-y-2'}`}
+      className={`${positionClass} z-50 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.08] transition-all duration-300 border-0 shadow-md ${isVisible ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none translate-y-2'}`}
       title="Scroll to Top"
     >
       <ChevronUp size={16} strokeWidth={2.5} />

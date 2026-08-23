@@ -14,7 +14,7 @@ const ConfirmModal = React.memo(({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[8px]">
+    <div className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[8px]">
       {/* Background click to close */}
       <div className="absolute inset-0" onClick={onCancel} />
 

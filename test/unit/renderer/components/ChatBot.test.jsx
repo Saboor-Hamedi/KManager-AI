@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act, fireEvent } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import React from 'react'
 import ChatBot from '../../../../src/renderer/src/components/ChatBot'
 
@@ -14,8 +14,7 @@ describe('ChatBot', () => {
   })
 
   async function openChat() {
-    await act(async () => render(<ChatBot />))
-    fireEvent.click(screen.getByTitle('Open Assistant'))
+    await act(async () => render(<ChatBot inline />))
   }
 
   it('renders welcome heading', async () => {

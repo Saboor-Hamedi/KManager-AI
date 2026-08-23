@@ -161,7 +161,7 @@ describe('DashboardSearch', () => {
     fireEvent.keyDown(textarea, { key: 'Enter' })
     await screen.findByText('Test Doc.md')
     window.dispatchEvent(new Event('new-session-intent'))
-    expect(await screen.findByText(/Start a new session\?/)).toBeInTheDocument()
+    expect(await screen.findByText(/Your current chat will be cleared/)).toBeInTheDocument()
     fireEvent.click(screen.getByText('New Session'))
     await waitFor(() => expect(screen.getByText('Knowledge Management')).toBeInTheDocument())
   })

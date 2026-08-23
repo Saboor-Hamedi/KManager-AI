@@ -38,7 +38,7 @@ const AnalyticsActivityFeed = memo(({ data }) => {
                 return (
                   <div 
                     key={idx} 
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border-b border-[var(--border-subtle)]/30 hover:bg-[var(--bg-panel)]/40 transition-colors group cursor-default last:border-b-0"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border-none hover:bg-[var(--bg-panel)]/40 transition-colors group cursor-default"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="text-[var(--text-muted)] opacity-60 group-hover:opacity-100 group-hover:text-[var(--text-accent)] transition-all shrink-0">

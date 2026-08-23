@@ -61,10 +61,10 @@ const LatencyTrendFigure = memo(({ data }) => {
             <Line 
               type="monotone" 
               dataKey="latency" 
-              stroke="var(--icon-danger)" 
+              stroke="var(--icon-warning)" 
               strokeWidth={2}
               dot={{ r: 2, fill: 'var(--bg-app)', strokeWidth: 2 }}
-              activeDot={{ r: 4, fill: 'var(--icon-danger)' }} 
+              activeDot={{ r: 4, fill: 'var(--icon-warning)' }} 
             />
           </LineChart>
         </ResponsiveContainer>
