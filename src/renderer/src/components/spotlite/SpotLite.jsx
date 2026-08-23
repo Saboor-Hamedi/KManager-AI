@@ -87,7 +87,7 @@ const SpotLite = () => {
 
     if (s.length < 2) {
       // Load recent documents automatically with content
-      window.api.db.query('SELECT id as document_id, file_name, file_type, vault_path, content, file_size, created_at FROM documents ORDER BY created_at DESC LIMIT 15').then(res => {
+      window.api.db.query('SELECT id as document_id, file_name, file_type, vault_path, content, file_size, created_at FROM documents ORDER BY created_at DESC LIMIT 10').then(res => {
         if (!isMounted) return
         const rows = res?.rows || (Array.isArray(res) ? res : [])
         if (rows.length > 0) {
@@ -123,7 +123,7 @@ const SpotLite = () => {
           FROM documents 
           WHERE file_name ILIKE $1 OR content ILIKE $1
           ORDER BY updated_at DESC
-          LIMIT 15
+          LIMIT 10
         `, [`%${s}%`])
         
         if (isMounted) {
@@ -193,6 +193,22 @@ const SpotLite = () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
   }
+
+  const memoizedPreview = React.useMemo(() => {
+    if (!hoveredDoc) return null
+    return (
+      <SpotLitePreview 
+        selectedPdf={hoveredDoc} 
+        fullText={hoveredDoc.content}
+        fileExists={true}
+        onClose={() => {}} 
+        onDocumentUpdate={(updatedDoc) => {
+          setHoveredDoc(updatedDoc)
+          setResults(prev => prev.map(d => d.id === updatedDoc.id ? updatedDoc : d))
+        }}
+      />
+    )
+  }, [hoveredDoc])
 
   if (!isOpen) return null
 
@@ -359,16 +375,7 @@ const SpotLite = () => {
               <div className="flex-1 min-w-0 bg-[var(--bg-app)] flex flex-col overflow-hidden relative">
                 {hoveredDoc ? (
                   <div className="absolute inset-0 z-0 select-text overflow-hidden">
-                    <SpotLitePreview 
-                      selectedPdf={hoveredDoc} 
-                      fullText={hoveredDoc.content}
-                      fileExists={true}
-                      onClose={() => {}} 
-                      onDocumentUpdate={(updatedDoc) => {
-                        setHoveredDoc(updatedDoc)
-                        setResults(prev => prev.map(d => d.id === updatedDoc.id ? updatedDoc : d))
-                      }}
-                    />
+                    {memoizedPreview}
                   </div>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-center py-6 px-4 h-full animate-in fade-in duration-300 relative">
@@ -390,7 +397,7 @@ const SpotLite = () => {
           </div>
           
           <div className={`w-full h-full relative ${mode === 'ai' ? 'block' : 'hidden'}`}>
-             <ChatBot inline={true} initialQuery={query} />
+             <ChatBot inline={true} initialQuery="" />
           </div>
         </div>
 
