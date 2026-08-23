@@ -11,12 +11,16 @@ const SettingUpdate = () => {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const [searchLimit, setSearchLimit] = useState(3)
+  const [autoLaunch, setAutoLaunch] = useState(false)
   const checkTimeoutRef = useRef(null)
 
   useEffect(() => {
     getSetting('SEARCH_RESULT_LIMIT', 3).then(limit => {
       setSearchLimit(parseInt(limit) || 3)
     })
+    window.api.system.getAutoLaunch().then(enabled => {
+      setAutoLaunch(enabled)
+    }).catch(() => {})
   }, [])
 
   // Load current app version once
@@ -264,6 +268,30 @@ const SettingUpdate = () => {
             }}
             className="w-12 text-center custom-input font-mono !py-1 !px-2 bg-[var(--bg-active)] border border-white/[0.05] rounded-[4px] text-[12px] text-[var(--text-main)] shadow-none outline-none ring-0 appearance-none m-0 focus:ring-1 focus:ring-[var(--text-accent)]/50 focus:bg-white/[0.04] transition-all"
           />
+        </div>
+
+        <div className="flex items-center justify-between p-3.5 mt-2 rounded-[6px] border border-white/[0.04] bg-white/[0.01]">
+          <div>
+            <h4 className="text-[12px] font-bold text-[var(--text-main)] tracking-tight">Launch on Startup</h4>
+            <p className="text-[12px] text-[var(--text-muted)] mt-0.5 max-w-[80%] leading-relaxed">
+              Automatically launch KManager AI when you sign in to Windows.
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              const current = await window.api.system.getAutoLaunch()
+              const next = !current
+              await window.api.system.toggleAutoLaunch(next)
+              setAutoLaunch(next)
+            }}
+            className="relative flex items-center justify-center shrink-0 w-8 h-4 rounded-full transition-colors border-0 bg-transparent p-0"
+            style={{ backgroundColor: autoLaunch ? 'var(--text-accent)' : 'rgba(255,255,255,0.1)' }}
+          >
+            <div 
+              className="absolute w-3 h-3 bg-white rounded-full transition-transform"
+              style={{ transform: `translateX(${autoLaunch ? '8px' : '-8px'})` }}
+            />
+          </button>
         </div>
       </div>
     </div>

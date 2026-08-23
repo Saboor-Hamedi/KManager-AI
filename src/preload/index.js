@@ -59,7 +59,9 @@ const api = {
     readFileContent: (filePath) => ipcRenderer.invoke('system:read-file-content', filePath),
     readFileBinary: (filePath) => ipcRenderer.invoke('system:read-file-binary', filePath),
     saveFileContent: (filePath, content) => ipcRenderer.invoke('system:save-file-content', filePath, content),
-    showInFolder: (filePath) => ipcRenderer.invoke('system:show-in-folder', filePath)
+    showInFolder: (filePath) => ipcRenderer.invoke('system:show-in-folder', filePath),
+    toggleAutoLaunch: (enable) => ipcRenderer.invoke('system:toggle-autolaunch', enable),
+    getAutoLaunch: () => ipcRenderer.invoke('system:get-autolaunch')
   },
   windowControls: {
     minimize: () => ipcRenderer.send('window:minimize'),
@@ -105,6 +107,11 @@ if (typeof window !== 'undefined') {
   // Catch ESC events from the main process (e.g. from PDF webviews)
   ipcRenderer.on('global-escape', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }))
+  })
+
+  // Catch open-spotlite from global shortcuts
+  ipcRenderer.on('open-spotlite', () => {
+    window.dispatchEvent(new Event('open-spotlite'))
   })
 }
 

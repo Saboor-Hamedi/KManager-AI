@@ -140,6 +140,15 @@ app.whenReady().then(() => {
   tray.setContextMenu(contextMenu)
   tray.on('click', () => { if (mainWindow) mainWindow.show() })
 
+  const { globalShortcut } = require('electron')
+  globalShortcut.register('CommandOrControl+K', () => {
+    if (mainWindow) {
+      mainWindow.show()
+      mainWindow.focus()
+      mainWindow.webContents.send('open-spotlite')
+    }
+  })
+
   ipcMain.handle('get-pdf-port', () => {
     return pdfPort
   })
@@ -222,6 +231,20 @@ app.whenReady().then(() => {
     configData[key] = value
     saveConfig()
     return true
+  })
+
+  ipcMain.handle('system:toggle-autolaunch', (_event, enable) => {
+    app.setLoginItemSettings({
+      openAtLogin: enable,
+      path: app.getPath('exe')
+    })
+    configData['autoLaunch'] = enable
+    saveConfig()
+    return true
+  })
+
+  ipcMain.handle('system:get-autolaunch', () => {
+    return app.getLoginItemSettings().openAtLogin
   })
 
   let db = null
