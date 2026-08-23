@@ -14,13 +14,16 @@ const SettingDataPanel = () => {
     fileName: ''
   })
   const [queue, setQueue] = useState([])
+  const isBusy = queue.some(q => q.status === 'processing' || q.status === 'pending') || ingestState.status === 'uploading'
   const [statsVisible, setStatsVisible] = useState(true)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const fileInputRef = useRef(null)
   const queueParentRef = useRef(null)
 
+  const pendingOrErrorQueue = queue.filter(q => q.status === 'pending' || q.status === 'processing' || q.status === 'error')
+
   const rowVirtualizer = useVirtualizer({
-    count: queue.length,
+    count: pendingOrErrorQueue.length,
     getScrollElement: () => queueParentRef.current,
     estimateSize: () => 36,
     overscan: 5,
@@ -133,8 +136,6 @@ const SettingDataPanel = () => {
     setStatsVisible(false)
   }
 
-  const pendingOrErrorQueue = queue
-
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       <div>
@@ -154,26 +155,33 @@ const SettingDataPanel = () => {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        {ingestState.status === 'idle' || ingestState.status === 'success' ? (
+        {!isBusy && (ingestState.status === 'idle' || ingestState.status === 'success' || ingestState.status === 'error') ? (
           <div className="flex flex-col items-center justify-center relative z-10 w-full animate-in fade-in zoom-in duration-300">
-            <UploadCloud className={`mx-auto mb-2 transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} size={32} strokeWidth={1.5} />
-            <h4 className="text-sm font-bold text-[var(--text-main)] mb-1">Drag and drop files or folders here</h4>
-            <p className="text-xs text-[var(--text-muted)]">or click to browse your computer</p>
-            <p className="text-[12px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf, .txt, .md, .json, .csv, code & office</p>
+            {ingestState.status === 'error' ? (
+              <AlertCircle className="text-red-500 mb-2" size={32} />
+            ) : (
+              <UploadCloud className={`mx-auto mb-2 transition-colors ${isDragging ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} size={32} strokeWidth={1.5} />
+            )}
+            <h4 className="text-sm font-bold text-[var(--text-main)] mb-1">
+              {ingestState.status === 'error' ? 'Ingestion Error' : 'Drag and drop files or folders here'}
+            </h4>
+            <p className="text-xs text-[var(--text-muted)] w-full max-w-[80%] truncate text-center">
+              {ingestState.status === 'error' ? ingestState.message : 'or click to browse your computer'}
+            </p>
+            {ingestState.status !== 'error' && (
+              <p className="text-[12px] font-bold text-[var(--text-faint)] mt-3 tracking-widest uppercase">Supported: .pdf, .txt, .md, .json, .csv, code & office</p>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center relative z-10 w-full animate-in fade-in zoom-in duration-300">
-            {ingestState.status === 'uploading' && <Loader2 className="animate-spin text-[var(--text-accent)] mb-3" size={32} />}
-            {ingestState.status === 'error' && <AlertCircle className="text-red-500 mb-3" size={32} />}
-            <h4 className="text-sm font-bold text-[var(--text-main)] mb-1 w-full max-w-[80%] truncate px-4">{ingestState.fileName || 'Processing...'}</h4>
-            <p className={`text-xs ${ingestState.status === 'error' ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
-              {ingestState.status === 'error' ? ingestState.message : 'Processing... Drop more files to add to queue'}
-            </p>
+            <Loader2 className="animate-spin text-[var(--text-accent)] mb-3" size={32} />
+            <h4 className="text-sm font-bold text-[var(--text-main)] mb-1 w-full max-w-[80%] truncate px-4 text-center">{ingestState.fileName || 'Processing...'}</h4>
+            <p className="text-xs text-[var(--text-muted)]">Processing... Drop more files to add to queue</p>
           </div>
         )}
 
         {/* Integrated Progress Bar anchored to the bottom */}
-        {ingestState.status === 'uploading' && (
+        {isBusy && (
           <div className="absolute bottom-0 left-0 h-1 bg-[var(--text-accent)] transition-all duration-300 ease-out z-0" style={{ width: `${ingestState.progress}%` }} />
         )}
         

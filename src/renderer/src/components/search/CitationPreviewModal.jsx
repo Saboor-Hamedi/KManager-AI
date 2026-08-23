@@ -60,7 +60,7 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
   const simPercent = rawSim !== null ? Math.min(100, Math.max(0, Math.round(rawSim * 100))) : null
 
   return (
-    <div className="fixed top-9 bottom-0 left-0 right-0 z-40 flex justify-end pointer-events-none">
+    <div className="fixed top-9 bottom-0 left-0 right-0 z-[9999] flex justify-end pointer-events-none">
       {/* Backdrop */}
       <div
         className="fixed top-9 bottom-0 left-0 right-0 bg-black/50 backdrop-blur-[1px] transition-opacity duration-300 animate-in fade-in pointer-events-auto"

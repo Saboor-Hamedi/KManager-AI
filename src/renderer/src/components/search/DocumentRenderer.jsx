@@ -167,8 +167,8 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
 
 // Pill tag for [[wikilinks]] — renders the page name without the brackets
 const WikiTag = ({ label }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 my-0.5 rounded-[5px] bg-[var(--bg-panel)] border-0 text-[var(--text-accent)] text-[12px] font-medium font-sans leading-none hover:bg-[var(--bg-active)] transition-colors cursor-default whitespace-nowrap">
-    <span className="opacity-40 text-[12px]">◈</span>
+  <span className="inline-flex items-center gap-1 mx-0.5 my-0.5 border-0 text-[var(--text-accent)] text-[13.5px] font-semibold font-sans leading-none cursor-default whitespace-nowrap">
+    <span className="opacity-60 text-[12px]">◈</span>
     {label}
   </span>
 )
@@ -225,9 +225,10 @@ export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
   // When a paragraph contains only WikiTag or WikiHoverCite pills (no plain text between them),
   // render it as a flex-wrap cloud so tags flow naturally across multiple lines.
   const childArray = React.Children.toArray(children)
+
   const allWikiTags = childArray.length > 0 && childArray.every(child => {
     if (typeof child === 'string') return /^\s*$/.test(child) // allow whitespace-only strings
-    return child?.type === WikiTag || child?.type === WikiHoverCite
+    return child?.type === WikiTag || child?.type === WikiHoverCite || child?.props?.node?.tagName === 'span' || child?.type === 'span'
   })
 
   if (allWikiTags) {
@@ -236,6 +237,29 @@ export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
         {childArray}
       </div>
     )
+  }
+
+  // ── Metadata List Formatting ────────────────────────────────────────────
+  // Format flat string blocks starting with Id: and containing typical metadata
+  if (typeof rawText === 'string' && rawText.trim().startsWith('Id: ') && rawText.includes('Title: ') && rawText.includes('Timestamp: ')) {
+    const regex = /(Id|Title|Language|Tags|Selection|IsPinned|CustomIcon|Timestamp):\s*(.*?)(?=\s+(Id|Title|Language|Tags|Selection|IsPinned|CustomIcon|Timestamp):|$)/g;
+    const items = [];
+    let match;
+    while ((match = regex.exec(rawText)) !== null) {
+      items.push({ key: match[1], value: match[2] });
+    }
+    
+    if (items.length > 0) {
+      return (
+        <ul className="list-disc pl-5 my-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props}>
+          {items.map((item, idx) => (
+            <li key={idx} className="pl-1 leading-relaxed">
+              <strong className="font-semibold text-[var(--text-main)] opacity-90">{item.key}:</strong> {item.value}
+            </li>
+          ))}
+        </ul>
+      )
+    }
   }
 
   if (fallbackRenderer) {
@@ -355,6 +379,12 @@ const cleanMarkdownComponents = {
   h3: ({node, ...props}) => <h3 className="text-[15px] font-semibold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
   h4: ({node, ...props}) => <h4 className="text-[14px] font-semibold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
   p: ({node, children, ...props}) => renderCalloutOrParagraph(children, props),
+  div: ({node, children, ...props}) => {
+    if (typeof props.className === 'string' && props.className.includes('leading-relaxed font-normal text-[var(--text-main)]')) {
+      return renderCalloutOrParagraph(children, props, (c, p) => <div {...p}>{c}</div>)
+    }
+    return <div {...props}>{children}</div>
+  },
   ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
   ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
   li: ({node, ...props}) => <li className="pl-1.5 leading-relaxed" {...props} />,
@@ -447,7 +477,7 @@ const cleanMarkdownComponents = {
     }
 
     return (
-      <code className="bg-[var(--bg-active)] px-1.5 py-0.5 rounded-[4px] text-[13px] text-[var(--text-accent)] font-mono break-words whitespace-pre-wrap border-0" {...props}>
+      <code className="text-[13px] text-[var(--text-accent)] font-semibold font-mono break-words whitespace-pre-wrap border-0" {...props}>
         {children}
       </code>
     )

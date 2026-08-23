@@ -103,3 +103,13 @@ The primary document browser and management interface.
 
 ### 4. Continuous File Sync
 The Main process continuously watches designated local folders. When a user creates a new note or adds a PDF, KManager parses the text, generates vector embeddings, and silently upserts the data into PostgreSQL, making it immediately available to the RAG pipeline.
+
+---
+
+## 🚧 Pending UI & State Fixes (ChatBot)
+
+The following known issues currently exist in `ChatBot.jsx` and require fixing:
+
+1. **Textarea Styling**: The input wrapper div uses overly large rounded corners (`rounded-[24px]` or `rounded-2xl`). This needs to be reduced to a tighter `rounded-[5px]` radius for a cleaner aesthetic.
+2. **Layout Shift (Jumping Response)**: When the AI finishes generating its response, the response block "falls" or shifts down. This is likely caused by the unmounting of the `isTyping` indicator (`Bot ... Thinking...`), which removes padding/margin from the DOM and causes a layout jump before the final scroll adjustment.
+3. **State Persistence Bug (Auto-Running Prompt)**: Closing the ChatBot and re-opening it currently re-triggers or pre-fills the last prompt automatically. The component's state (`messages`, `input`) is not being properly cleared out or reset upon the modal closing/re-opening.

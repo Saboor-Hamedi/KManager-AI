@@ -285,7 +285,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
 
       completedCount = completedQueue.length
       totalFiles = completedCount + remainCount
-      isBusy = processingItem || progress.status === 'extracting' || progress.status === 'chunking' || progress.status === 'embedding'
+      isBusy = remainCount > 0 || processingItem || progress.status === 'extracting' || progress.status === 'chunking' || progress.status === 'embedding'
 
       overallPercent = totalFiles > 0 
         ? Math.min(100, Math.round(((completedCount + (processingCount * ((progress.progress || 0) / 100))) / totalFiles) * 100))

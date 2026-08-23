@@ -26,6 +26,7 @@ const SpotLite = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [mode, setMode] = useState('search') // 'search' | 'ai'
   const [query, setQuery] = useState('')
+  const [searchTriggerQuery, setSearchTriggerQuery] = useState('')
   const [results, setResults] = useState([])
   const [hoveredDoc, setHoveredDoc] = useState(null)
   const [isSearching, setIsSearching] = useState(false)
@@ -64,6 +65,7 @@ const SpotLite = () => {
       setTimeout(() => inputRef.current?.focus(), 100)
     } else {
       setQuery('')
+      setSearchTriggerQuery('')
       setResults([])
       setHoveredDoc(null)
       setSelectedIndex(0)
@@ -72,8 +74,14 @@ const SpotLite = () => {
   }, [isOpen])
 
   useEffect(() => {
+    if (query === '') {
+      setSearchTriggerQuery('')
+    }
+  }, [query])
+
+  useEffect(() => {
     if (!isOpen || mode !== 'search') return
-    const s = query.trim()
+    const s = searchTriggerQuery.trim()
     let isMounted = true
     setIsSearching(true)
 
@@ -148,10 +156,23 @@ const SpotLite = () => {
       isMounted = false
       clearTimeout(timer)
     }
-  }, [query, mode, isOpen])
+  }, [searchTriggerQuery, mode, isOpen])
 
   const handleInputKeyDown = (e) => {
-    if (mode !== 'search' || results.length === 0) return
+    if (mode !== 'search') return
+
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (searchTriggerQuery !== query) {
+        setSearchTriggerQuery(query)
+      } else {
+        // Here we could handle opening the selected document in the main view
+      }
+      return
+    }
+
+    if (results.length === 0) return
+
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       const next = (selectedIndex + 1) % results.length
@@ -162,10 +183,6 @@ const SpotLite = () => {
       const next = (selectedIndex - 1 + results.length) % results.length
       setSelectedIndex(next)
       setHoveredDoc(results[next])
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      // Open the document inside the main app dashboard when possible, or just preview it.
-      // Since SpotLite is primarily a preview tool, we do not open OS external PDF anymore.
     }
   }
 

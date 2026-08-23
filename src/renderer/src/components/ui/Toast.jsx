@@ -9,7 +9,14 @@ const Toast = () => {
     const handleToast = (e) => {
       const { message, type = 'info', duration = 3000 } = e.detail
       const id = Date.now() + Math.random()
-      setToasts(prev => [...prev, { id, message, type }])
+      
+      setToasts(prev => {
+        // Prevent duplicate messages from stacking
+        if (prev.some(t => t.message === message)) {
+          return prev
+        }
+        return [...prev, { id, message, type }]
+      })
       
       if (duration > 0) {
         setTimeout(() => {

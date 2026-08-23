@@ -67,16 +67,19 @@ const ChatCodeBlock = memo(({ lang, codeString }) => {
   )
 })
 
-const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPrompt, isLatest }) => {
+const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPrompt, isLatest, shouldAnimate, onAnimationStart }) => {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState(null)
-  const [displayedText, setDisplayedText] = useState(isLatest ? '' : text)
+  const [displayedText, setDisplayedText] = useState(shouldAnimate ? '' : text)
 
   useEffect(() => {
-    if (!isLatest) {
+    if (!shouldAnimate) {
       setDisplayedText(text)
       return
     }
+    
+    onAnimationStart?.()
+    
     let i = displayedText.length
     if (i >= text.length) return
 
@@ -90,7 +93,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
       }
     }, 15)
     return () => clearInterval(interval)
-  }, [text, isLatest])
+  }, [text, shouldAnimate])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text)
@@ -116,36 +119,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
         <div className="py-2 text-xs leading-relaxed text-left bg-transparent text-[var(--text-main)] shadow-none border-0" style={{ overflowWrap: 'break-word' }}>
           <div style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
-              p: ({node, children, ...props}) => {
-                const extractText = (nodes) => {
-                  return React.Children.toArray(nodes).map(child => {
-                    if (typeof child === 'string') return child
-                    if (child && child.props && child.props.children) return extractText(child.props.children)
-                    return ''
-                  }).join('')
-                }
-                const lineText = extractText(children).trim()
-                
-                if (lineText.endsWith('?') && lineText.length > 5 && lineText.length < 250) {
-                   const cleanText = lineText.replace(/^(\d+\.|-|\*)\s*/, '').trim()
-                    return (
-                      <div className="my-1">
-                        <button
-                          onClick={() => {
-                            window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: cleanText } }))
-                            window.dispatchEvent(new CustomEvent('close-chatbot'))
-                          }}
-                          className="w-full group flex items-start gap-2.5 px-3 py-2 rounded-[6px] bg-transparent hover:bg-[var(--bg-active)] text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 text-left max-w-full break-words"
-                        >
-                          <span className="shrink-0 mt-0.5 text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">💡</span>
-                          <span className="flex-1 transition-colors leading-relaxed">{cleanText}</span>
-                          <ArrowRight size={14} className="shrink-0 mt-1 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--text-accent)]" />
-                        </button>
-                      </div>
-                   )
-                }
-                return <p className="mb-2 last:mb-0 text-left" {...props}>{children}</p>
-              },
+              p: ({node, children, ...props}) => <p className="mb-2 last:mb-0 text-left" {...props}>{children}</p>,
               strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-accent)]" {...props} />,
               em: ({node, ...props}) => <em className="italic text-[var(--text-muted)]" {...props} />,
               h1: ({node, ...props}) => <h1 className="text-[15px] font-bold mt-5 mb-3 text-[var(--text-main)]" {...props} />,
@@ -153,36 +127,7 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
               h3: ({node, ...props}) => <h3 className="text-[13px] font-bold mt-4 mb-2 text-[var(--text-main)]" {...props} />,
               ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-3 space-y-1.5 marker:text-[var(--text-muted)]" {...props} />,
               ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-3 space-y-1.5 marker:text-[var(--text-muted)]" {...props} />,
-              li: ({node, children, ...props}) => {
-                const extractText = (nodes) => {
-                  return React.Children.toArray(nodes).map(child => {
-                    if (typeof child === 'string') return child
-                    if (child && child.props && child.props.children) return extractText(child.props.children)
-                    return ''
-                  }).join('')
-                }
-                const lineText = extractText(children).trim()
-                
-                if (lineText.endsWith('?') && lineText.length > 5 && lineText.length < 250) {
-                   const cleanText = lineText.replace(/^(\d+\.|-|\*)\s*/, '').trim()
-                    return (
-                      <li className="my-0.5 list-none" {...props}>
-                        <button
-                          onClick={() => {
-                            window.dispatchEvent(new CustomEvent('fill-search', { detail: { query: cleanText } }))
-                            window.dispatchEvent(new CustomEvent('close-chatbot'))
-                          }}
-                          className="w-full group flex items-start gap-2.5 px-3 py-2 rounded-[6px] bg-transparent hover:bg-[var(--bg-active)] text-[12.5px] text-[var(--text-main)] hover:text-[var(--text-accent)] transition-all duration-200 text-left max-w-full break-words -ml-3"
-                        >
-                          <span className="shrink-0 mt-0.5 text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">💡</span>
-                          <span className="flex-1 transition-colors leading-relaxed">{cleanText}</span>
-                          <ArrowRight size={14} className="shrink-0 mt-1 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--text-accent)]" />
-                        </button>
-                      </li>
-                   )
-                }
-                return <li {...props}>{children}</li>
-              },
+              li: ({node, children, ...props}) => <li {...props}>{children}</li>,
               img: ({node, src, alt, ...props}) => (
                 <React.Suspense fallback={<div className="w-full h-[200px] my-4 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[12px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
                   <MarkdownImage src={src} alt={alt} {...props} />
@@ -316,7 +261,8 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
             </div>
 
             {queryText && (
-              <div className="w-full pt-1">
+              <div className="w-full pt-1 flex flex-col gap-2">
+                <hr className="w-full border-t border-white/[0.05] my-1" />
                 <SuggestedPrompts
                   msg={{ id: idx, query: queryText, ragStatus: 'done', ragAnswer: text, results: [] }}
                   onSelectPrompt={onSelectPrompt}
@@ -331,17 +277,17 @@ const BotMessage = memo(({ text, idx, onSave, savedState, queryText, onSelectPro
 })
 
 const UserMessage = memo(({ text, attachedFile }) => (
-  <div className="flex flex-col items-end w-full py-2 animate-in fade-in duration-200">
+  <div className="flex flex-col items-end w-full py-3 animate-in fade-in duration-200">
     {attachedFile && (
-      <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[#2b313a]/50 border border-white/[0.05] rounded-lg shadow-sm self-end">
+      <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[var(--bg-active)] rounded-lg self-end">
         <FileText size={14} className="text-[#10a37f] dark:text-[#2dd4bf]" />
         <span className="text-[11px] font-semibold text-[var(--text-main)] truncate max-w-[200px]">
           {attachedFile.name}
         </span>
       </div>
     )}
-    <div className="bg-[#2b313a] px-4 py-3 max-w-[90%] rounded-2xl rounded-tr-sm border border-white/[0.05] shadow-sm">
-      <p className="text-[13.5px] leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words">{text}</p>
+    <div className="px-1 py-1 max-w-[90%]">
+      <p className="text-[14px] leading-relaxed font-normal text-[var(--text-main)] whitespace-pre-wrap break-words text-right">{text}</p>
     </div>
   </div>
 ))
@@ -358,6 +304,7 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
   const [dbStats, setDbStats] = useState({})
   const [isDragging, setIsDragging] = useState(false)
   const [attachedFile, setAttachedFile] = useState(null)
+  const animatedRef = useRef(new Set())
   
   const allPrompts = useMemo(() => [
     'Summarize key insights across documents',
@@ -393,6 +340,13 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
       window.removeEventListener('toggle-chatbot', handleToggle)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isOpen && !inline) {
+      setInput('')
+      setAttachedFile(null)
+    }
+  }, [isOpen, inline])
 
   useKeyboardShortcuts({
     onToggleChat: () => setIsOpen(prev => !prev),
@@ -508,6 +462,7 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
     setMessages([])
     setAttachedFile(null)
     setSavedResponses({})
+    animatedRef.current.clear()
     setShowConfirm(false)
   }
 
@@ -719,11 +674,13 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
                   queryText={idx > 0 ? messages[idx - 1]?.text || '' : ''}
                   onSelectPrompt={sendQuickPrompt}
                   isLatest={idx === messages.length - 1}
+                  shouldAnimate={idx === messages.length - 1 && !animatedRef.current.has(idx)}
+                  onAnimationStart={() => animatedRef.current.add(idx)}
                 />
           ))}
           {isTyping && (
             <div className="flex items-start w-full animate-in fade-in duration-200">
-              <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[var(--bg-panel)] shadow-sm flex items-center gap-2 border border-white/[0.05]">
+              <div className="py-2 flex items-center gap-2">
                 <Bot size={14} className="text-[#10a37f] animate-pulse" />
                 <span className="text-[12px] font-medium text-[var(--text-muted)] animate-pulse">Thinking...</span>
               </div>
@@ -736,7 +693,7 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
       <div className={cn("bg-transparent shrink-0 relative z-40", inline ? "px-0 pb-0 pt-0 border-t border-white/[0.06] bg-[var(--bg-panel)]" : "px-6 pb-6 pt-2")}>
         <div className={cn("max-w-3xl mx-auto w-full", inline && "max-w-full")}>
           <div 
-            className={cn("flex flex-col transition-all duration-200 overflow-hidden relative", inline ? "bg-transparent border-0 rounded-none" : "bg-white/[0.02] border border-white/[0.05] rounded-[24px]")}
+            className={cn("flex flex-col transition-all duration-200 overflow-hidden relative", inline ? "bg-transparent border-0 rounded-none" : "bg-white/[0.02] border border-white/[0.05] rounded-[5px]")}
             onDragEnter={handleDragOver}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -744,14 +701,14 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
           >
             
             {isDragging && (
-              <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 backdrop-blur flex flex-col items-center justify-center border-2 border-dashed border-[var(--text-accent)] rounded-[24px] pointer-events-none transition-all duration-200">
+              <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 backdrop-blur flex flex-col items-center justify-center border-2 border-dashed border-[var(--text-accent)] rounded-[5px] pointer-events-none transition-all duration-200">
                 <FileText size={24} className="text-[var(--text-accent)] mb-2 animate-bounce" />
                 <h3 className="text-sm font-bold text-[var(--text-main)]">Drop file to attach</h3>
               </div>
             )}
 
             {attachedFile && (
-              <div className="relative flex flex-col mx-4 mt-4 w-[140px] h-[140px] bg-[var(--bg-active)] hover:bg-white/[0.04] border border-white/[0.05] rounded-[24px] group animate-in slide-in-from-bottom-2 duration-200 transition-colors shadow-sm">
+              <div className="relative flex flex-col mx-4 mt-4 w-[140px] h-[140px] bg-[var(--bg-active)] hover:bg-white/[0.04] border border-white/[0.05] rounded-[5px] group animate-in slide-in-from-bottom-2 duration-200 transition-colors shadow-sm">
                 <div className="p-4 pb-2">
                   <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[var(--bg-panel)] mb-1 shadow-sm">
                     <FileText size={20} className="text-[#10a37f] dark:text-[#2dd4bf]" />

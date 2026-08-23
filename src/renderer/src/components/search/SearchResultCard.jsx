@@ -282,12 +282,12 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
             )}
             
             {createdLabel && (
-              <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--text-muted)] bg-white/[0.04] px-1.5 py-0.5 rounded-[4px] shrink-0 border border-white/[0.04]">
+              <span className="text-[9.5px] font-medium tracking-wide uppercase text-[var(--text-muted)] shrink-0">
                 {createdLabel}
               </span>
             )}
 
-            {showWikiHover && (
+            {showWikiHover && item.category !== 'AI_RESPONSE' && (
               <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} anchorRef={titleRef} />
             )}
           </div>
