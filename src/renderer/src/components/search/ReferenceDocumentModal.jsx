@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { FileText, X } from 'lucide-react'
-import DocumentRenderer from './DocumentRenderer'
+import DocumentRenderer from './document/DocumentRenderer'
 
 const ReferenceDocumentModal = ({ selectedPdf, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)

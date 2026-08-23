@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Plus, Copy, ThumbsUp, ThumbsDown, Check, Edit as EditIcon } from 'lucide-react'
-import DocumentRenderer from './DocumentRenderer'
+import DocumentRenderer from './document/DocumentRenderer'
 import SuggestedPrompts from './SuggestedPrompts'
 import InlineChat from './InlineChat'
 import AutoResizeTextarea from './AutoResizeTextarea'
-import './horizontal.css'
+import '../../assets/horizontal.css'
 
 const RagAnswer = ({ msg, handleSaveResponse, savedResponses, setQuery, textareaRef, activeReplyId, setActiveReplyId, collapsedReplies, setCollapsedReplies, submitFollowUp, onUpdateAnswer, onStopGeneration }) => {
   const [isEditing, setIsEditing] = useState(false)

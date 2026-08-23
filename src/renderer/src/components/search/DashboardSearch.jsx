@@ -12,7 +12,7 @@ import { getSetting, saveSetting } from '../../lib/settings'
 import { streamRagAnswer, streamOfflineExtractiveRag, isCasualGreeting } from '../../lib/LLMProvider'
 import { rerankChunks } from '../../lib/reranker'
 import ConfirmModal from '../layout/ConfirmModal'
-import './horizontal.css'
+import '../../assets/horizontal.css'
 
 const SearchLoadingSkeleton = () => (
   <div className="flex flex-col gap-6 py-3 animate-in fade-in duration-200">

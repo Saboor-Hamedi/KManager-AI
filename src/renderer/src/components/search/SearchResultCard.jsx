@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
 import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus, Edit } from 'lucide-react'
 import HoverWikilink from './HoverWikilink'
-import DocumentRenderer, { cleanMarkdownComponents, remarkMath, rehypeKatex, renderCalloutOrParagraph } from './DocumentRenderer'
-import { resolveRelativeMedia, formatMarkdownText } from './DocumentFormatters'
+import DocumentRenderer, { cleanMarkdownComponents, remarkMath, rehypeKatex, renderCalloutOrParagraph } from './document/DocumentRenderer'
+import { resolveRelativeMedia, formatMarkdownText } from './document/DocumentFormatters'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import Wrapper from '../code/Wrapper'
 import AutoResizeTextarea from './AutoResizeTextarea'
-import './horizontal.css'
+import '../../assets/horizontal.css'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 

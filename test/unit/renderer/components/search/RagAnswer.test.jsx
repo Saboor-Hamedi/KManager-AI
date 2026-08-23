@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import React from 'react'
 import RagAnswer from '../../../../../src/renderer/src/components/search/RagAnswer'
 
-vi.mock('../../../../../src/renderer/src/components/search/DocumentRenderer', () => ({
+vi.mock('../../../../../src/renderer/src/components/search/document/DocumentRenderer', () => ({
   default: ({ content }) => <div data-testid="document-renderer">{content}</div>
 }))
 

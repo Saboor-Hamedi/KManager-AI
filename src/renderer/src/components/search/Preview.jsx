@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, X, Home, SquarePen } from 'lucide-react'
-import DocumentRenderer from './DocumentRenderer'
+import DocumentRenderer from './document/DocumentRenderer'
 import PulseLoader from '../PulseLoader'
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'

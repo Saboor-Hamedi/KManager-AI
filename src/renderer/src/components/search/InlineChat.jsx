@@ -1,6 +1,6 @@
 import React from 'react'
 import { ChevronDown, ChevronUp, Bot, ArrowUp } from 'lucide-react'
-import DocumentRenderer from './DocumentRenderer'
+import DocumentRenderer from './document/DocumentRenderer'
 import SuggestedPrompts from './SuggestedPrompts'
 
 const InlineChat = ({ 

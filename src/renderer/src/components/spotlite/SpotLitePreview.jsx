@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, Home, SquarePen } from 'lucide-react'
-import DocumentRenderer from '../search/DocumentRenderer'
+import DocumentRenderer from '../search/document/DocumentRenderer'
 
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'

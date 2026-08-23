@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { BookOpen } from 'lucide-react'
-import DocumentRenderer from './search/DocumentRenderer'
+import DocumentRenderer from './search/document/DocumentRenderer'
 import DocSidebar from './DocSidebar'
 import DocHeader from './DocHeader'
 

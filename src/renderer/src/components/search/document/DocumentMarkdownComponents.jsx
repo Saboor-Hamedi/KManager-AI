@@ -1,178 +1,16 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
-import { createPortal } from 'react-dom'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import Wrapper from '../code/Wrapper'
-import { Copy, Check, X } from 'lucide-react'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import rehypeRaw from 'rehype-raw'
-import 'katex/dist/katex.min.css'
-import './horizontal.css'
-const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
-const HoverWikilink = lazy(() => import('./HoverWikilink'))
-const MarkdownImage = lazy(() => import('./MarkdownImage'))
-import { resolveRelativeMedia, formatMarkdownText, formatJsonContent } from './DocumentFormatters'
-
-const ReactMarkdown = lazy(() => import('react-markdown'))
-
-
-
-const CodeCopyButton = ({ code }) => {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      className={`p-1.5 rounded-[4px] flex items-center justify-center transition-colors border-0 ${
-        copied 
-          ? 'text-emerald-400 bg-emerald-500/10' 
-          : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.1]'
-      }`}
-      title="Copy code"
-    >
-      {copied ? <Check size={14} /> : <Copy size={14} />}
-    </button>
-  )
-}
-
-const fastJsonHighlight = (jsonString) => {
-  if (typeof jsonString !== 'string') return ''
-  // Escape HTML characters safely before highlighting
-  const escaped = jsonString
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-  
-  return escaped.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
-    let cls = 'text-[#ce9178]' // string color
-    if (/^"/.test(match)) {
-      if (/:$/.test(match)) {
-        cls = 'text-[#9cdcfe]' // key color
-      }
-    } else if (/true|false/.test(match)) {
-      cls = 'text-[#569cd6]' // boolean
-    } else if (/null/.test(match)) {
-      cls = 'text-[#569cd6]' // null
-    } else {
-      cls = 'text-[#b5cea8]' // number
-    }
-    return `<span class="${cls}">${match}</span>`
-  })
-}
-
-const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
-  const [expanded, setExpanded] = useState(false)
-  const [isOverflowing, setIsOverflowing] = useState(false)
-  const [contentHeight, setContentHeight] = useState(0)
-  const contentRef = useRef(null)
-  const maxHeight = 400
-
-  useEffect(() => {
-    if (!contentRef.current) return
-    const checkOverflow = () => {
-      if (!contentRef.current) return
-      const sh = contentRef.current.scrollHeight
-      setContentHeight(prev => prev !== sh ? sh : prev)
-      setIsOverflowing(sh > maxHeight + 20)
-    }
-    checkOverflow()
-    const ro = new ResizeObserver(() => checkOverflow())
-    if (contentRef.current) {
-      ro.observe(contentRef.current)
-      if (contentRef.current.firstElementChild) ro.observe(contentRef.current.firstElementChild)
-    }
-    return () => ro.disconnect()
-  }, [code])
-
-  return (
-    <div className="my-6 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] shadow-sm max-w-full border border-[var(--border-dim)] relative group/code">
-      {/* Persistent Small Header - Ultra Subtle */}
-      <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
-        <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
-          {language || title || 'TEXT'}
-        </div>
-        <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity h-full gap-3">
-          {isOverflowing && (
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setExpanded(!expanded)
-              }}
-              className="text-[10px] font-semibold text-[var(--text-accent)] uppercase tracking-wide hover:text-white transition-colors border-0 bg-transparent flex items-center gap-1"
-            >
-              {expanded ? 'Show Less' : 'Show More'}
-            </button>
-          )}
-          <CodeCopyButton code={code} />
-        </div>
-      </div>
-      
-      <div 
-        ref={contentRef}
-        className="transition-[max-height] duration-500 ease-in-out overflow-hidden relative"
-        style={{ 
-          maxHeight: expanded ? `${Math.max(contentHeight, maxHeight + 20)}px` : (isOverflowing ? `${maxHeight}px` : 'none') 
-        }}
-      >
-        <div className="overflow-x-auto bg-transparent custom-scrollbar relative">
-          {/* Right edge fade indicator for horizontal scroll */}
-          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[var(--bg-panel)] to-transparent pointer-events-none" />
-          
-          {language === 'json' ? (
-            <pre 
-              className="m-0 bg-transparent text-[var(--text-main)] opacity-90 text-[12.5px] leading-[1.6] px-[1.25rem] py-[1rem] overflow-x-auto font-mono"
-              dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
-            />
-          ) : (
-            <SyntaxHighlighter
-              children={code}
-              style={vscDarkPlus}
-              language={language || 'text'}
-              showLineNumbers={showLineNumbers}
-              PreTag="div"
-              className="custom-scrollbar"
-              customStyle={{
-                margin: 0,
-                background: 'transparent',
-                color: 'var(--text-main)',
-                fontSize: '13px',
-                padding: '1rem 1.25rem',
-                overflowX: 'auto',
-                lineHeight: '1.6'
-              }}
-              wrapLines={true}
-              wrapLongLines={false}
-            />
-          )}
-        </div>
-        {/* Gradient Fade (Only when overflowing and collapsed) */}
-        {isOverflowing && !expanded && (
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-panel)] to-transparent pointer-events-none" />
-        )}
-      </div>
-    </div>
-  )
-}
+import React, { Suspense, lazy } from 'react'
+import DocumentAdaptiveCodeBlock from './DocumentAdaptiveCodeBlock'
+const MermaidDiagram = lazy(() => import('../MermaidDiagram'))
+const HoverWikilink = lazy(() => import('../HoverWikilink'))
+const MarkdownImage = lazy(() => import('../MarkdownImage'))
 
 // Pill tag for [[wikilinks]] — renders the page name without the brackets
-const WikiTag = ({ label }) => (
+export const WikiTag = ({ label }) => (
   <span className="inline-flex items-center gap-1 mx-0.5 my-0.5 border-0 text-[var(--text-accent)] text-[13.5px] font-semibold font-sans leading-none cursor-default whitespace-nowrap">
     <span className="opacity-60 text-[12px]">◈</span>
     {label}
   </span>
 )
-
 
 const cleanCalloutChildren = (children, regex) => {
   return React.Children.map(children, child => {
@@ -222,12 +60,10 @@ export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
   }
 
   // ── Wikilink tag cloud ──────────────────────────────────────────────────
-  // When a paragraph contains only WikiTag or WikiHoverCite pills (no plain text between them),
-  // render it as a flex-wrap cloud so tags flow naturally across multiple lines.
   const childArray = React.Children.toArray(children)
 
   const allWikiTags = childArray.length > 0 && childArray.every(child => {
-    if (typeof child === 'string') return /^\s*$/.test(child) // allow whitespace-only strings
+    if (typeof child === 'string') return /^\s*$/.test(child)
     return child?.type === WikiTag || child?.type === WikiHoverCite || child?.props?.node?.tagName === 'span' || child?.type === 'span'
   })
 
@@ -240,7 +76,6 @@ export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
   }
 
   // ── Metadata List Formatting ────────────────────────────────────────────
-  // Format flat string blocks starting with Id: and containing typical metadata
   if (typeof rawText === 'string' && rawText.trim().startsWith('Id: ') && rawText.includes('Title: ') && rawText.includes('Timestamp: ')) {
     const regex = /(Id|Title|Language|Tags|Selection|IsPinned|CustomIcon|Timestamp):\s*(.*?)(?=\s+(Id|Title|Language|Tags|Selection|IsPinned|CustomIcon|Timestamp):|$)/g;
     const items = [];
@@ -373,7 +208,7 @@ export const WikiHoverCite = ({ idx, title, displayNum }) => {
   )
 }
 
-const cleanMarkdownComponents = {
+export const cleanMarkdownComponents = {
   h1: ({node, ...props}) => <h1 className="text-[18px] font-bold text-[var(--text-main)] mt-6 mb-3 break-words" {...props} />,
   h2: ({node, ...props}) => <h2 className="text-[16px] font-bold text-[var(--text-main)] mt-6 mb-3 break-words" {...props} />,
   h3: ({node, ...props}) => <h3 className="text-[15px] font-semibold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
@@ -399,9 +234,6 @@ const cleanMarkdownComponents = {
     const lang = match ? match[1] : null
     const codeString = String(children).replace(/\n$/, '')
 
-    // ── Wikilink pills ────────────────────────────────────────────────────
-    // formatMarkdownText encodes [[Page]] as `wikilink:Page`. Intercept here
-    // and render as a styled pill tag rather than a code block.
     if (codeString.startsWith('wikilink:')) {
       return <WikiTag label={codeString.slice('wikilink:'.length)} />
     }
@@ -425,9 +257,6 @@ const cleanMarkdownComponents = {
     
     const isMermaidLang = mermaidLangs.includes(lowerLang)
     
-    // In react-markdown v9, the 'inline' prop is removed. 
-    // We determine if it's a block by checking if it has a language tag or contains newlines.
-    // This prevents inline code like `graph TD` from being hijacked into a full diagram.
     const isMultiLine = codeString.includes('\n')
     const isBlockCode = Boolean(lang) || isMultiLine
     
@@ -443,11 +272,8 @@ const cleanMarkdownComponents = {
     )
 
     if (isMermaid) {
-      // If the AI used the diagram type as the language tag (e.g. ```classDiagram), 
-      // Mermaid requires it to be inside the code string itself.
       let finalChartString = codeString
       if (lowerLang !== 'mermaid' && isMermaidLang && !cleanCode.toLowerCase().startsWith(lowerLang)) {
-        // Find the correct case for the diagram type
         const correctCaseLang = ['sequenceDiagram', 'classDiagram', 'stateDiagram', 'stateDiagram-v2', 'erDiagram', 'gitGraph']
           .find(l => l.toLowerCase() === lowerLang) || lowerLang
         finalChartString = `${correctCaseLang}\n${codeString}`
@@ -460,7 +286,6 @@ const cleanMarkdownComponents = {
       )
     }
 
-    // Only render a full code box if it spans multiple lines OR has an explicit language tag
     const isBlock = isBlockCode || (Boolean(lang) && codeString.length > 40)
 
     if (isBlock) {
@@ -472,7 +297,7 @@ const cleanMarkdownComponents = {
         )
       }
       return (
-        <AdaptiveCodeBlock code={codeString.trim()} language={lang || 'text'} title={lang || 'CODE'} />
+        <DocumentAdaptiveCodeBlock code={codeString.trim()} language={lang || 'text'} title={lang || 'CODE'} />
       )
     }
 
@@ -546,62 +371,3 @@ const cleanMarkdownComponents = {
     </summary>
   )
 }
-
-
-const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaultPath = '', results = null, className, maxLength = 150000 }) => {
-  React.useEffect(() => {
-    if (results && Array.isArray(results) && results.length > 0) {
-      window.__currentSearchMappedResults = results
-    }
-  }, [results])
-
-  const components = React.useMemo(() => {
-    if (!vaultPath) return cleanMarkdownComponents
-    return {
-      ...cleanMarkdownComponents,
-      img: ({node, src, alt, ...props}) => cleanMarkdownComponents.img({node, src: resolveRelativeMedia(src, vaultPath), alt, ...props}),
-      a: ({node, href, children, ...props}) => cleanMarkdownComponents.a({node, href: resolveRelativeMedia(href, vaultPath), children, ...props})
-    }
-  }, [vaultPath])
-
-  if (!content) return null
-  const safeContent = typeof content !== 'string' && category !== 'JSON' ? String(content) : content
-  const ext = fileTitle ? fileTitle.split('.').pop().toLowerCase() : ''
-  
-  // Prevent AI Responses (which might have titles like "Explain index.js") from being rendered entirely as code files.
-  const isCodeFile = category !== 'AI_RESPONSE' && ['py', 'js', 'jsx', 'ts', 'tsx', 'sql', 'html', 'css', 'sh', 'bash', 'java', 'cpp', 'c', 'rust', 'go'].includes(ext)
-
-  if (category === 'JSON' || ext === 'json') {
-    const formattedJson = formatJsonContent(safeContent, maxLength)
-    if (formattedJson !== null) {
-      return (
-        <AdaptiveCodeBlock code={formattedJson} language="json" title="JSON Data" showLineNumbers={true} />
-      )
-    }
-  }
-
-  if (isCodeFile) {
-    const codeContent = safeContent.length > maxLength 
-      ? safeContent.slice(0, maxLength) + '\n\n... [Content truncated for performance]'
-      : safeContent
-      
-    return (
-      <AdaptiveCodeBlock code={codeContent.trim()} language={ext || 'text'} title={`${ext} Source File`} showLineNumbers={true} />
-    )
-  }
-
-  const formattedContent = formatMarkdownText(safeContent)
-
-  return (
-    <div className={className || "text-[var(--text-main)] text-[14.5px] leading-relaxed max-w-full overflow-visible"}>
-      <Suspense fallback={<div className="flex items-center justify-center py-10 text-[var(--text-muted)] animate-pulse text-sm">Loading document...</div>}>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeRaw, rehypeKatex]} components={components}>
-          {formattedContent}
-        </ReactMarkdown>
-      </Suspense>
-    </div>
-  )
-}
-
-export default DocumentRenderer
-export { cleanMarkdownComponents, formatMarkdownText, formatJsonContent, remarkMath, rehypeKatex }

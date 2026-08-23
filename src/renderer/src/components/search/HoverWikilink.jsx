@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ExternalLink, FileText } from 'lucide-react'
-import DocumentRenderer from './DocumentRenderer'
+import DocumentRenderer from './document/DocumentRenderer'
 
 const cleanPreviewText = (text) => {
   if (!text || typeof text !== 'string') return ''

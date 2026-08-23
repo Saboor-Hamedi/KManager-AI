@@ -3,7 +3,7 @@ import {
   resolveRelativeMedia,
   formatMarkdownText,
   formatJsonContent
-} from '../../../../../src/renderer/src/components/search/DocumentFormatters'
+} from '../../../../../src/renderer/src/components/search/document/DocumentFormatters'
 
 describe('resolveRelativeMedia', () => {
   it('returns src unchanged for absolute/http/data/file/blob urls', () => {

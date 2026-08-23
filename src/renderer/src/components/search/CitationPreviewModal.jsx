@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo } from 'react'
 import { Copy, Check, ExternalLink, X } from 'lucide-react'
-import DocumentRenderer from './DocumentRenderer'
+import DocumentRenderer from './document/DocumentRenderer'
 
 const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query }) => {
   const [copied, setCopied] = useState(false)
