@@ -133,13 +133,19 @@ const DashboardSearch = () => {
     setSavedResponses(prev => ({ ...prev, [msgId]: 'saving' }))
     try {
       const res = await window.electron.ipcRenderer.invoke('db:ingest-text', { title: query, text: answer })
-      if (res.success) {
+      if (!res.success && res.message && res.message.includes('DUPLICATE_CONTENT')) {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Duplicate data: This response already exists in your library.', type: 'info', duration: 4000 } }))
+        setSavedResponses(prev => ({ ...prev, [msgId]: 'error' }))
+      } else if (res.success) {
         setSavedResponses(prev => ({ ...prev, [msgId]: 'saved' }))
       } else {
         setSavedResponses(prev => ({ ...prev, [msgId]: 'error' }))
         console.error('Failed to save response:', res.message)
       }
     } catch (err) {
+      if (err.message && err.message.includes('DUPLICATE_CONTENT')) {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Duplicate data: This response already exists in your library.', type: 'info', duration: 4000 } }))
+      }
       setSavedResponses(prev => ({ ...prev, [msgId]: 'error' }))
       console.error('Failed to save response:', err)
     }

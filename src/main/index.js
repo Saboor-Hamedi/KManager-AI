@@ -286,10 +286,12 @@ app.whenReady().then(() => {
         } else {
           item.status = 'error'
           item.timing = result?.message || 'Failed'
+          safeSendToWindow('db:ingest-progress', { status: 'error', message: result?.message || 'Failed', fileName: item.name })
         }
       } catch (err) {
         item.status = 'error'
-        item.timing = 'Failed'
+        item.timing = err.message || 'Failed'
+        safeSendToWindow('db:ingest-progress', { status: 'error', message: err.message || 'Failed', fileName: item.name })
       }
       
       safeSendToWindow('db:queue-updated', ingestionQueue)

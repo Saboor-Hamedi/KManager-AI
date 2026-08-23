@@ -14,6 +14,7 @@ import Documentation from './components/Documentation'
 import GlobalError from './components/GlobalError'
 import AnalyticsModal from './components/analytics/AnalyticsModal'
 import MyLibrary from './components/library/MyLibrary'
+import Toast from './components/ui/Toast'
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -99,6 +100,7 @@ function App() {
     <div className="flex flex-col h-screen bg-[#06080a] text-white overflow-hidden font-sans transition-colors duration-300" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
       <GlobalError>
         <GlobalTitleBar />
+        <Toast />
       </GlobalError>
 
       <div className="flex-1 flex min-h-0 overflow-hidden">

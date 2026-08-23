@@ -94,6 +94,19 @@ class IngestionService {
     progressCallback({ status: 'chunking', progress: 25, message: `✂️  Chunking text (extracted in ${extractTime})...` })
 
     const contentHash = crypto.createHash('sha256').update(sanitizedText).digest('hex')
+    
+    // Check if identical content already exists
+    const existingDoc = await db.query('SELECT id, vault_path FROM documents WHERE content_hash = $1', [contentHash])
+    if (existingDoc.rows.length > 0) {
+      const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
+      if (existingDoc.rows[0].vault_path !== normalizedPath) {
+        throw new Error('DUPLICATE_CONTENT: Data already exists')
+      } else {
+        // They are saving the exact same file without changes
+        return { success: true, documentId: existingDoc.rows[0].id, chunksProcessed: 0, timing: { extract: extractTime, chunk: '0ms', embed: '0ms', total: extractTime } }
+      }
+    }
+
     const chunks      = this.chunkText(sanitizedText)
     const totalChunks = chunks.length
     const chunkTime   = elapsed(t2)
@@ -157,6 +170,12 @@ class IngestionService {
     const vaultPath = `ai-response-${titleHash.slice(0, 16)}`
     const fileSize = Buffer.byteLength(sanitizedText, 'utf8')
     
+    // Check if identical content already exists
+    const existingDoc = await db.query('SELECT id, vault_path FROM documents WHERE content_hash = $1', [contentHash])
+    if (existingDoc.rows.length > 0) {
+      throw new Error('DUPLICATE_CONTENT: Data already exists')
+    }
+
     return await db.transaction(async (client) => {
       const docInsertRes = await client.query(
         `INSERT INTO documents (vault_path, file_name, file_type, file_size, content, content_hash)

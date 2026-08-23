@@ -57,10 +57,18 @@ const SettingDataPanel = () => {
       // Ignore re-embed progress updates (they belong in SettingDBPropertiesPanel)
       if (update.type === 'reembed') return
 
-      if (update.status === 'complete' || update.status === 'idle') {
+      if (update.status === 'error') {
+        if (update.message && update.message.includes('DUPLICATE_CONTENT')) {
+          window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Duplicate data: This file already exists in your library.', type: 'info', duration: 4000 } }))
+        } else {
+          window.dispatchEvent(new CustomEvent('toast', { detail: { message: update.message || 'Ingestion failed', type: 'error', duration: 4000 } }))
+        }
+      } else if (update.status === 'complete') {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'File successfully ingested', type: 'success', duration: 3000 } }))
         loadStats()
         window.dispatchEvent(new Event('db-stats-updated'))
       }
+
       setIngestState(prev => ({
         ...prev,
         progress: update.progress || 0,

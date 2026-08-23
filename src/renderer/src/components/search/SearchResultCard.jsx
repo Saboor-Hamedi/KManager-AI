@@ -268,27 +268,29 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
     >
       <div className="flex items-center justify-between gap-4 mb-1.5">
-        <div 
-          ref={titleRef}
-          onClick={() => onSelect(item)}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="relative flex items-start justify-between gap-3 cursor-pointer min-w-0 flex-1 group/title pr-2"
-        >
-          <h4 className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
-            {item.title}
-          </h4>
-          
-          {createdLabel && (
-            <span className="shrink-0 whitespace-nowrap text-[11px] font-medium text-[var(--text-faint)] bg-[var(--bg-active)] px-1.5 py-0.5 rounded-[4px] border border-white/[0.05] mt-0.5">
-              {createdLabel}
-            </span>
-          )}
+          <div 
+            ref={titleRef}
+            onClick={() => onSelect(item)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="relative flex items-start justify-between gap-3 cursor-pointer min-w-0 flex-1 group/title pr-2"
+          >
+            {item.category !== 'AI_RESPONSE' && (
+              <h4 className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
+                {item.title || item.file_name}
+              </h4>
+            )}
+            
+            {createdLabel && (
+              <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--text-muted)] bg-white/[0.04] px-1.5 py-0.5 rounded-[4px] shrink-0 border border-white/[0.04]">
+                {createdLabel}
+              </span>
+            )}
 
-          {showWikiHover && (
-            <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} anchorRef={titleRef} />
-          )}
-        </div>
+            {showWikiHover && (
+              <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} anchorRef={titleRef} />
+            )}
+          </div>
       </div>
 
       <div className="text-[14px] text-[var(--text-main)] leading-relaxed font-normal max-w-full text-left">

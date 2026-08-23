@@ -258,9 +258,11 @@ const SpotLite = () => {
                          <div className="flex items-center gap-2 overflow-hidden w-full">
                            <FileText size={14} className={`shrink-0 ${selectedIndex === idx ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'}`} />
                            <div className="flex-1 min-w-0 pr-2">
-                             <div className="text-[12px] font-semibold text-[var(--text-main)] truncate">
-                               <Highlight text={doc.title} query={query} />
-                             </div>
+                             {doc.category !== 'AI_RESPONSE' && (
+                               <div className="text-[12px] font-semibold text-[var(--text-main)] truncate">
+                                 <Highlight text={doc.title} query={query} />
+                               </div>
+                             )}
                            </div>
                            
                            {/* Mini File Type Badge */}

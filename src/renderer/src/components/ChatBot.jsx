@@ -568,13 +568,21 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
   const handleSaveResponse = useCallback(async (idx, text) => {
     setSavedResponses(prev => ({ ...prev, [idx]: 'saving' }))
     try {
-      let query = 'ChatBot AI Response'
+      let query = 'AI Response'
       if (idx > 0 && messages[idx - 1].role === 'user') {
         query = messages[idx - 1].text
       }
       const res = await window.electron.ipcRenderer.invoke('db:ingest-text', { title: query, text })
+      if (!res.success && res.message && res.message.includes('DUPLICATE_CONTENT')) {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Duplicate data: This response already exists in your library.', type: 'info', duration: 4000 } }))
+      } else if (res.success) {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Saved to library', type: 'success', duration: 3000 } }))
+      }
       setSavedResponses(prev => ({ ...prev, [idx]: res.success ? 'saved' : 'error' }))
     } catch (err) {
+      if (err.message && err.message.includes('DUPLICATE_CONTENT')) {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Duplicate data: This response already exists in your library.', type: 'info', duration: 4000 } }))
+      }
       setSavedResponses(prev => ({ ...prev, [idx]: 'error' }))
     }
   }, [messages])

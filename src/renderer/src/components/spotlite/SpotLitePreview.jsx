@@ -143,30 +143,30 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
         >
           <div className="flex items-center h-full flex-1 min-w-0 pr-4">
             <div className="flex items-center gap-1.5 px-3 min-w-0 flex-1">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !isSaving) {
-                      e.preventDefault()
-                      handleSave()
-                    }
-                  }}
-                  autoFocus
-                  disabled={isSaving}
-                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none focus:border-0 rounded-none px-2 h-[22px] flex-1 min-w-0 max-w-[600px] flex items-center"
-                />
-              ) : (
-                <span 
-                  className={`text-[11.5px] font-medium truncate shrink text-[var(--text-main)] px-2 h-[22px] flex items-center ${isEditable ? 'cursor-text' : ''}`} 
-                  title={localTitle !== null ? localTitle : selectedPdf.title}
-                  onDoubleClick={handleEditToggle}
-                >
-                  {localTitle !== null ? localTitle : selectedPdf.title}
-                </span>
-              )}
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isSaving) {
+                        e.preventDefault()
+                        handleSave()
+                      }
+                    }}
+                    className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
+                  />
+                ) : (
+                  selectedPdf.category !== 'AI_RESPONSE' ? (
+                    <span 
+                      className={`text-[11.5px] font-medium truncate shrink text-[var(--text-main)] px-2 h-[22px] flex items-center ${isEditable ? 'cursor-text' : ''}`} 
+                      title={localTitle !== null ? localTitle : selectedPdf.title}
+                      onDoubleClick={handleEditToggle}
+                    >
+                      {localTitle !== null ? localTitle : selectedPdf.title}
+                    </span>
+                  ) : <span className="text-[11.5px] font-medium shrink text-[var(--text-muted)] px-2 h-[22px] flex items-center">AI Response</span>
+                )}
               
               <FilePathIndicator vaultPath={currentVaultPath} />
             </div>

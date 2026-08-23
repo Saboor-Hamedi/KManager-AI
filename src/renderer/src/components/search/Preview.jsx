@@ -167,9 +167,11 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                   className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
                 />
               ) : (
-                <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
-                  {localTitle !== null ? localTitle : selectedPdf.title}
-                </span>
+                selectedPdf.file_type !== 'ai_response' && selectedPdf.category !== 'AI_RESPONSE' ? (
+                  <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
+                    {localTitle !== null ? localTitle : selectedPdf.title}
+                  </span>
+                ) : <span className="text-[11.5px] font-medium shrink text-[var(--text-muted)] border border-transparent px-2 h-[22px] flex items-center">AI Response</span>
               )}
               
               <FilePathIndicator vaultPath={currentVaultPath} />
