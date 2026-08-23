@@ -133,10 +133,10 @@ graph TD
 ```mermaid
 graph LR
     subgraph CBOW
-        A1[w(t-2)] --> H1[Hidden]
-        A2[w(t-1)] --> H1
-        A3[w(t+1)] --> H1
-        A4[w(t+2)] --> H1
+        A1["w(t-2)"] --> H1[Hidden]
+        A2["w(t-1)"] --> H1
+        A3["w(t+1)"] --> H1
+        A4["w(t+2)"] --> H1
         H1 --> O1["Predict w(t)"]
     end
     subgraph Skip-gram
@@ -264,17 +264,17 @@ def get_bert_embeddings(text: str, model_name: str = "bert-base-uncased"):
 
 ```mermaid
 graph TD
-    A[Input: "I bank at the river bank"] --> B[BERT Tokenizer]
-    B --> C[bank → token 1]
-    B --> D[bank → token 2]
-    C --> E[Self-Attention]
+    A["Input: I bank at the river bank"] --> B["BERT Tokenizer"]
+    B --> C["bank → token 1"]
+    B --> D["bank → token 2"]
+    C --> E["Self-Attention"]
     D --> E
-    E --> F[bank₁ vector]
-    E --> G[bank₂ vector]
-    F -.->|Different!| G
+    E --> F["bank1 vector"]
+    E --> G["bank2 vector"]
+    F -.->|"Different!"| G
     subgraph Static
-        H[bank vector]
-        H --> I[Always the same]
+        H["bank vector"]
+        H --> I["Always the same"]
     end
     style F fill:#f96
     style G fill:#9cf
@@ -391,15 +391,15 @@ The Massive Text Embedding Benchmark evaluates embeddings across 8 tasks.
 graph TD
     A[MTEB] --> B[Classification]
     A --> C[Clustering]
-    A --> D[Pair Classification]
+    A --> D["Pair Classification"]
     A --> E[Reranking]
     A --> F[Retrieval]
     A --> G[STS]
     A --> H[Summarization]
-    A --> I[Bitext classification]
-    B --> J[Average across 12 datasets]
-    F --> K[Recall@k, MAP, nDCG]
-    G --> L[Sentence similarity correlation]
+    A --> I["Bitext classification"]
+    B --> J["Average across 12 datasets"]
+    F --> K["Recall@k, MAP, nDCG"]
+    G --> L["Sentence similarity correlation"]
 ```
 
 | Rank | Model | Dim | Avg | Classification | Clustering | PairClass | Reranking | Retrieval | STS | Summarization |
