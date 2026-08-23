@@ -764,12 +764,12 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
             )}
 
             {/* Scope Indicator */}
-            <div className="flex items-center gap-1.5 pt-1.5 px-4 pb-0 overflow-x-auto custom-scrollbar">
+            <div className="flex items-center gap-1.5 pt-1 px-3 pb-0 overflow-x-auto custom-scrollbar">
               <button 
                 onClick={toggleScope}
-                className="flex items-center gap-1 text-[8.5px] font-bold tracking-wider uppercase text-[var(--text-accent)] bg-[var(--text-accent)]/15 hover:bg-[var(--text-accent)]/25 hover:scale-105 px-1.5 py-0.5 rounded-sm shadow-sm shrink-0 border-0 transition-all cursor-pointer"
+                className="flex items-center gap-1 text-[8px] font-bold tracking-wider uppercase text-[var(--text-accent)] bg-[var(--text-accent)]/15 hover:bg-[var(--text-accent)]/25 hover:scale-105 px-1.5 py-0.5 rounded-sm shadow-sm shrink-0 border-0 transition-all cursor-pointer"
               >
-                <Database size={9} /> Scope: {scope}
+                <Database size={8} /> Scope: {scope}
               </button>
             </div>
 
@@ -781,7 +781,7 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
               onChange={handleInput}
               onKeyDown={handleKeyDown}
               placeholder="Ask a question or drop a file to attach..."
-              className={cn("w-full bg-transparent border-none outline-none font-normal text-[var(--text-main)] resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40", inline ? "text-[14px] py-3 px-5 placeholder-[var(--text-faint)]" : "text-[13.5px] py-3 px-4 placeholder-[var(--text-muted)]/60")}
+              className={cn("w-full bg-transparent border-none outline-none font-normal text-[var(--text-main)] resize-none leading-relaxed overflow-y-auto custom-scrollbar max-h-40", inline ? "text-[13px] py-1.5 px-3 placeholder-[var(--text-faint)]" : "text-[13px] py-2 px-3 placeholder-[var(--text-muted)]/60")}
               autoComplete="off"
               spellCheck="false"
             />
@@ -795,30 +795,30 @@ const ChatBot = ({ inline = false, initialQuery = '', appState = EMPTY_STATE }) 
             />
 
             {/* Bottom Row: Send Button & Actions */}
-            <div className={cn("flex items-center justify-between select-none", inline ? "px-4 pb-3 pt-0" : "px-3 pb-2 pt-1")}>
+            <div className="flex items-center justify-between select-none px-3 pb-2 pt-0">
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center w-7 h-7 rounded-[8px] bg-white/[0.02] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-all border-0 shrink-0" 
+                  className="flex items-center justify-center w-6 h-6 rounded-[6px] bg-white/[0.02] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-active)] transition-all border-0 shrink-0" 
                   title="Click to select a file or drag & drop anywhere"
                 >
-                  <Paperclip size={14} />
+                  <Paperclip size={12} />
                 </button>
-                <span className="text-[12px] text-[var(--text-faint)] hidden sm:block">
+                <span className="text-[10px] text-[var(--text-faint)] hidden sm:block">
                   Press Enter to send • Drag & drop to attach files
                 </span>
               </div>
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && !attachedFile) || isTyping}
-                className={cn("w-7 h-7 rounded-[8px] transition-all duration-200 flex items-center justify-center border-0 shrink-0", 
+                className={cn("w-6 h-6 rounded-[6px] transition-all duration-200 flex items-center justify-center border-0 shrink-0", 
                   (input.trim() || attachedFile) && !isTyping
                     ? "bg-[#10a37f] hover:bg-[#0d8a6b] text-white shadow-[0_0_12px_rgba(16,163,127,0.4)]"
                     : "bg-white/[0.05] text-[var(--text-muted)] opacity-50"
                 )}
                 title="Send message"
               >
-                <ArrowUp size={16} strokeWidth={2.5} />
+                <ArrowUp size={14} strokeWidth={2.5} />
               </button>
             </div>
           </div>

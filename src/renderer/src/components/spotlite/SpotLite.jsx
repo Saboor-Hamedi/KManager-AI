@@ -369,14 +369,14 @@ const SpotLite = () => {
         </div>
 
         {/* Footer Shortcuts */}
-        <div className="h-[28px] shrink-0 border-t border-white/[0.04] bg-[var(--bg-panel)] flex items-center px-3 gap-4 select-none">
-          <div className="flex items-center gap-1.5 opacity-60">
-            <kbd className="text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">↑↓</kbd>
-            <span className="text-[10px] text-[var(--text-muted)] font-medium">Navigate</span>
+        <div className="h-[24px] shrink-0 border-t border-white/[0.04] bg-[var(--bg-panel)] flex items-center px-3 gap-3 select-none">
+          <div className="flex items-center gap-1 opacity-50">
+            <kbd className="text-[8px] font-mono px-1 py-[1px] rounded-[2px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">↑↓</kbd>
+            <span className="text-[9px] text-[var(--text-muted)] font-medium">Navigate</span>
           </div>
-          <div className="flex items-center gap-1.5 opacity-60">
-            <kbd className="text-[9.5px] font-mono px-1.5 py-[2px] rounded-[3px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">Esc</kbd>
-            <span className="text-[10px] text-[var(--text-muted)] font-medium">Close</span>
+          <div className="flex items-center gap-1 opacity-50">
+            <kbd className="text-[8px] font-mono px-1 py-[1px] rounded-[2px] bg-white/[0.04] text-white/40 tracking-wider outline-none border-none shadow-none uppercase">Esc</kbd>
+            <span className="text-[9px] text-[var(--text-muted)] font-medium">Close</span>
           </div>
         </div>
       </div>
