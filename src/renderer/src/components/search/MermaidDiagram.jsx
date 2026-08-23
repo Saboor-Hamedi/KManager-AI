@@ -149,16 +149,8 @@ const MermaidDiagram = memo(({ chart }) => {
   }, [isModalOpen])
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const handleWheel = (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      if (e.deltaY < 0) setZoom(z => Math.min(z + 0.1, 6))
-      else setZoom(z => Math.max(z - 0.1, 0.25))
-    }
-    el.addEventListener('wheel', handleWheel, { passive: false })
-    return () => el.removeEventListener('wheel', handleWheel)
+    // Wheel zoom removed as requested by user. 
+    // UI icons for zoom remain.
   }, [svgContent])
 
   useEffect(() => {
@@ -193,6 +185,9 @@ const MermaidDiagram = memo(({ chart }) => {
         // Fix common AI capitalization typos for the root diagram type and internal blocks
         let sanitizedChart = chart.trim()
         
+        // Strip backend search highlight markers that may be present if the diagram was returned from a search query
+        sanitizedChart = sanitizedChart.replace(/ﬂ°|¶ß/g, '')
+
         // Fix Root nodes
         sanitizedChart = sanitizedChart.replace(/^(\s*)(Graph|Flowchart|SequenceDiagram|ClassDiagram|StateDiagram|ErDiagram|Gantt|Pie|GitGraph)/i, (_, space, match) => {
           const m = match.toLowerCase()

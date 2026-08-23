@@ -36,7 +36,7 @@ const Wrapper = ({ children, maxHeight = 300 }) => {
   }, [children, maxHeight])
 
   return (
-    <div className="relative w-full group -mx-4 px-4">
+    <div className="relative w-full group">
       <div 
         ref={contentRef} 
         className="transition-[max-height] duration-500 ease-in-out overflow-hidden"

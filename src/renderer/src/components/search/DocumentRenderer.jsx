@@ -73,23 +73,23 @@ const fastJsonHighlight = (jsonString) => {
 const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) => {
   return (
     <Wrapper maxHeight={400}>
-      <div className="my-4 rounded-t-[5px] rounded-b-none overflow-hidden bg-[#1e1e1e] shadow-sm max-w-full ring-1 ring-white/5 relative group/code">
+      <div className="my-6 rounded-[8px] overflow-hidden bg-[var(--bg-panel)] shadow-sm max-w-full border border-[var(--border-dim)] relative group/code">
         {/* Persistent Small Header - Ultra Subtle */}
-        <div className="flex items-center justify-between px-2 py-1 bg-transparent select-none">
-          <div className="text-[12px] font-semibold text-white/30 uppercase tracking-widest pl-1 leading-none mt-px">
+        <div className="flex items-center justify-between px-3 py-1 bg-black/[0.08] select-none border-b border-[var(--border-subtle)] h-[24px]">
+          <div className="text-[10px] font-bold text-[var(--text-muted)]/50 uppercase tracking-widest pl-1">
             {language || title || 'TEXT'}
           </div>
-          <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity">
+          <div className="flex items-center opacity-70 hover:opacity-100 transition-opacity h-full">
             <CodeCopyButton code={code} />
           </div>
         </div>
         <div className="overflow-x-auto bg-transparent custom-scrollbar relative">
           {/* Right edge fade indicator for horizontal scroll */}
-          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[#1e1e1e] to-transparent pointer-events-none" />
+          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-[var(--bg-panel)] to-transparent pointer-events-none" />
           
           {language === 'json' ? (
             <pre 
-              className="m-0 bg-transparent text-[#d4d4d4] text-[12.5px] leading-[1.6] px-[1.75rem] py-[1rem] overflow-x-auto font-mono"
+              className="m-0 bg-transparent text-[var(--text-main)] opacity-90 text-[12.5px] leading-[1.6] px-[1.25rem] py-[1rem] overflow-x-auto font-mono"
               dangerouslySetInnerHTML={{ __html: fastJsonHighlight(code) }}
             />
           ) : (
@@ -103,9 +103,9 @@ const AdaptiveCodeBlock = ({ code, language, title, showLineNumbers = false }) =
               customStyle={{
                 margin: 0,
                 background: 'transparent',
-                color: '#d4d4d4',
+                color: 'var(--text-main)',
                 fontSize: '13px',
-                padding: '1rem 1.75rem',
+                padding: '1rem 1.25rem',
                 overflowX: 'auto',
                 lineHeight: '1.6'
               }}
@@ -450,15 +450,15 @@ const cleanMarkdownComponents = {
   },
   hr: ({node, ...props}) => <div className="horizontal-divider my-6" {...props} />,
   table: ({node, ...props}) => (
-    <div className="my-3 w-full overflow-x-auto bg-transparent border-0 shadow-none">
-      <table className="w-full text-left border-collapse text-xs text-[var(--text-main)]" {...props} />
+    <div className="my-6 w-full overflow-x-auto bg-[var(--bg-panel)] rounded-[8px] shadow-sm max-w-full border border-[var(--border-dim)]">
+      <table className="w-full text-left border-collapse text-xs text-[var(--text-main)] m-0" {...props} />
     </div>
   ),
-  thead: ({node, ...props}) => <thead className="bg-transparent border-b border-white/10 dark:border-white/[0.06] text-left" {...props} />,
+  thead: ({node, ...props}) => <thead className="bg-black/[0.08] border-b border-[var(--border-subtle)] text-left" {...props} />,
   tbody: ({node, ...props}) => <tbody className="divide-y divide-white/5 dark:divide-white/[0.04]" {...props} />,
   tr: ({node, ...props}) => <tr className="bg-transparent transition-none border-0" {...props} />,
-  th: ({node, ...props}) => <th className="py-2 px-3 text-xs font-semibold text-[var(--text-main)] whitespace-nowrap select-text bg-transparent border-0" {...props} />,
-  td: ({node, ...props}) => <td className="py-2 px-3 text-xs text-[var(--text-main)]/90 leading-relaxed break-words select-text border-0" {...props} />,
+  th: ({node, ...props}) => <th className="py-2.5 px-4 text-xs font-semibold text-[var(--text-main)] whitespace-nowrap select-text border-0" {...props} />,
+  td: ({node, ...props}) => <td className="py-2.5 px-4 text-xs text-[var(--text-main)]/90 leading-relaxed break-words select-text border-0" {...props} />,
   em: ({node, ...props}) => <em className="italic text-[var(--text-accent)] font-normal" {...props} />,
   details: ({node, ...props}) => (
     <details className="my-3 border border-white/[0.08] bg-[var(--bg-panel)] rounded-[6px] overflow-hidden group shadow-sm px-4 group-open:pb-2 [&>summary+br]:hidden [&>summary+p]:mt-2" {...props} />
