@@ -1185,7 +1185,11 @@ function setupAutoUpdater() {
   })
 
   autoUpdater.on('error', (err) => {
-    log.error('AutoUpdater error:', err.message)
+    if (err.message.includes('Please check update first')) {
+      log.warn('AutoUpdater warning:', err.message)
+    } else {
+      log.error('AutoUpdater error:', err.message)
+    }
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('update-error', err.message)
     }
@@ -1214,10 +1218,13 @@ ipcMain.handle('update:check', () => {
 
 ipcMain.handle('update:download', () => {
   return autoUpdater.downloadUpdate().catch((err) => {
-    log.error('Download failed:', err.message)
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-error', err.message)
+    if (err.message.includes('Please check update first')) {
+      log.warn('Download bypassed (no update available to download).')
+    } else {
+      log.error('Download failed:', err.message)
     }
+    // We do NOT send update-error here again, because autoUpdater.on('error') 
+    // internally catches and dispatches this exact error to the frontend already.
   })
 })
 

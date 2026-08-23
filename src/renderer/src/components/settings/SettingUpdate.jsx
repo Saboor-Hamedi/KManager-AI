@@ -35,13 +35,13 @@ const SettingUpdate = () => {
     const unsubAvailable = window.api.update.onUpdateAvailable((info) => {
       clearTimeout(checkTimeoutRef.current)
       setVersion(info.version)
-      setStatus('available')
+      setStatus(prev => (prev === 'downloaded' || prev === 'downloading') ? prev : 'available')
       setError('')
     })
 
     const unsubNotAvailable = window.api.update.onUpdateNotAvailable(() => {
       clearTimeout(checkTimeoutRef.current)
-      setStatus('uptodate')
+      setStatus(prev => (prev === 'downloaded' || prev === 'downloading') ? prev : 'uptodate')
     })
 
     const unsubProgress = window.api.update.onUpdateProgress((progressObj) => {
@@ -125,109 +125,45 @@ const SettingUpdate = () => {
       <div className="bg-white/[0.01] rounded-[6px] px-4 py-3 flex items-center justify-between border border-white/[0.04]">
         <div>
           <p className="text-[12px] font-medium text-[var(--text-muted)]">Current Version</p>
-          <p className="text-sm font-bold text-[var(--text-main)] mt-0.5">v{currentVersion || '—'}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm font-bold text-[var(--text-main)]">v{currentVersion || '—'}</p>
+            {status === 'available' && <span className="text-[var(--text-accent)] text-xs font-semibold">→ v{version}</span>}
+            {status === 'downloading' && (
+              <div className="w-24 h-1.5 bg-[var(--bg-card)] rounded-full overflow-hidden ml-2">
+                <div className="h-full bg-[var(--text-accent)] rounded-full transition-all duration-200" style={{ width: `${Math.max(progress, 4)}%` }} />
+              </div>
+            )}
+            {status === 'error' && <span className="text-red-400 text-xs font-medium ml-2">{error || 'Failed'}</span>}
+          </div>
         </div>
         <button
-          onClick={handleCheck}
+          onClick={() => {
+            if (status === 'available' || status === 'error') handleDownload()
+            else if (status === 'downloaded') handleInstall()
+            else handleCheck()
+          }}
           disabled={status === 'checking' || status === 'downloading'}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-[var(--bg-active)] hover:bg-white/[0.06] text-[12px] text-[var(--text-main)] transition-colors disabled:opacity-50 border-0"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] text-[12px] transition-colors border-0 ${
+            status === 'available' || status === 'error'
+              ? 'bg-[var(--text-accent)] text-white hover:opacity-90 shadow-none'
+              : status === 'downloaded'
+              ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-none animate-pulse'
+              : 'bg-[var(--bg-active)] hover:bg-white/[0.06] text-[var(--text-main)] disabled:opacity-50'
+          }`}
         >
-          <RotateCw size={13} className={status === 'checking' ? 'animate-spin' : ''} />
-          <span>{status === 'checking' ? 'Checking...' : 'Check for Updates'}</span>
+          {status === 'available' ? (
+             <><Download size={13} /><span>Download</span></>
+          ) : status === 'downloaded' ? (
+             <><RefreshCcw size={13} /><span>Restart</span></>
+          ) : status === 'error' ? (
+             <><RotateCw size={13} /><span>Retry</span></>
+          ) : status === 'downloading' ? (
+             <><Download size={13} /><span>{Math.round(progress)}%</span></>
+          ) : (
+             <><RotateCw size={13} className={status === 'checking' ? 'animate-spin' : ''} /><span>{status === 'checking' ? 'Checking...' : status === 'uptodate' ? 'Up to date' : 'Check for Updates'}</span></>
+          )}
         </button>
       </div>
-
-      {/* Checking */}
-      {status === 'checking' && (
-        <div className="bg-white/[0.01] rounded-[6px] px-4 py-3 border border-white/[0.04]">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full border-2 border-[var(--text-accent)] border-t-transparent animate-spin" />
-            <p className="text-xs font-medium text-[var(--text-muted)]">Checking for updates...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Up to date */}
-      {status === 'uptodate' && (
-        <div className="bg-emerald-500/5 rounded-[6px] px-4 py-3 border border-emerald-500/10">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-medium text-emerald-300">KManager AI is up to date</p>
-          </div>
-        </div>
-      )}
-
-      {/* Available */}
-      {status === 'available' && (
-        <div className="bg-white/[0.01] rounded-[6px] px-4 py-3 border border-white/[0.04]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-[var(--text-accent)]">Update v{version} available</p>
-              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
-                {currentVersion && version ? `v${currentVersion} → v${version}` : 'A new version is ready to download.'}
-              </p>
-            </div>
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-[var(--text-accent)] hover:opacity-90 text-white text-[12px] transition-all animate-pulse border-0 shadow-none"
-            >
-              <Download size={13} />
-              <span>Download</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Downloading */}
-      {status === 'downloading' && (
-        <div className="bg-white/[0.01] rounded-[6px] px-4 py-3 border border-white/[0.04]">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-[var(--text-main)]">Downloading update...</p>
-            <span className="text-xs font-mono text-[var(--text-accent)] font-semibold">{Math.round(progress)}%</span>
-          </div>
-          <div className="h-1.5 bg-[var(--bg-card)] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[var(--text-accent)] rounded-full transition-all duration-200"
-              style={{ width: `${Math.max(progress, 4)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Downloaded */}
-      {status === 'downloaded' && (
-        <div className="bg-emerald-500/5 rounded-[6px] px-4 py-3 border border-emerald-500/10">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-emerald-400">Update ready to install</p>
-              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Restart the application to apply the update.</p>
-            </div>
-            <button
-              onClick={handleInstall}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] transition-all animate-pulse shadow-none border-0"
-            >
-              <RefreshCcw size={13} />
-              <span>Restart</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {status === 'error' && (
-        <div className="bg-red-500/10 rounded-[6px] px-4 py-3 border border-red-500/10">
-          <p className="text-xs font-semibold text-red-400">Update check failed</p>
-          <p className="text-[12px] text-red-400/80 mt-0.5">
-            {error || 'Could not reach update server. Check your internet connection.'}
-          </p>
-          <button
-            onClick={handleCheck}
-            className="mt-2 flex items-center gap-1 text-[12px] text-red-400 hover:text-red-300 transition-colors border-0 bg-transparent"
-          >
-            <RotateCw size={10} />
-            <span>Try again</span>
-          </button>
-        </div>
-      )}
 
       {/* System Constraints Config */}
       <div>

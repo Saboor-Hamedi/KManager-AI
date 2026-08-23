@@ -157,15 +157,13 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                     className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
                   />
                 ) : (
-                  selectedPdf.category !== 'AI_RESPONSE' ? (
-                    <span 
-                      className={`text-[11.5px] font-medium truncate shrink text-[var(--text-main)] px-2 h-[22px] flex items-center ${isEditable ? 'cursor-text' : ''}`} 
-                      title={localTitle !== null ? localTitle : selectedPdf.title}
-                      onDoubleClick={handleEditToggle}
-                    >
-                      {localTitle !== null ? localTitle : selectedPdf.title}
-                    </span>
-                  ) : <span className="text-[11.5px] font-medium shrink text-[var(--text-muted)] px-2 h-[22px] flex items-center">AI Response</span>
+                  <span 
+                    className={`text-[11.5px] font-medium truncate shrink text-[var(--text-main)] px-2 h-[22px] flex items-center ${isEditable ? 'cursor-text' : ''}`}
+                    title={localTitle !== null ? localTitle : selectedPdf.title}
+                    onDoubleClick={handleEditToggle}
+                  >
+                    {localTitle !== null ? localTitle : selectedPdf.title}
+                  </span>
                 )}
               
               <FilePathIndicator vaultPath={currentVaultPath} />

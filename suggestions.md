@@ -1,76 +1,29 @@
-til-character@2.1.1","unified@11.0.5"]
-  • updating asar integrity executable resource  executablePath=dist\win-unpacked\kmanager.exe
-  • signing with signtool.exe  path=dist\win-unpacked\kmanager.exe
-  • building        target=nsis file=dist\kmanager-1.0.6-setup.exe archs=x64 oneClick=true perMachine=false
-  • signing with signtool.exe  path=dist\win-unpacked\resources\elevate.exe
-  • signing with signtool.exe  path=dist\kmanager-1.0.6-setup.__uninstaller.exe
-  • signing with signtool.exe  path=dist\kmanager-1.0.6-setup.exe
-  • building block map  blockMapFile=dist\kmanager-1.0.6-setup.exe.blockmap
-  • publishing      publisher=Github (owner: Saboor-Hamedi, project: KManager-AI, version: 1.0.6)
-  • publishing      publisher=Github (owner: Saboor-Hamedi, project: KManager-AI, version: 1.0.6)
-  • uploading       file=kmanager-1.0.6-setup.exe.blockmap provider=github
-  • uploading       file=kmanager-1.0.6-setup.exe provider=github
-  • creating GitHub release  reason=release doesn't exist tag=v1.0.6 version=1.0.6
-  • creating GitHub release  reason=release doesn't exist tag=v1.0.6 version=1.0.6
-  ⨯ 422 Unprocessable Entity
-"method: post url: https://api.github.com/repos/Saboor-Hamedi/KManager-AI/releases\n\n          Data:\n          {\n  \"message\": \"Validation Failed\",\n  \"errors\": [\n    {\n      \"resource\": \"Release\",\n      \"code\": \"custom\",\n      \"message\": \"Published releases must have a valid tag\"\n    }\n  ],\n  \"documentation_url\": \"https://docs.github.com/rest/releases/releases#create-a-release\",\n  \"status\": \"422\"\n}\n          "
-Headers: {
-  "date": "Sun, 23 Aug 2026 12:14:27 GMT",
-  "content-type": "application/json; charset=utf-8",
-  "content-length": "235",
-  "x-oauth-scopes": "b894ca4f0f304deb58b4c83ccf5b37ac3c8f80e097a91bd5d8b39430c410f901 (sha256 hash)",
-  "x-accepted-oauth-scopes": "071ca2227754705837aa3ef9748ed59e9f8a015fd765c42f391a4cbc271c6d5e (sha256 hash)",
-  "github-authentication-token-expiration": "ae33f69bc28013b9404d4bac0b176ae4061f2d91f94007767b6aa725e009f83a (sha256 hash)",
-  "x-github-media-type": "github.v3; format=json",
-  "x-github-api-version-selected": "2022-11-28",
-  "access-control-expose-headers": "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning",
-  "access-control-allow-origin": "*",
-  "strict-transport-security": "max-age=31536000; includeSubdomains; preload",
-  "x-frame-options": "deny",
-  "x-content-type-options": "nosniff",
-  "x-xss-protection": "0",
-  "referrer-policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
-  "content-security-policy": "default-src 'none'",
-  "vary": "Accept-Encoding, Accept, X-Requested-With",
-  "server": "github.com",
-  "x-ratelimit-limit": "5000",
-  "x-ratelimit-remaining": "4993",
-  "x-ratelimit-reset": "1787489556",
-  "x-ratelimit-used": "7",
-  "x-ratelimit-resource": "core",
-  "x-github-request-id": "E075:F5530:17A97A1:18DA7D8:6A8AE423",
-  "x-github-edge-region": "southeastasia"
-}  failedTask=build stackTrace=HttpError: 422 Unprocessable Entity
-"method: post url: https://api.github.com/repos/Saboor-Hamedi/KManager-AI/releases\n\n          Data:\n          {\n  \"message\": \"Validation Failed\",\n  \"errors\": [\n    {\n      \"resource\": \"Release\",\n      \"code\": \"custom\",\n      \"message\": \"Published releases must have a valid tag\"\n    }\n  ],\n  \"documentation_url\": \"https://docs.github.com/rest/releases/releases#create-a-release\",\n  \"status\": \"422\"\n}\n          "
-Headers: {
-  "date": "Sun, 23 Aug 2026 12:14:27 GMT",
-  "content-type": "application/json; charset=utf-8",
-  "content-length": "235",
-  "x-oauth-scopes": "b894ca4f0f304deb58b4c83ccf5b37ac3c8f80e097a91bd5d8b39430c410f901 (sha256 hash)",
-  "x-accepted-oauth-scopes": "071ca2227754705837aa3ef9748ed59e9f8a015fd765c42f391a4cbc271c6d5e (sha256 hash)",
-  "github-authentication-token-expiration": "ae33f69bc28013b9404d4bac0b176ae4061f2d91f94007767b6aa725e009f83a (sha256 hash)",
-  "x-github-media-type": "github.v3; format=json",
-  "x-github-api-version-selected": "2022-11-28",
-  "access-control-expose-headers": "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning",
-  "access-control-allow-origin": "*",
-  "strict-transport-security": "max-age=31536000; includeSubdomains; preload",
-  "x-frame-options": "deny",
-  "x-content-type-options": "nosniff",
-  "x-xss-protection": "0",
-  "referrer-policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
-  "content-security-policy": "default-src 'none'",
-  "vary": "Accept-Encoding, Accept, X-Requested-With",
-  "server": "github.com",
-  "x-ratelimit-limit": "5000",
-  "x-ratelimit-remaining": "4993",
-  "x-ratelimit-reset": "1787489556",
-  "x-ratelimit-used": "7",
-  "x-ratelimit-resource": "core",
-  "x-github-request-id": "E075:F5530:17A97A1:18DA7D8:6A8AE423",
-  "x-github-edge-region": "southeastasia"
-}
-    at createHttpError (B:\kmanager\node_modules\builder-util-runtime\src\httpExecutor.ts:66:10)
-    at IncomingMessage.<anonymous> (B:\kmanager\node_modules\builder-util-runtime\src\httpExecutor.ts:241:13)
-    at IncomingMessage.emit (node:events:531:35)
-    at endReadableNT (node:internal/streams/readable:1698:12)
-    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+**Prompt: Sidebar Cleanup & Hierarchy (Minimalist Approach)**
+
+"The current sidebar feels cluttered and visually heavy. Please revert to a cleaner, flatter design but improve the hierarchy using only spacing and opacity. Do not add heavy borders, gradients, or complex backgrounds.
+
+1.  **Remove Visual Noise:**
+    *   Remove any heavy borders, outlines, or pill-shaped backgrounds around 'New Session' or nav items. Keep it flat and clean.
+    *   Remove any complex gradient backgrounds for active states. Use a simple, subtle background tint (e.g., `bg-white/5`) instead.
+
+2.  **Create Separation via Spacing (Not Lines):**
+    *   Instead of a visible divider line, use **vertical whitespace**. Add `mt-8` (margin-top) to the 'Documentation' section to physically separate it from 'Analytics'. The empty space is the divider.
+    *   Ensure consistent vertical padding (e.g., `py-3`) for all nav items so they aren't cramped.
+
+3.  **Typography & Opacity Hierarchy:**
+    *   **Active Item:** Text should be `text-white` (100% opacity) and `font-medium`. No bolding needed if the contrast is right.
+    *   **Inactive Items:** Text should be `text-white/50` (50% opacity). This creates depth without adding colors.
+    *   **Utility Items (Bottom):** Reduce font size slightly (e.g., `text-sm` or `13px`) and keep opacity at `text-white/40`. This naturally pushes them to the background visually.
+
+4.  **'New Session' Button:**
+    *   Keep it simple. Just ensure it has slightly more top margin (`mt-4`) to separate it from the logo.
+    *   On hover, just increase opacity or add a very faint background highlight. No borders.
+
+5.  **Shortcut Keys:**
+    *   Make them smaller (`text-xs`) and more muted (`text-white/30`). They are helpers, not main content. Align them perfectly to the right.
+
+6.  **Logo Alignment:**
+    *   Ensure the logo and 'KMANAGER' text are vertically centered in their container. Add `mb-6` below the logo row to give the navigation room to start.
+
+**Goal:** A sidebar that looks like a native, high-end desktop app (like Linear or Arc). Flat, spacious, and relying on opacity/size for hierarchy rather than decorations."

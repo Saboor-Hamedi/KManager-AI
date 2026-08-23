@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, FileJson, FileSpreadsheet, Code, Database, File, Image as ImageIcon } from 'lucide-react'
+import { FileText, FileJson, FileSpreadsheet, Code, Database, File, Image as ImageIcon, MessageSquare } from 'lucide-react'
 
 export const formatBytes = (bytes, decimals = 1) => {
   if (!+bytes) return '0 B'
@@ -27,6 +27,7 @@ export const getFileIcon = (category) => {
     case 'JPG':
     case 'JPEG':
     case 'SVG': return ImageIcon
+    case 'AI_RESPONSE': return MessageSquare
     default: return File
   }
 }
@@ -36,6 +37,14 @@ const SpotliteList = ({ results, selectedIndex, setSelectedIndex, setHoveredDoc 
     <div className="p-2 flex flex-col gap-1">
       {results.map((doc, idx) => {
         const Icon = getFileIcon(doc.category)
+        
+        let displayPath = ''
+        if (doc.category === 'AI_RESPONSE') {
+          displayPath = 'Saved AI Response'
+        } else {
+          displayPath = doc.vault_path.split(/[\\/]/).slice(0, -1).join('\\')
+        }
+
         return (
           <div
             key={idx}
@@ -51,7 +60,7 @@ const SpotliteList = ({ results, selectedIndex, setSelectedIndex, setHoveredDoc 
              </div>
              <div className="flex items-center justify-between mt-1">
                <span className={`text-[10px] truncate pl-5 font-mono leading-none flex-1 ${selectedIndex === idx ? 'text-[var(--text-accent)]/70' : 'text-[var(--text-faint)]'}`}>
-                 {doc.vault_path.split(/[\\/]/).slice(0, -1).join('\\')}
+                 {displayPath}
                </span>
                {doc.file_size != null && (
                  <span className={`text-[10px] font-mono whitespace-nowrap ml-2 shrink-0 ${selectedIndex === idx ? 'text-[var(--text-accent)]/70' : 'text-[var(--text-muted)]'}`}>
@@ -62,6 +71,7 @@ const SpotliteList = ({ results, selectedIndex, setSelectedIndex, setHoveredDoc 
           </div>
         )
       })}
+
     </div>
   )
 }

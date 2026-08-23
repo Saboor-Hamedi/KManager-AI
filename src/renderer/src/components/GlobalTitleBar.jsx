@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Minus, Square, X, Database, WifiOff, CodeXml, Download, RefreshCcw, Package, MessageSquare } from 'lucide-react'
+import UpdateDetails from './UpdateDetails'
 
 const GlobalTitleBar = () => {
   const [dbConnected, setDbConnected] = useState(false)
@@ -34,7 +35,7 @@ const GlobalTitleBar = () => {
   useEffect(() => {
     const unsubAvailable = window.api.update?.onUpdateAvailable?.((info) => {
       setUpdateVersion(info.version)
-      setUpdateState('available')
+      setUpdateState(prev => (prev === 'downloaded' || prev === 'downloading') ? prev : 'available')
     })
 
     const unsubProgress = window.api.update?.onUpdateProgress?.((progressObj) => {
@@ -51,9 +52,10 @@ const GlobalTitleBar = () => {
 
     const unsubError = window.api.update?.onUpdateError?.((errMsg) => {
       console.error('Update error:', errMsg)
-      // Reset to idle so the button re-appears if user tries again manually
-      setUpdateState('idle')
+      setUpdateState(prev => (prev === 'downloading' ? 'available' : prev))
       setDownloadProgress(0)
+      // Notify the user via Toast
+      window.dispatchEvent(new CustomEvent('toast', { detail: { message: `Update error: ${errMsg}`, type: 'error' } }))
     })
 
     // Trigger an immediate check on mount
@@ -92,14 +94,13 @@ const GlobalTitleBar = () => {
     return () => window.removeEventListener('mousedown', handleClick)
   }, [showDropdown])
 
-  // Removed handleUpdateClick since we'll use hover for dropdown and click for download
-
   const handleDownload = useCallback(() => {
     setUpdateState('downloading')
     setDownloadProgress(0)
     window.api.update.download().catch((err) => {
       console.error('Failed to start download:', err)
       setUpdateState('available')
+      window.dispatchEvent(new CustomEvent('toast', { detail: { message: `Failed to start download: ${err.message}`, type: 'error' } }))
     })
   }, [])
 
@@ -128,7 +129,7 @@ const GlobalTitleBar = () => {
   const showUpdate = updateState === 'available' || updateState === 'downloading' || updateState === 'downloaded'
 
   return (
-    <div className="h-[26px] w-full bg-[var(--bg-panel)] flex items-center justify-between shrink-0 z-50 [-webkit-app-region:drag] select-none border-0">
+    <div className="h-[26px] w-full bg-[var(--bg-panel)] flex items-center justify-between shrink-0 z-[60] relative [-webkit-app-region:drag] select-none border-0">
       {/* Left: App Identity & Update Button */}
       <div className="flex items-center gap-2 px-2.5 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -151,7 +152,7 @@ const GlobalTitleBar = () => {
                 className="group flex items-center justify-center w-7 h-7 text-[var(--text-accent)] hover:bg-[var(--bg-active)] rounded-md transition-all active:scale-[0.95]"
                 aria-label="Update Available"
               >
-                <Download size={14} strokeWidth={2.5} className="group-hover:-translate-y-0.5 transition-transform" />
+                <Download size={14} strokeWidth={2.5} className="transition-transform" />
               </button>
             )}
             {updateState === 'downloading' && (
@@ -178,25 +179,11 @@ const GlobalTitleBar = () => {
               </button>
             )}
 
-            {/* Dropdown */}
-            {showDropdown && (
-              <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg shadow-xl w-[230px]">
-                  <div className="p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Package size={14} className="text-[var(--text-accent)] shrink-0" />
-                      <div>
-                        <p className="text-xs font-semibold text-[var(--text-main)]">Update Available</p>
-                        <p className="text-[12px] text-[var(--text-muted)] mt-0.5">v{currentVersion} → <span className="text-[var(--text-accent)] font-medium">v{updateVersion}</span></p>
-                      </div>
-                    </div>
-                    <p className="text-[12px] text-[var(--text-muted)] leading-relaxed">
-                      A new version of KManager AI is ready. Click the update button to get new features, improvements, and bug fixes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <UpdateDetails 
+              show={showDropdown} 
+              currentVersion={currentVersion} 
+              updateVersion={updateVersion} 
+            />
           </div>
         )}
       </div>
