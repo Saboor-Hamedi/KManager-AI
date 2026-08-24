@@ -33,23 +33,7 @@ export const getFileIcon = (category) => {
   }
 }
 
-const Highlight = ({ text, query }) => {
-  if (!query || !text) return <span>{text || ''}</span>
-  try {
-    const parts = text.split(new RegExp(`(${query})`, 'gi'))
-    return (
-      <span>
-        {parts.map((part, i) => 
-          part.toLowerCase() === query.toLowerCase() 
-            ? <mark key={i} className="bg-[var(--text-accent)]/20 text-[var(--text-accent)] rounded-[2px] px-0.5 font-bold">{part}</mark> 
-            : <span key={i}>{part}</span>
-        )}
-      </span>
-    )
-  } catch (e) {
-    return <span>{text}</span>
-  }
-}
+import Highlight from './Highlight'
 
 const SpotliteList = ({ results, query, selectedIndex, setSelectedIndex, setHoveredDoc }) => {
   return (
@@ -72,6 +56,11 @@ const SpotliteList = ({ results, query, selectedIndex, setSelectedIndex, setHove
                    <div className="text-[12px] font-semibold text-[var(--text-main)] truncate">
                      <Highlight text={doc.title} query={query} />
                    </div>
+                   {doc.content && (
+                     <div className="text-[10px] text-[var(--text-muted)] truncate mt-0.5">
+                       <Highlight text={doc.content.replace(/\s+/g, ' ')} query={query} />
+                     </div>
+                   )}
                </div>
                
                {/* Mini File Type Badge */}

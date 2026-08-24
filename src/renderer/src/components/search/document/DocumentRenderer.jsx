@@ -8,11 +8,12 @@ import '../../../assets/horizontal.css'
 
 import { resolveRelativeMedia, formatMarkdownText, formatJsonContent } from './DocumentFormatters'
 import DocumentAdaptiveCodeBlock from './DocumentAdaptiveCodeBlock'
-import { cleanMarkdownComponents } from './DocumentMarkdownComponents'
+import { cleanMarkdownComponents, renderCalloutOrParagraph } from './DocumentMarkdownComponents'
+import Highlight from '../../spotlite/Highlight'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
-const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaultPath = '', results = null, className, maxLength = 150000 }) => {
+const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaultPath = '', results = null, className, maxLength = 150000, searchQuery = '', highlightsRemoved = false }) => {
   React.useEffect(() => {
     if (results && Array.isArray(results) && results.length > 0) {
       window.__currentSearchMappedResults = results
@@ -20,13 +21,55 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaul
   }, [results])
 
   const components = React.useMemo(() => {
-    if (!vaultPath) return cleanMarkdownComponents
-    return {
-      ...cleanMarkdownComponents,
-      img: ({node, src, alt, ...props}) => cleanMarkdownComponents.img({node, src: resolveRelativeMedia(src, vaultPath), alt, ...props}),
-      a: ({node, href, children, ...props}) => cleanMarkdownComponents.a({node, href: resolveRelativeMedia(href, vaultPath), children, ...props})
+    let base = { ...cleanMarkdownComponents }
+    
+    if (vaultPath) {
+      base.img = ({node, src, alt, ...props}) => cleanMarkdownComponents.img({node, src: resolveRelativeMedia(src, vaultPath), alt, ...props})
+      base.a = ({node, href, children, ...props}) => cleanMarkdownComponents.a({node, href: resolveRelativeMedia(href, vaultPath), children, ...props})
     }
-  }, [vaultPath])
+
+    if (searchQuery && !highlightsRemoved) {
+      const renderWithHighlight = (children) => {
+        if (typeof children === 'string') {
+          return <Highlight text={children} query={searchQuery} disabled={highlightsRemoved} />
+        }
+        if (Array.isArray(children)) {
+          return children.map((child, i) => (
+            <React.Fragment key={i}>{renderWithHighlight(child)}</React.Fragment>
+          ))
+        }
+        // If it's a React element, we can't easily recurse into it without cloneElement,
+        // but react-markdown will pass the inner text through our other overridden components anyway!
+        return children
+      }
+
+      const wrapOriginal = (OriginalComponent) => {
+        if (!OriginalComponent) return undefined
+        return ({ node, children, ...props }) => OriginalComponent({ node, children: renderWithHighlight(children), ...props })
+      }
+
+      const fallbackRender = (children, props) => (
+        <div className="mb-4 last:mb-0 text-justify whitespace-pre-wrap" {...props}>
+          {renderWithHighlight(children)}
+        </div>
+      )
+      
+      base.p = ({ node, children, ...props }) => renderCalloutOrParagraph(children, props, fallbackRender)
+      base.li = wrapOriginal(cleanMarkdownComponents.li)
+      base.h1 = wrapOriginal(cleanMarkdownComponents.h1)
+      base.h2 = wrapOriginal(cleanMarkdownComponents.h2)
+      base.h3 = wrapOriginal(cleanMarkdownComponents.h3)
+      base.h4 = wrapOriginal(cleanMarkdownComponents.h4)
+      base.strong = wrapOriginal(cleanMarkdownComponents.strong)
+      base.em = wrapOriginal(cleanMarkdownComponents.em)
+      base.blockquote = wrapOriginal(cleanMarkdownComponents.blockquote)
+      base.td = wrapOriginal(cleanMarkdownComponents.td)
+      base.th = wrapOriginal(cleanMarkdownComponents.th)
+      base.span = wrapOriginal(cleanMarkdownComponents.span)
+    }
+    
+    return base
+  }, [vaultPath, searchQuery, highlightsRemoved])
 
   if (!content) return null
   const safeContent = typeof content !== 'string' && category !== 'JSON' ? String(content) : content

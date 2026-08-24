@@ -100,26 +100,33 @@ const SpotLite = () => {
 
     const timer = setTimeout(async () => {
       try {
-        // Ultra-fast lexical search on both title and content
-        const res = await window.api.db.query(`
-          SELECT id as document_id, file_name, file_type, vault_path, content, file_size, created_at 
-          FROM documents 
-          WHERE file_name ILIKE $1 OR content ILIKE $1
-          ORDER BY updated_at DESC
-          LIMIT 10
-        `, [`%${s}%`])
+        // Use true Hybrid Search (semantic + keyword + fuzzy)
+        const res = await window.api.db.search(s, 20)
         
         if (isMounted) {
            const rows = res?.rows || (Array.isArray(res) ? res : [])
-           const finalDocs = rows.map(row => ({
-             id: row.document_id,
-             title: row.file_name || 'Untitled',
-             category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
-             vault_path: row.vault_path,
-             content: row.content,
-             file_size: row.file_size,
-             created_at: row.created_at
-           }))
+           
+           // db.search returns chunks. We deduplicate by document_id 
+           // to avoid showing the same file multiple times.
+           const uniqueDocs = []
+           const seenIds = new Set()
+           
+           for (const row of rows) {
+             if (!seenIds.has(row.document_id)) {
+               seenIds.add(row.document_id)
+               uniqueDocs.push({
+                 id: row.document_id,
+                 title: row.file_name || 'Untitled',
+                 category: row.file_type ? row.file_type.toUpperCase() : 'DOCUMENT',
+                 vault_path: row.vault_path,
+                 content: row.content, // Snippet content returned from search
+                 file_size: row.file_size,
+                 created_at: row.created_at
+               })
+             }
+           }
+           
+           const finalDocs = uniqueDocs.slice(0, 10)
            setResults(finalDocs)
            setSelectedIndex(0)
            if (finalDocs.length > 0) {
@@ -184,6 +191,7 @@ const SpotLite = () => {
         selectedPdf={hoveredDoc} 
         fullText={hoveredDoc.content}
         fileExists={true}
+        searchQuery={query}
         onClose={() => {}} 
         onDocumentUpdate={(updatedDoc) => {
           setHoveredDoc(updatedDoc)
@@ -196,9 +204,9 @@ const SpotLite = () => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[12vh] animate-in fade-in duration-150 ease-out" onClick={() => setIsOpen(false)}>
+    <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[10vh] animate-in fade-in duration-150 ease-out" onClick={() => setIsOpen(false)}>
       <div 
-        className="bg-[var(--bg-app)] rounded-[5px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[760px] h-[485px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
+        className="bg-[var(--bg-app)] rounded-[5px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[880px] h-[580px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
         onClick={e => e.stopPropagation()}
       >
         {/* Top Input Bar */}

@@ -4,8 +4,9 @@ import DocumentRenderer from '../search/document/DocumentRenderer'
 
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'
+import Highlight from './Highlight'
 
-const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClose, onDocumentUpdate }) => {
+const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, searchQuery, onClose, onDocumentUpdate }) => {
   const [isReady, setIsReady] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState('')
@@ -14,12 +15,14 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
   const [localContent, setLocalContent] = useState(null)
   const [localTitle, setLocalTitle] = useState(null)
   const [localVaultPath, setLocalVaultPath] = useState(null)
+  const [highlightsRemoved, setHighlightsRemoved] = useState(false)
 
   // Reset local content if a new file is opened
   useEffect(() => {
     setLocalContent(null)
     setLocalTitle(null)
     setLocalVaultPath(null)
+    setHighlightsRemoved(false)
   }, [selectedPdf?.id, selectedPdf?.vault_path])
 
   // SpotLite already handles ESC globally for the modal, so we don't need a local ESC catcher.
@@ -134,7 +137,12 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden animate-in fade-in duration-150 relative">
+    <div 
+      className="w-full h-full flex flex-col overflow-hidden animate-in fade-in duration-150 relative"
+      onClick={() => {
+        if (!highlightsRemoved) setHighlightsRemoved(true)
+      }}
+    >
 
         {/* Titlebar — matches GlobalTitleBar style (small, flat) */}
         <div
@@ -162,7 +170,11 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                     title={localTitle !== null ? localTitle : selectedPdf.title}
                     onDoubleClick={handleEditToggle}
                   >
-                    {localTitle !== null ? localTitle : selectedPdf.title}
+                    <Highlight 
+                      text={localTitle !== null ? localTitle : selectedPdf.title} 
+                      query={searchQuery} 
+                      disabled={highlightsRemoved} 
+                    />
                   </span>
                 )}
               
@@ -237,6 +249,8 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                     content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
                     category={selectedPdf.category}
                     fileTitle={localTitle !== null ? localTitle : selectedPdf.title}
+                    searchQuery={searchQuery}
+                    highlightsRemoved={highlightsRemoved}
                   />
                 ) : (
                   <div className="text-[var(--text-faint)] text-sm mt-10 text-center">No archived content available.</div>
@@ -264,6 +278,8 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, onClo
                     content={localContent !== null ? localContent : (fullText || selectedPdf.content)}
                     category={selectedPdf.category}
                     fileTitle={localTitle !== null ? localTitle : selectedPdf.title}
+                    searchQuery={searchQuery}
+                    highlightsRemoved={highlightsRemoved}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center mt-20 opacity-50">
