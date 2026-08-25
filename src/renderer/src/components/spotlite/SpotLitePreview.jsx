@@ -5,6 +5,7 @@ import DocumentRenderer from '../search/document/DocumentRenderer'
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'
 import Highlight from './Highlight'
+import { cleanMetadata } from '../../utils/useMetadata'
 
 const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, searchQuery, onClose, onDocumentUpdate }) => {
   const [isReady, setIsReady] = useState(false)
@@ -65,7 +66,7 @@ const SpotLitePreview = ({ selectedPdf, fullText, loadingText, fileExists, searc
     if (isEditing) {
       setIsEditing(false)
     } else {
-      setEditContent(localContent !== null ? localContent : (fullText || selectedPdf.content || ''))
+      setEditContent(cleanMetadata(localContent !== null ? localContent : (fullText || selectedPdf.content || '')))
       setEditTitle(localTitle !== null ? localTitle : selectedPdf.title)
       setIsEditing(true)
     }

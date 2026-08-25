@@ -12,6 +12,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
+        '@utils': resolve('src/utils'),
         // Force all packages to use the same React instance.
         // This prevents "Invalid hook call" errors when heavy deps
         // like mermaid bundle their own copy of React.

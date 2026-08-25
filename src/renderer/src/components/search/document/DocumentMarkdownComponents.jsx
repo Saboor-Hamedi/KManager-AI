@@ -6,7 +6,7 @@ const MarkdownImage = lazy(() => import('../MarkdownImage'))
 
 // Pill tag for [[wikilinks]] — renders the page name without the brackets
 export const WikiTag = ({ label }) => (
-  <span className="inline-flex items-center gap-1 mx-0.5 my-0.5 border-0 text-[var(--text-accent)] text-[13.5px] font-semibold font-sans leading-none cursor-default whitespace-nowrap">
+  <span className="inline-flex items-center gap-1 mx-0.5 my-0.5 border-0 text-[var(--text-accent)] text-[13.5px] font-semibold leading-none cursor-default whitespace-nowrap">
     <span className="opacity-60 text-[12px]">◈</span>
     {label}
   </span>
@@ -102,7 +102,7 @@ export const renderCalloutOrParagraph = (children, props, fallbackRenderer) => {
   }
 
   return (
-    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[14.5px] break-words whitespace-pre-wrap text-justify" {...props}>
+    <div className="mb-4 leading-relaxed font-normal text-[var(--text-main)] text-[12px] break-words whitespace-pre-wrap text-justify" {...props}>
       {children}
     </div>
   )
@@ -209,10 +209,10 @@ export const WikiHoverCite = ({ idx, title, displayNum }) => {
 }
 
 export const cleanMarkdownComponents = {
-  h1: ({node, ...props}) => <h1 className="text-[18px] font-bold text-[var(--text-main)] mt-6 mb-3 break-words" {...props} />,
-  h2: ({node, ...props}) => <h2 className="text-[16px] font-bold text-[var(--text-main)] mt-6 mb-3 break-words" {...props} />,
-  h3: ({node, ...props}) => <h3 className="text-[15px] font-semibold text-[var(--text-main)] mt-5 mb-2.5 break-words" {...props} />,
-  h4: ({node, ...props}) => <h4 className="text-[14px] font-semibold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
+  h1: ({node, ...props}) => <h1 className="text-[14px] font-bold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
+  h2: ({node, ...props}) => <h2 className="text-[12px] font-bold text-[var(--text-main)] mt-4 mb-2 break-words" {...props} />,
+  h3: ({node, ...props}) => <h3 className="text-[12px] font-semibold text-[var(--text-main)] mt-3 mb-1.5 break-words" {...props} />,
+  h4: ({node, ...props}) => <h4 className="text-[12px] font-semibold text-[var(--text-main)] mt-2 mb-1 break-words" {...props} />,
   p: ({node, children, ...props}) => renderCalloutOrParagraph(children, props),
   div: ({node, children, ...props}) => {
     if (typeof props.className === 'string' && props.className.includes('leading-relaxed font-normal text-[var(--text-main)]')) {
@@ -220,8 +220,8 @@ export const cleanMarkdownComponents = {
     }
     return <div {...props}>{children}</div>
   },
-  ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
-  ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words" {...props} />,
+  ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[12px] break-words" {...props} />,
+  ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-5 space-y-2.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[12px] break-words" {...props} />,
   li: ({node, ...props}) => <li className="pl-1.5 leading-relaxed" {...props} />,
   img: ({node, src, alt, ...props}) => (
     <Suspense fallback={<div className="w-full h-[200px] my-6 rounded-[5px] bg-[#1e1e1e] animate-pulse ring-1 ring-white/5 flex items-center justify-center text-[12px] text-white/30 tracking-widest uppercase">Loading Image...</div>}>
@@ -307,6 +307,7 @@ export const cleanMarkdownComponents = {
       </code>
     )
   },
+  pre: ({node, children, ...props}) => <>{children}</>,
   blockquote: ({node, ...props}) => (
     <blockquote className="border-l-[0.5px] border-white/20 bg-white/[0.03] pl-4 py-2 pr-4 rounded-[4px] text-[var(--text-muted)] italic my-4 break-words shadow-sm has-[.callout-box]:border-0 has-[.callout-box]:bg-transparent has-[.callout-box]:p-0 has-[.callout-box]:m-0 has-[.callout-box]:shadow-none" {...props} />
   ),

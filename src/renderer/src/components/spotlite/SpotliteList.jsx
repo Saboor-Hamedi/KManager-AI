@@ -34,6 +34,7 @@ export const getFileIcon = (category) => {
 }
 
 import Highlight from './Highlight'
+import { cleanMetadata, stripMarkdown } from '../../utils/useMetadata'
 
 const SpotliteList = ({ results, query, selectedIndex, setSelectedIndex, setHoveredDoc }) => {
   return (
@@ -58,7 +59,7 @@ const SpotliteList = ({ results, query, selectedIndex, setSelectedIndex, setHove
                    </div>
                    {doc.content && (
                      <div className="text-[10px] text-[var(--text-muted)] truncate mt-0.5">
-                       <Highlight text={doc.content.replace(/\s+/g, ' ')} query={query} />
+                       <Highlight text={stripMarkdown(cleanMetadata(doc.content))} query={query} />
                      </div>
                    )}
                </div>

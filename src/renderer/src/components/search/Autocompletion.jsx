@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
+import { cleanMetadata, stripMarkdown } from '../../utils/useMetadata'
 
 export const getSuggestion = (content, queryStr) => {
   if (!content || !queryStr) return { text: '', matchIdx: -1 }
-  const cleanContent = content.replace(/[*_~`>#\[\]\n]/g, ' ')
+  // Strip all metadata, HTML tags, and markdown symbols down to clean plain text
+  const cleanContent = stripMarkdown(cleanMetadata(content))
   const escapedQuery = queryStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   
   // Look for word boundary match first

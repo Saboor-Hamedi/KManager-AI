@@ -215,7 +215,15 @@ export class PDFIngestionService {
     let buffer = ''
 
     for (const section of sections) {
-      const headingTag = section.heading ? `## ${section.heading}\n\n` : ''
+      // If the content already starts with the heading, do not double-stamp it
+      const hasHeading = section.heading && (
+        section.content.startsWith(`# ${section.heading}`) || 
+        section.content.startsWith(`## ${section.heading}`) ||
+        section.content.startsWith(`### ${section.heading}`) ||
+        section.content.startsWith(`#### ${section.heading}`)
+      );
+      
+      const headingTag = (section.heading && !hasHeading) ? `## ${section.heading}\n\n` : ''
       const sectionText = headingTag + section.content.trim()
 
       if (buffer.length + sectionText.length + 2 <= maxChars) {

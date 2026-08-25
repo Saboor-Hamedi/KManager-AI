@@ -1,8 +1,32 @@
-<ul class="list-disc pl-5 my-4 space-y-1.5 marker:text-[var(--text-accent)] font-normal text-[var(--text-main)] text-[14px] break-words"><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">Id:</strong> 5db1f3ae-13ab-4b4e-8fcb-97081c54f3de</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">Title:</strong> pipeline</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">Language:</strong> markdown</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">Tags:</strong> ''</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">Selection:</strong> null</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">IsPinned:</strong> false</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">CustomIcon:</strong> null</li><li class="pl-1 leading-relaxed"><strong class="font-semibold text-[var(--text-main)] opacity-90">Timestamp:</strong> 1785376865892</li></ul>
+<pre class="bg-transparent border border-white/5 p-3.5 rounded-[6px] my-4 overflow-x-auto text-[13px] text-[var(--text-main)] font-mono leading-relaxed whitespace-pre-wrap custom-scrollbar">## What happened
 
 
 
-i have huge amount of data which has metadata 
-i want to handle like @useExtension.js can we create useMetadata.js simple call it and handle so it does not show our meta data
+[Describe the actual behavior the user experienced, in plain language]
+
+## What I expected
 
 
+
+[Describe the expected behavior]
+
+## Steps to reproduce
+
+
+
+
+1. [Concrete, numbered steps a developer can follow]
+
+2. [Use domain terms from the codebase, not internal module names]
+
+3. [Include relevant inputs, flags, or configuration]
+
+## Additional context
+
+
+
+[Any extra observations from the user or from codebase exploration that help frame the issue — e.g. "this only happens when using the Docker layer, not the filesystem layer" — use domain language but don't cite files]</pre>
+
+
+
+have a look it shows like this 

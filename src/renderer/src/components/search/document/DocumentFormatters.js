@@ -73,10 +73,10 @@ export const formatMarkdownText = (text) => {
   // Detect lines that are a pipe or comma-separated list of [[wikilinks]], possibly with a prefix like "**Links**: "
   // Convert them into a vertical stack with controlled tight gaps.
   result = result.replace(
-    /^(?:(\*\*?[^*:]+\*\*?:\s*)|([A-Za-z0-9_-]+:\s*))?(\[\[[^\]]+\]\]\s*(?:(?:\||,)\s*\[\[[^\]]+\]\]\s*)+)$/gm,
+    /^(?:(\*\*?[^*:]+\*\*?:\s*)|([A-Za-z0-9_-]+:\s*))?(\[\s*\[[^\]]+\]\s*\]\s*(?:(?:\||,)\s*\[\s*\[[^\]]+\]\s*\]\s*)+)$/gm,
     (line, boldPrefix, plainPrefix, tagsPart) => {
       const prefix = boldPrefix || plainPrefix || ''
-      const tags = [...tagsPart.matchAll(/\[\[([^\]]+)\]\]/g)].map(m => m[1])
+      const tags = [...tagsPart.matchAll(/\[\s*\[\s*([^\]|]+?)\s*(?:\|\s*[^\]]*?)?\s*\]\s*\]/g)].map(m => m[1])
       
       let out = `<span class="flex flex-col items-start gap-2.5 mt-2 mb-4 w-full">`
       if (prefix) out += `<span class="mb-1 leading-relaxed">${prefix.trim()}</span>`
@@ -86,8 +86,8 @@ export const formatMarkdownText = (text) => {
     }
   )
 
-  // Convert remaining standalone [[wikilinks]] to inline wikilink tokens
-  result = result.replace(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (_, page) => `\`wikilink:${page.trim()}\``)
+  // Convert remaining standalone [[wikilinks]] to inline wikilink tokens (forgiving of spaces like [ [ link ] ])
+  result = result.replace(/\[\s*\[\s*([^\]|]+?)\s*(?:\|\s*[^\]]*?)?\s*\]\s*\]/g, (_, page) => `\`wikilink:${page.trim()}\``)
 
   // Convert [Source X] / [Source X: Title] / [Doc X] / standalone [1] into `sourcecite:` tokens
   // Display numbers are ALWAYS sequential 1, 2, 3... in order of first appearance

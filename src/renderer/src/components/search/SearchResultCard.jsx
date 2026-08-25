@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
 import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus, Edit } from 'lucide-react'
 import HoverWikilink from './HoverWikilink'
 import { useExtension } from '../../../../utils/useExtension'
+import { cleanMetadata } from '../../utils/useMetadata'
 import DocumentRenderer, { cleanMarkdownComponents, remarkMath, rehypeKatex, renderCalloutOrParagraph } from './document/DocumentRenderer'
 import { resolveRelativeMedia, formatMarkdownText } from './document/DocumentFormatters'
 import remarkGfm from 'remark-gfm'
@@ -189,15 +190,17 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
     }
   }
 
-  const [localContent, setLocalContent] = useState(item.content)
+  const [localContent, setLocalContent] = useState(cleanMetadata(item.content))
   const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState(item.content)
+  const [editValue, setEditValue] = useState(cleanMetadata(item.content))
   const [isSaving, setIsSaving] = useState(false)
   const textareaRef = useRef(null)
+  
+  const cleanContent = cleanMetadata(localContent)
 
   useEffect(() => {
-    setLocalContent(item.content)
-    setEditValue(item.content)
+    setLocalContent(cleanMetadata(item.content))
+    setEditValue(cleanMetadata(item.content))
   }, [item.content])
 
   const handleSaveEdit = async () => {
@@ -267,7 +270,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   return (
     <div 
       onClick={handleCardClick} 
-      className={`group relative transition-colors duration-200 overflow-visible py-4 px-2 -mx-2 rounded-[8px] shadow-none ${selected ? 'bg-[var(--bg-active)]/60' : 'bg-transparent'}`}
+      className={`group relative transition-colors duration-200 overflow-visible py-4 rounded-[8px] shadow-none ${selected ? 'bg-[var(--bg-active)]/60' : 'bg-transparent'}`}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
     >
       <div className="flex items-center justify-between gap-4 mb-1.5">
@@ -280,7 +283,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
               <h4 
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug flex items-center flex-wrap"
+                className="text-[16px] font-bold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug flex items-center flex-wrap"
               >
                 <span>{cleanTitle}</span>
               </h4>
@@ -375,7 +378,7 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
 
               return (
                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeRaw, rehypeKatex]} components={highlightComponents}>
-                  {formatMarkdownText(localContent)}
+                  {formatMarkdownText(cleanContent)}
                 </ReactMarkdown>
               )
             })()}

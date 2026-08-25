@@ -5,6 +5,7 @@ import PulseLoader from '../PulseLoader'
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'
 import { useExtension } from '../../../../utils/useExtension'
+import { cleanMetadata } from '../../utils/useMetadata'
 
 const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
@@ -79,7 +80,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
     if (isEditing) {
       setIsEditing(false)
     } else {
-      setEditContent(localContent !== null ? localContent : (fullText || selectedPdf.content || ''))
+      setEditContent(cleanMetadata(localContent !== null ? localContent : (fullText || selectedPdf.content || '')))
       setEditTitle(localTitle !== null ? localTitle : selectedPdf.title)
       setIsEditing(true)
     }

@@ -10,6 +10,7 @@ import { resolveRelativeMedia, formatMarkdownText, formatJsonContent } from './D
 import DocumentAdaptiveCodeBlock from './DocumentAdaptiveCodeBlock'
 import { cleanMarkdownComponents, renderCalloutOrParagraph } from './DocumentMarkdownComponents'
 import Highlight from '../../spotlite/Highlight'
+import { useMetadata } from '../../../utils/useMetadata'
 
 const ReactMarkdown = lazy(() => import('react-markdown'))
 
@@ -71,8 +72,10 @@ const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaul
     return base
   }, [vaultPath, searchQuery, highlightsRemoved])
 
+  const rawSafeContent = typeof content !== 'string' && category !== 'JSON' ? String(content || '') : (content || '')
+  const { cleanContent: safeContent, metadata } = useMetadata(rawSafeContent)
+  
   if (!content) return null
-  const safeContent = typeof content !== 'string' && category !== 'JSON' ? String(content) : content
   const ext = fileTitle ? fileTitle.split('.').pop().toLowerCase() : ''
   
   // Prevent AI Responses (which might have titles like "Explain index.js") from being rendered entirely as code files.

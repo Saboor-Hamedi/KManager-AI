@@ -72,7 +72,16 @@ export async function performHybridSearchService(db, embeddingService, queryText
       ...r,
       similarity: Math.min(1.0, (r.similarity / maxRrf) * 0.3 + (r.cosine_similarity || 0) * 0.7)
     }))
-    return { rows: normalizedRows.slice(0, limit), isFallback: false }
+    
+    // Filter out duplicate documents, keeping only the highest scoring chunk per file
+    const uniqueDocs = new Map()
+    for (const row of normalizedRows) {
+      if (!uniqueDocs.has(row.document_id) || uniqueDocs.get(row.document_id).similarity < row.similarity) {
+        uniqueDocs.set(row.document_id, row)
+      }
+    }
+    
+    return { rows: Array.from(uniqueDocs.values()).slice(0, limit), isFallback: false }
   }
 
   // 2. FALLBACK: Pure vector similarity query across all chunks if FTS leg yielded no exact hits
@@ -92,7 +101,15 @@ export async function performHybridSearchService(db, embeddingService, queryText
 
   if (fallback && fallback.rows && fallback.rows.length > 0) {
     // Already sorted by similarity in SQL
-    return { rows: fallback.rows.slice(0, limit), isFallback: true }
+    // Filter out duplicate documents, keeping only the highest scoring chunk per file
+    const uniqueDocs = new Map()
+    for (const row of fallback.rows) {
+      if (!uniqueDocs.has(row.document_id)) {
+        uniqueDocs.set(row.document_id, row)
+      }
+    }
+    
+    return { rows: Array.from(uniqueDocs.values()).slice(0, limit), isFallback: true }
   }
 
 

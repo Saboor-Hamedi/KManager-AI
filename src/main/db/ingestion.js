@@ -205,15 +205,18 @@ class IngestionService {
 
     const chunks     = this.chunkText(rawText)
     const totalChunks = chunks.length
-    const BATCH_SIZE  = 8 // Optimized batch size for massive C++/ONNX throughput with zero UI lag
+    
+    // Ultra-lightweight background footprint: 
+    // Batch size 1 ensures ONNX returns control instantly.
+    const BATCH_SIZE  = options?.isReembed ? 1 : 2 
 
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       if (isCancelled()) {
         throw new Error('Cancelled by user')
       }
 
-      // Quick 3ms yield so Electron UI event loop processes hovers/clicks smoothly
-      await new Promise(resolve => setTimeout(resolve, 3))
+      // 60ms yield (1-2 full frame drops) to completely free the Electron main thread
+      await new Promise(resolve => setTimeout(resolve, options?.isReembed ? 60 : 25))
 
       const batchChunks = chunks.slice(i, i + BATCH_SIZE)
       const chunkRatio  = i / Math.max(1, chunks.length)
@@ -244,8 +247,8 @@ class IngestionService {
 
       const batchVectors = await embeddingService.embedQuery(batchChunks)
 
-      // Brief 2ms yield before batch insert
-      await new Promise(resolve => setTimeout(resolve, 2))
+      // Another 30ms yield after heavy ONNX inference so the UI doesn't stutter
+      await new Promise(resolve => setTimeout(resolve, options?.isReembed ? 30 : 10))
 
       const values     = []
       const flatParams = []
@@ -255,9 +258,13 @@ class IngestionService {
         const content    = batchChunks[j]
         const vectorStr  = '[' + batchVectors[j].join(',') + ']'
         const tokenCount = content.split(/\s+/).length
-        const sectionMatch = content.match(/^##\s+(.+?)\n\n/)
+        
+        // Extract the section name from the heading (e.g. # Title, ## Subtitle)
+        // This is used for the database 'section' column, but we DO NOT strip it
+        // from the content so the LLM retains the context of what section it's reading.
+        const sectionMatch = content.match(/^(?:#{1,6})\s+(.+?)(?:\n|$)/)
         const section = sectionMatch ? sectionMatch[1].trim() : null
-        const cleanContent = sectionMatch ? content.slice(sectionMatch[0].length) : content
+        const cleanContent = content
 
         values.push(
           `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}::vector, $${paramIndex++}, $${paramIndex++})`
@@ -291,7 +298,9 @@ class IngestionService {
       if (isCancelled()) {
         throw new Error('Cancelled by user')
       }
-      await new Promise(resolve => setTimeout(resolve, 5))
+      
+      // Major 150ms yield between whole documents to flush IPC messages to the UI 
+      await new Promise(resolve => setTimeout(resolve, 150))
 
       const docMeta  = docs[idx]
       const docStart = startTimer()

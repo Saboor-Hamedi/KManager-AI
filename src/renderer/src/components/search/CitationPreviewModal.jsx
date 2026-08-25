@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from 'react'
 import { Copy, Check, ExternalLink, X } from 'lucide-react'
 import DocumentRenderer from './document/DocumentRenderer'
+import { cleanMetadata } from '../../utils/useMetadata'
 
 const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query }) => {
   const [copied, setCopied] = useState(false)
@@ -51,7 +52,7 @@ const CitationPreviewModal = memo(({ previewItem, onClose, onOpenFullFile, query
 
   const handleCopy = () => {
     const textToCopy = showFullContext && fullContextText ? fullContextText : previewItem.content
-    navigator.clipboard.writeText(textToCopy || '')
+    navigator.clipboard.writeText(cleanMetadata(textToCopy || ''))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
