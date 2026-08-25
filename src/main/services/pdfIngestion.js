@@ -159,7 +159,7 @@ export class PDFIngestionService {
    * Detects markdown headings and keeps sections together.
    * Falls back to paragraph splitting for non-markdown content.
    */
-  splitIntoSemanticChunks(text, maxChars = 1500, overlap = 250) {
+  splitIntoSemanticChunks(text, maxChars = 1500, overlap = 0) {
     if (!text) return []
     const cleanText = this.sanitizeText(text)
     if (!cleanText) return []
@@ -252,9 +252,10 @@ export class PDFIngestionService {
   /**
    * Split a large section that exceeds maxChars into sentence-bounded chunks.
    */
-  splitLargeSection(section, maxChars, overlap) {
+  splitLargeSection(section, maxChars, overlap = 0) {
     const text = (section.heading ? `## ${section.heading}\n\n` : '') + section.content.trim()
-    const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text]
+    // Support Arabic (؟, ۔) and CJK (。, ！, ？) sentence boundaries
+    const sentences = text.match(/[^.!?؟۔。！？]+[.!?؟۔。！？]+(\s+|$)/g) || [text]
     const chunks = []
     let subChunk = ''
     const headingTag = section.heading ? `## ${section.heading}\n\n` : ''
@@ -330,7 +331,7 @@ export class PDFIngestionService {
         }
 
         if (currentChunk.length > maxChars) {
-          const sentences = currentChunk.match(/[^.!?]+[.!?]+(\s+|$)/g) || [currentChunk]
+          const sentences = currentChunk.match(/[^.!?؟۔。！？]+[.!?؟۔。！？]+(\s+|$)/g) || [currentChunk]
           let subChunk = ''
           for (const s of sentences) {
             const trimmedS = s.trim()

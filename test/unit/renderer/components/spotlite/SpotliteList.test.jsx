@@ -33,7 +33,7 @@ describe('SpotliteList', () => {
   it('highlights the selected item', () => {
     render(<SpotliteList results={results} selectedIndex={1} setSelectedIndex={vi.fn()} setHoveredDoc={vi.fn()} />)
     const selected = screen.getByText('data.json').closest('div[class*="rounded-md"]')
-    expect(selected.className).toContain('bg-[var(--text-accent)]/10')
+    expect(selected.className).toContain('bg-[var(--bg-active)]')
   })
 })
 

@@ -73,7 +73,8 @@ class IngestionService {
     // ── Auto-Tagging (Automated Knowledge Extraction) ─────────────
     const extractKeywords = (text) => {
       const stopWords = new Set(['the','and','to','of','a','in','that','is','for','on','it','as','with','this','was','at','by','an','be','from','or','are','not','but','which','all','have','they','we','been','has','will','more','their','can','about','if','when','would','there','what','so','up','out','who','into','its','then','them','some','could'])
-      const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+      // Use \p{L} (any letter) and \p{N} (any number) to support all languages
+      const words = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/)
       const freqs = {}
       for (const w of words) {
         if (w.length > 3 && !stopWords.has(w) && isNaN(w)) {

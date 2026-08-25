@@ -4,6 +4,7 @@ import DocumentRenderer from './document/DocumentRenderer'
 import PulseLoader from '../PulseLoader'
 import ScrollToTopButton from '../ScrollToTopButton'
 import FilePathIndicator from '../FilePathIndicator'
+import { useExtension } from '../../../../utils/useExtension'
 
 const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) => {
   const [isReady, setIsReady] = useState(false)
@@ -132,6 +133,8 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
       setIsSaving(false)
     }
   }
+  const displayTitleRaw = localTitle !== null ? localTitle : selectedPdf?.title || ''
+  const { cleanTitle, extension } = useExtension(displayTitleRaw)
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden animate-in fade-in duration-150 relative">
@@ -142,14 +145,15 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
           style={{ height: '32px' }}
         >
           <div className="flex items-center h-full flex-1 min-w-0 pr-4">
-            <button
+            {/* Close Button / Back */}
+            <button 
               onClick={onClose}
-              className="flex items-center shrink-0 gap-1.5 px-3 h-full hover:bg-white/[0.05] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-0 text-[10.5px] font-semibold tracking-wide"
+              className="h-full px-3 flex items-center gap-1.5 text-[10.5px] font-bold tracking-wide text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/[0.05] transition-colors border-0 shrink-0 uppercase"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              Library
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              Back
             </button>
-            <div className="w-px h-3.5 bg-white/[0.08] mx-1 shrink-0" />
+            <div className="w-px h-3.5 bg-white/[0.08] mx-0.5 shrink-0" />
             
             <div className="flex items-center gap-1.5 px-2 min-w-0 flex-1">
               {isEditing ? (
@@ -164,16 +168,17 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
                     }
                   }}
                   disabled={isSaving}
-                  className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-2 h-[22px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
+                  className="text-[11px] font-medium truncate shrink text-[var(--text-main)] bg-white/[0.05] border border-transparent rounded px-1.5 h-[20px] w-full max-w-[300px] focus:outline-none focus:bg-white/[0.08] transition-all flex items-center"
                 />
               ) : (
                 selectedPdf.file_type !== 'ai_response' && selectedPdf.category !== 'AI_RESPONSE' ? (
-                  <span className="text-[11.5px] font-medium truncate shrink text-[var(--text-main)] border border-transparent px-2 h-[22px] flex items-center" title={localTitle !== null ? localTitle : selectedPdf.title}>
-                    {localTitle !== null ? localTitle : selectedPdf.title}
-                  </span>
-                ) : <span className="text-[11.5px] font-medium shrink text-[var(--text-muted)] border border-transparent px-2 h-[22px] flex items-center">AI Response</span>
+                  <div className="flex items-center min-w-0 shrink truncate h-[20px] px-1 border border-transparent" title={displayTitleRaw}>
+                    <span className="text-[11px] font-medium truncate shrink text-[var(--text-main)] leading-none">{cleanTitle}</span>
+                  </div>
+                ) : <span className="text-[11px] font-medium shrink text-[var(--text-muted)] border border-transparent px-1 h-[20px] flex items-center">AI Response</span>
               )}
               
+              <div className="w-px h-2.5 bg-white/[0.1] mx-1 shrink-0" />
               <FilePathIndicator vaultPath={currentVaultPath} />
             </div>
           </div>

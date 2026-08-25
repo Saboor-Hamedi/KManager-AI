@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, memo, Suspense, lazy } from 'react'
 import { Copy, ThumbsUp, ThumbsDown, Check, Eye, X, MessageSquarePlus, Edit } from 'lucide-react'
 import HoverWikilink from './HoverWikilink'
+import { useExtension } from '../../../../utils/useExtension'
 import DocumentRenderer, { cleanMarkdownComponents, remarkMath, rehypeKatex, renderCalloutOrParagraph } from './document/DocumentRenderer'
 import { resolveRelativeMedia, formatMarkdownText } from './document/DocumentFormatters'
 import remarkGfm from 'remark-gfm'
@@ -260,6 +261,8 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
   }
 
   const createdLabel = formatDate(item.created_at)
+  const displayTitleRaw = item.title || item.file_name || ''
+  const { cleanTitle, extension } = useExtension(displayTitleRaw)
 
   return (
     <div 
@@ -271,23 +274,25 @@ const SearchResultCard = memo(({ item, query, handleSelect, onReply, isActiveRep
           <div 
             ref={titleRef}
             onClick={() => onSelect(item)}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
             className="relative flex items-start justify-between gap-3 cursor-pointer min-w-0 flex-1 group/title pr-2"
           >
-            {item.category !== 'AI_RESPONSE' && (
-              <h4 className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug">
-                {item.title || item.file_name}
+            {item.category !== 'AI_RESPONSE' && item.file_type !== 'ai_response' && (
+              <h4 
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                className="text-[14px] font-semibold text-[var(--text-main)] break-words whitespace-normal group-hover/title:text-[var(--text-accent)] transition-colors leading-snug flex items-center flex-wrap"
+              >
+                <span>{cleanTitle}</span>
               </h4>
             )}
             
             {createdLabel && (
-              <span className="text-[9.5px] font-medium tracking-wide uppercase text-[var(--text-muted)] shrink-0">
+              <span className="text-[9.5px] font-medium tracking-wide uppercase text-[var(--text-muted)] shrink-0 mt-0.5">
                 {createdLabel}
               </span>
             )}
 
-            {showWikiHover && item.category !== 'AI_RESPONSE' && (
+            {showWikiHover && item.category !== 'AI_RESPONSE' && item.file_type !== 'ai_response' && (
               <HoverWikilink item={item} setShowWikiHover={setShowWikiHover} onSelect={onSelect} anchorRef={titleRef} />
             )}
           </div>

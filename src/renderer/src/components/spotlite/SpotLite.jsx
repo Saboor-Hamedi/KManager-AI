@@ -10,6 +10,7 @@ const SpotLite = () => {
   const [mode, setMode] = useState('search') // 'search' | 'ai'
   const [query, setQuery] = useState('')
   const [searchTriggerQuery, setSearchTriggerQuery] = useState('')
+  const [searchNonce, setSearchNonce] = useState(0)
   const [results, setResults] = useState([])
   const [hoveredDoc, setHoveredDoc] = useState(null)
   const [isSearching, setIsSearching] = useState(false)
@@ -27,11 +28,18 @@ const SpotLite = () => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setIsOpen(prev => !prev)
+        if (isOpen) {
+          // If already open, clicking Ctrl+K should re-focus the input if it lost focus (e.g. from preview)
+          if (mode === 'search' && document.activeElement !== inputRef.current) {
+            inputRef.current?.focus()
+          } else {
+            setIsOpen(false)
+          }
+        } else {
+          setIsOpen(true)
+        }
       }
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false)
-      }
+      // Note: Escape key logic moved to React onKeyDown to respect event bubbling (modals closing on their own turn)
     }
     const handleOpen = () => setIsOpen(true)
     
@@ -41,7 +49,7 @@ const SpotLite = () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('open-spotlite', handleOpen)
     }
-  }, [isOpen])
+  }, [isOpen, mode])
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +57,7 @@ const SpotLite = () => {
     } else {
       setQuery('')
       setSearchTriggerQuery('')
+      setSearchNonce(0)
       setResults([])
       setHoveredDoc(null)
       setSelectedIndex(0)
@@ -59,6 +68,7 @@ const SpotLite = () => {
   useEffect(() => {
     if (query === '') {
       setSearchTriggerQuery('')
+      setSearchNonce(0)
     }
   }, [query])
 
@@ -100,8 +110,9 @@ const SpotLite = () => {
 
     const timer = setTimeout(async () => {
       try {
-        // Use true Hybrid Search (semantic + keyword + fuzzy)
-        const res = await window.api.db.search(s, 20)
+        // Fetch a larger pool of chunks (80) so that after deduplicating by document_id, 
+        // we actually get a diverse list of different documents rather than just 1 document's chunks.
+        const res = await window.api.db.search(s, 80)
         
         if (isMounted) {
            const rows = res?.rows || (Array.isArray(res) ? res : [])
@@ -140,13 +151,13 @@ const SpotLite = () => {
       } finally {
         if (isMounted) setIsSearching(false)
       }
-    }, 50)
+    }, 60)
 
     return () => {
       isMounted = false
       clearTimeout(timer)
     }
-  }, [searchTriggerQuery, mode, isOpen])
+  }, [searchTriggerQuery, searchNonce, mode, isOpen])
 
   const handleInputKeyDown = (e) => {
     if (mode !== 'search') return
@@ -156,7 +167,8 @@ const SpotLite = () => {
       if (searchTriggerQuery !== query) {
         setSearchTriggerQuery(query)
       } else {
-        // Here we could handle opening the selected document in the main view
+        // Increment nonce to force a re-search even if the query text hasn't changed
+        setSearchNonce(prev => prev + 1)
       }
       return
     }
@@ -204,7 +216,17 @@ const SpotLite = () => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[10vh] animate-in fade-in duration-150 ease-out" onClick={() => setIsOpen(false)}>
+    <div 
+      className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[10vh] animate-in fade-in duration-150 ease-out" 
+      onClick={() => setIsOpen(false)}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation()
+          setIsOpen(false)
+        }
+      }}
+      tabIndex={-1}
+    >
       <div 
         className="bg-[var(--bg-app)] rounded-[5px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/[0.08] relative w-[880px] h-[580px] animate-in zoom-in-[0.98] slide-in-from-top-4 duration-150 ease-out"
         onClick={e => e.stopPropagation()}
@@ -225,7 +247,11 @@ const SpotLite = () => {
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  // Search instantly as the user types (handled smoothly by the 60ms debounce)
+                  setSearchTriggerQuery(e.target.value)
+                }}
                 onKeyDown={handleInputKeyDown}
                 placeholder="Search your library..."
                 className="flex-1 bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none focus:border-0 text-[14px] font-medium text-[var(--text-main)] placeholder-[var(--text-faint)]"

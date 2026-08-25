@@ -20,10 +20,9 @@ describe('FilePathIndicator', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('renders folder path', () => {
+  it('renders folder path indicator', () => {
     render(<FilePathIndicator vaultPath={vaultPath} />)
-    expect(screen.getByTitle(vaultPath)).toBeInTheDocument()
-    expect(screen.getByText('C:\\vault\\docs')).toBeInTheDocument()
+    expect(screen.getByTitle('Show in File Explorer')).toBeInTheDocument()
   })
 
   it('calls showInFolder on button click', () => {

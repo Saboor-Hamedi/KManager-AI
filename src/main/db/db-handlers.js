@@ -123,68 +123,6 @@ export function setupDbHandlers(getMainWindow, safeSendToWindow) {
     }
   })
 
-  ipcMain.handle('db:patch-search', async () => {
-    if (!db || !db.isConnected()) return { success: false, message: 'Database not connected' }
-    try {
-      await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
-      // Create a trigram index for faster fuzzy search
-      await db.query(`CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)`)
-      await db.query(`
-        DROP FUNCTION IF EXISTS search_chunks(text, vector, integer);
-        CREATE OR REPLACE FUNCTION search_chunks(
-          query_text TEXT,
-          query_embedding VECTOR(384),
-          result_limit INT DEFAULT 10
-        )
-        RETURNS TABLE (
-          id UUID, document_id UUID, chunk_index INT, content TEXT,
-          vault_path TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMPTZ, similarity FLOAT, cosine_similarity FLOAT
-        )
-        LANGUAGE plpgsql AS $$
-        BEGIN
-          RETURN QUERY
-          WITH semantic_search AS (
-            SELECT dc.id, RANK() OVER (ORDER BY dc.embedding <=> query_embedding) AS semantic_rank
-            FROM embedding_documents dc
-            WHERE dc.embedding IS NOT NULL
-            ORDER BY dc.embedding <=> query_embedding LIMIT 100
-          ),
-          keyword_search AS (
-            SELECT dc.id, RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC) AS keyword_rank
-            FROM embedding_documents dc
-            WHERE dc.fts_vector @@ plainto_tsquery('simple', query_text)
-            ORDER BY ts_rank_cd(dc.fts_vector, plainto_tsquery('simple', query_text)) DESC LIMIT 100
-          ),
-          fuzzy_search AS (
-            SELECT dc.id, RANK() OVER (ORDER BY similarity(dc.content, query_text) DESC) AS fuzzy_rank
-            FROM embedding_documents dc
-            WHERE similarity(dc.content, query_text) > 0.08
-            ORDER BY similarity(dc.content, query_text) DESC LIMIT 100
-          )
-          SELECT dc.id, dc.document_id, dc.chunk_index, 
-            (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
-            d.vault_path, d.file_name, d.file_type, d.created_at,
-            (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
-             COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
-             COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity,
-            (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity
-          FROM embedding_documents dc
-          JOIN documents d ON d.id = dc.document_id
-          LEFT JOIN semantic_search ss ON ss.id = dc.id
-          LEFT JOIN keyword_search ks ON ks.id = dc.id
-          LEFT JOIN fuzzy_search fs ON fs.id = dc.id
-          WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL OR fs.id IS NOT NULL
-          ORDER BY similarity DESC LIMIT result_limit;
-        END;
-        $$;
-      `)
-      return { success: true }
-    } catch (err) {
-      console.error('db:patch-search error:', err)
-      return { success: false, message: err.message }
-    }
-  })
-
   ipcMain.handle('db:ingest-ai-response', async (_event, text, title) => {
     return await ingestionService.ingestAIResponse(text, title)
   })
@@ -257,6 +195,9 @@ export function setupDbHandlers(getMainWindow, safeSendToWindow) {
       // Auto-initialize schema idempotently on connect
       ;(async () => {
         try {
+          // Pre-warm embedding model in the background (Suggestion #13)
+          embeddingService.init().catch(console.error)
+
           const isProd = app.isPackaged
           let finalPath = isProd 
             ? path.join(process.resourcesPath, 'schema.sql')
@@ -289,70 +230,10 @@ export function setupDbHandlers(getMainWindow, safeSendToWindow) {
           await db.query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
           await db.query('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch')
           await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops)')
-          // Replace search_chunks with the full 3-leg hybrid: semantic + FTS + trigram fuzzy
-          await db.query(`DROP FUNCTION IF EXISTS search_chunks(text, vector, integer)`)
-          await db.query(`DROP FUNCTION IF EXISTS search_chunks(text, vector, integer, text, integer)`)
-          await db.query(`
-            CREATE OR REPLACE FUNCTION search_chunks(
-              query_text TEXT,
-              query_embedding VECTOR(384),
-              result_limit INT DEFAULT 10,
-              p_file_type TEXT DEFAULT NULL,
-              p_year INT DEFAULT NULL
-            )
-            RETURNS TABLE (
-              id UUID, document_id UUID, chunk_index INT, content TEXT,
-              vault_path TEXT, file_name TEXT, file_type TEXT, file_size BIGINT, created_at TIMESTAMPTZ, similarity FLOAT, cosine_similarity FLOAT
-            )
-            LANGUAGE plpgsql AS $func$
-            BEGIN
-              RETURN QUERY
-              WITH filtered_docs AS (
-                SELECT d.id FROM documents d
-                WHERE (p_file_type IS NULL OR d.file_type = p_file_type)
-                  AND (p_year IS NULL OR EXTRACT(YEAR FROM d.created_at) = p_year)
-              ),
-              semantic_search AS (
-                SELECT dc.id,
-                  RANK() OVER (ORDER BY dc.embedding <=> query_embedding) AS semantic_rank
-                FROM embedding_documents dc
-                JOIN filtered_docs fd ON fd.id = dc.document_id
-                WHERE dc.embedding IS NOT NULL
-                ORDER BY dc.embedding <=> query_embedding LIMIT 100
-              ),
-              keyword_search AS (
-                SELECT dc.id,
-                  RANK() OVER (ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC) AS keyword_rank
-                FROM embedding_documents dc
-                JOIN filtered_docs fd ON fd.id = dc.document_id
-                WHERE dc.fts_vector @@ websearch_to_tsquery('simple', query_text)
-                ORDER BY ts_rank_cd(dc.fts_vector, websearch_to_tsquery('simple', query_text)) DESC LIMIT 100
-              ),
-              fuzzy_search AS (
-                SELECT dc.id,
-                  RANK() OVER (ORDER BY word_similarity(query_text, dc.content) DESC) AS fuzzy_rank
-                FROM embedding_documents dc
-                JOIN filtered_docs fd ON fd.id = dc.document_id
-                WHERE word_similarity(query_text, dc.content) > 0.12
-                ORDER BY word_similarity(query_text, dc.content) DESC LIMIT 100
-              )
-              SELECT dc.id, dc.document_id, dc.chunk_index,
-                (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
-                d.vault_path, d.file_name, d.file_type, d.file_size, d.created_at,
-                (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
-                 COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
-                 COALESCE(1.5 / (60 + fs.fuzzy_rank), 0.0))::FLOAT AS similarity,
-                (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity
-              FROM embedding_documents dc
-              JOIN documents d ON d.id = dc.document_id
-              LEFT JOIN semantic_search ss ON ss.id = dc.id
-              LEFT JOIN keyword_search ks ON ks.id = dc.id
-              LEFT JOIN fuzzy_search fs ON fs.id = dc.id
-              WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL OR fs.id IS NOT NULL
-              ORDER BY similarity DESC LIMIT result_limit;
-            END;
-            $func$;
-          `)
+          // Add HNSW index for lightning fast vector searches
+          await db.query('CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw ON embedding_documents USING hnsw (embedding vector_cosine_ops)')
+
+          // search_chunks function is now strictly maintained in schema.sql (Suggestion #2)
         } catch (_err) {
           // Non-fatal — works on standard postgres without superuser if extensions already installed
         }
@@ -402,7 +283,8 @@ export function setupDbHandlers(getMainWindow, safeSendToWindow) {
   ipcMain.handle('db:search', async (_event, queryText, limit = 10) => {
     try {
       const start = Date.now()
-      const result = await performHybridSearch(db, queryText, limit)
+      const clampedLimit = Math.max(1, Math.min(limit, 100))
+      const result = await performHybridSearch(db, queryText, clampedLimit)
       const { rows, isFallback, queryRefined, refinedQuery, lowInfoQuery } = result
       const latency = Date.now() - start
       const topSim = rows.length > 0 ? rows[0].similarity || 0 : 0
@@ -431,9 +313,10 @@ export function setupDbHandlers(getMainWindow, safeSendToWindow) {
           d.vault_path
         FROM embedding_documents dc
         JOIN documents d ON dc.document_id = d.id
-        WHERE dc.content ILIKE $1
+        WHERE word_similarity($1, dc.content) > 0.3
+        ORDER BY word_similarity($1, dc.content) DESC
         LIMIT $2
-      `, [`%${query}%`, limit])
+      `, [query, limit])
       
       return result.rows
     } catch (err) {

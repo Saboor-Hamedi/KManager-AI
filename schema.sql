@@ -93,18 +93,12 @@ CREATE INDEX IF NOT EXISTS idx_documents_updated ON documents(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chunks_document   ON embedding_documents(document_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_index      ON embedding_documents(document_id, chunk_index);
 
--- Full text search index
+-- HNSW index for lightning fast vector searches
+CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw ON embedding_documents USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_chunks_fts ON embedding_documents USING GIN(fts_vector);
 
 -- Trigram index for fuzzy / typo-tolerant search
 CREATE INDEX IF NOT EXISTS idx_chunks_content_trgm ON embedding_documents USING GIN(content gin_trgm_ops);
-
--- pgvector: IVFFlat index for approximate nearest-neighbour search
--- (lists = 100 is a sensible default for up to ~1M vectors; tune as needed)
-CREATE INDEX IF NOT EXISTS idx_chunks_embedding
-  ON embedding_documents
-  USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);
 
 -- ============================================================================
 -- HELPER: delete_document(vault_path TEXT)
@@ -154,6 +148,7 @@ $$;
 -- Results are merged via Reciprocal Rank Fusion (RRF).
 -- ============================================================================
 DROP FUNCTION IF EXISTS search_chunks(text, vector, integer);
+DROP FUNCTION IF EXISTS search_chunks(text, vector, integer, text, integer);
 
 CREATE OR REPLACE FUNCTION search_chunks(
   query_text TEXT,
@@ -173,7 +168,10 @@ RETURNS TABLE (
   file_size     BIGINT,
   created_at    TIMESTAMPTZ,
   similarity    FLOAT,
-  cosine_similarity FLOAT
+  cosine_similarity FLOAT,
+  semantic_rank BIGINT,
+  keyword_rank  BIGINT,
+  fuzzy_rank    BIGINT
 )
 LANGUAGE plpgsql
 AS $func$
@@ -214,27 +212,33 @@ BEGIN
     ORDER BY word_similarity(query_text, dc.content) DESC
     LIMIT 100
   )
-  SELECT
-    dc.id,
-    dc.document_id,
-    dc.chunk_index,
-    (SELECT string_agg(c.content, E'\n\n' ORDER BY c.chunk_index) FROM embedding_documents c WHERE c.document_id = dc.document_id AND c.chunk_index BETWEEN dc.chunk_index - 1 AND dc.chunk_index + 1) AS content,
-    d.vault_path,
-    d.file_name,
-    d.file_type,
-    d.file_size,
-    d.created_at,
-    -- RRF: semantic (1x) + exact keyword (2x) + fuzzy (1.5x)
-    (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
-     COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
-     COALESCE(1.5 / (60 + fs.fuzzy_rank),   0.0))::FLOAT AS similarity,
-    (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity
-  FROM embedding_documents dc
-  JOIN documents d ON d.id = dc.document_id
-  LEFT JOIN semantic_search ss ON ss.id = dc.id
-  LEFT JOIN keyword_search  ks ON ks.id = dc.id
-  LEFT JOIN fuzzy_search    fs ON fs.id = dc.id
-  WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL OR fs.id IS NOT NULL
+  SELECT * FROM (
+    SELECT DISTINCT ON (dc.document_id)
+      dc.id,
+      dc.document_id,
+      dc.chunk_index,
+      dc.content AS content,
+      d.vault_path,
+      d.file_name,
+      d.file_type,
+      d.file_size,
+      d.created_at,
+      -- RRF: semantic (1x) + exact keyword (2x) + fuzzy (1.5x)
+      (COALESCE(1.0 / (60 + ss.semantic_rank), 0.0) +
+       COALESCE(2.0 / (60 + ks.keyword_rank), 0.0) +
+       COALESCE(1.5 / (60 + fs.fuzzy_rank),   0.0))::FLOAT AS similarity,
+      (1 - (dc.embedding <=> query_embedding))::FLOAT AS cosine_similarity,
+      ss.semantic_rank,
+      ks.keyword_rank,
+      fs.fuzzy_rank
+    FROM embedding_documents dc
+    JOIN documents d ON d.id = dc.document_id
+    LEFT JOIN semantic_search ss ON ss.id = dc.id
+    LEFT JOIN keyword_search  ks ON ks.id = dc.id
+    LEFT JOIN fuzzy_search    fs ON fs.id = dc.id
+    WHERE ss.id IS NOT NULL OR ks.id IS NOT NULL OR fs.id IS NOT NULL
+    ORDER BY dc.document_id, similarity DESC
+  ) subquery
   ORDER BY similarity DESC
   LIMIT result_limit;
 END;

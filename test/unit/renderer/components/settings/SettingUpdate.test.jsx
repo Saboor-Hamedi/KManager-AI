@@ -67,7 +67,7 @@ describe('SettingUpdate', () => {
     }
     await act(async () => render(<SettingUpdate />))
     await vi.waitFor(() => {
-      expect(screen.getByText('KManager AI is up to date')).toBeInTheDocument()
+      expect(screen.getByText('Up to date')).toBeInTheDocument()
     }, { timeout: 2000 })
   })
 
@@ -78,7 +78,7 @@ describe('SettingUpdate', () => {
     }
     await act(async () => render(<SettingUpdate />))
     await vi.waitFor(() => {
-      expect(screen.getByText('Update v1.0.6 available')).toBeInTheDocument()
+      expect(screen.getByText('Download')).toBeInTheDocument()
     }, { timeout: 2000 })
   })
 
@@ -89,8 +89,9 @@ describe('SettingUpdate', () => {
     }
     await act(async () => render(<SettingUpdate />))
     await vi.waitFor(() => {
-      expect(screen.getByText('v1.0.5 → v1.0.6')).toBeInTheDocument()
+      expect(screen.getByText('→ v1.0.6')).toBeInTheDocument()
     }, { timeout: 2000 })
+    expect(screen.getByText('v1.0.5')).toBeInTheDocument()
   })
 
   it('calls download when Download clicked', async () => {
@@ -149,21 +150,21 @@ describe('SettingUpdate', () => {
     }
     await act(async () => render(<SettingUpdate />))
     await vi.waitFor(() => {
-      expect(screen.getByText('Update check failed')).toBeInTheDocument()
+      expect(screen.getByText('Network error')).toBeInTheDocument()
     })
-    expect(screen.getByText('Network error')).toBeInTheDocument()
+    expect(screen.getByText('Retry')).toBeInTheDocument()
   })
 
-  it('shows Try again button on error', async () => {
+  it('retries download when Retry clicked on error', async () => {
     globalThis.window.api.update.onUpdateError = (cb) => {
       setTimeout(() => cb('err'), 10)
       return () => {}
     }
     await act(async () => render(<SettingUpdate />))
     await vi.waitFor(() => {
-      expect(screen.getByText('Try again')).toBeInTheDocument()
+      expect(screen.getByText('Retry')).toBeInTheDocument()
     })
-    fireEvent.click(screen.getByText('Try again'))
-    expect(mockCheck).toHaveBeenCalled()
+    fireEvent.click(screen.getByText('Retry'))
+    expect(mockDownload).toHaveBeenCalled()
   })
 })

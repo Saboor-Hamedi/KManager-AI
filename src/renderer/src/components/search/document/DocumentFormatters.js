@@ -70,13 +70,19 @@ export const formatMarkdownText = (text) => {
     return `![Image](${match})`
   })
 
-  // Detect lines that are ONLY a pipe-separated list of [[wikilinks]] (common in Obsidian
-  // note metadata like "wikilinks" fields). Render them as a tag cloud paragraph instead.
+  // Detect lines that are a pipe or comma-separated list of [[wikilinks]], possibly with a prefix like "**Links**: "
+  // Convert them into a vertical stack with controlled tight gaps.
   result = result.replace(
-    /^(\s*\|\s*\[\[[^\]]+\]\]\s*)+\|?\s*$/gm,
-    (line) => {
-      const tags = [...line.matchAll(/\[\[([^\]]+)\]\]/g)].map(m => m[1])
-      return tags.map(t => `\`wikilink:${t}\``).join(' ')
+    /^(?:(\*\*?[^*:]+\*\*?:\s*)|([A-Za-z0-9_-]+:\s*))?(\[\[[^\]]+\]\]\s*(?:(?:\||,)\s*\[\[[^\]]+\]\]\s*)+)$/gm,
+    (line, boldPrefix, plainPrefix, tagsPart) => {
+      const prefix = boldPrefix || plainPrefix || ''
+      const tags = [...tagsPart.matchAll(/\[\[([^\]]+)\]\]/g)].map(m => m[1])
+      
+      let out = `<span class="flex flex-col items-start gap-[2px] mt-1.5 mb-3 w-full">`
+      if (prefix) out += `<span class="mb-0.5">${prefix.trim()}</span>`
+      out += tags.map(t => `<span class="leading-none">\`wikilink:${t}\`</span>`).join('')
+      out += `</span>`
+      return out
     }
   )
 

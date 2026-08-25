@@ -62,9 +62,10 @@ describe('SpotLite', () => {
 
   it('closes on Escape', async () => {
     await openSpotlite()
-    expect(screen.getByPlaceholderText('Search your library...')).toBeInTheDocument()
+    const input = screen.getByPlaceholderText('Search your library...')
+    expect(input).toBeInTheDocument()
     await act(async () => {
-      fireEvent.keyDown(window, { key: 'Escape' })
+      fireEvent.keyDown(input, { key: 'Escape' })
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(screen.queryByPlaceholderText('Search your library...')).not.toBeInTheDocument()

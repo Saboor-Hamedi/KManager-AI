@@ -226,7 +226,14 @@ const MermaidDiagram = memo(({ chart }) => {
         }
       } catch (err) {
         console.warn('[MermaidDiagram] render error:', err)
-        if (isMounted) setError(err?.message || 'Failed to render diagram')
+        let errMsg = err?.message || 'Failed to render diagram'
+        
+        // Provide a helpful UI hint for common subgraph direction syntax errors
+        if (errMsg.includes("got 'NODE_STRING'") && sanitizedChart.toLowerCase().includes('direction')) {
+          errMsg += '\n\n💡 HINT: This parse error usually happens when you place a "direction TB" or "direction LR" command inside a subgraph while using the legacy "graph" syntax. To fix this, simply delete the "direction" commands from inside your subgraphs, or change the first line of your diagram to use "flowchart" instead of "graph".'
+        }
+        
+        if (isMounted) setError(errMsg)
       }
     }
 
@@ -290,7 +297,7 @@ const MermaidDiagram = memo(({ chart }) => {
         </div>
 
         {/* Content Area */}
-        <div className="relative min-h-[160px] w-full overflow-hidden flex items-center justify-center bg-transparent">
+        <div className="relative min-h-[210px] w-full overflow-hidden flex items-center justify-center bg-transparent">
           {showRaw || error ? (
             <div className="w-full p-4 overflow-auto max-h-[500px] bg-transparent [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {error && (
@@ -306,7 +313,7 @@ const MermaidDiagram = memo(({ chart }) => {
           ) : svgContent ? (
             <div 
               ref={containerRef}
-              className="w-full h-full min-h-[200px] flex justify-center items-center relative cursor-move"
+              className="w-full h-full min-h-[250px] flex justify-center items-center relative cursor-move"
               onMouseDown={(e) => {
                 if (e.target.closest('button')) return
                 isDragging.current = true

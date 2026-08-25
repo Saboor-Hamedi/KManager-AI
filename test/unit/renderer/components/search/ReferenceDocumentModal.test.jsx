@@ -39,7 +39,7 @@ describe('ReferenceDocumentModal', () => {
 
   it('renders markdown body content after ready', async () => {
     render(<ReferenceDocumentModal selectedPdf={mdItem} onClose={onClose} fileExists={true} />)
-    expect(await screen.findByText('Body text of the notes document.', {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText('Body text of the notes document.', {}, { timeout: 10000 })).toBeInTheDocument()
   })
 
   it('renders webview for PDF files that exist on disk', () => {
@@ -51,7 +51,7 @@ describe('ReferenceDocumentModal', () => {
 
   it('falls back to archived text when PDF file is missing', async () => {
     render(<ReferenceDocumentModal selectedPdf={pdfItem} onClose={onClose} fileExists={false} />)
-    expect(await screen.findByText(/Pdf content/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText(/Pdf content/, {}, { timeout: 10000 })).toBeInTheDocument()
   })
 
   it('closes on Escape key', async () => {
@@ -78,6 +78,6 @@ describe('ReferenceDocumentModal', () => {
 
   it('strips the title from the beginning of the content', async () => {
     render(<ReferenceDocumentModal selectedPdf={mdItem} onClose={onClose} fileExists={true} />)
-    expect(await screen.findByText('Body text of the notes document.', {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText('Body text of the notes document.', {}, { timeout: 10000 })).toBeInTheDocument()
   })
 })

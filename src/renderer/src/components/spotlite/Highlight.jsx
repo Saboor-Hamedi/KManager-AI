@@ -11,7 +11,7 @@ const STOP_WORDS = new Set([
 ])
 
 const Highlight = ({ text, query, disabled }) => {
-  if (disabled || !query || !text) return <span>{text || ''}</span>
+  if (disabled || !query || !text) return <>{text || ''}</>
   
   try {
     const exactPhrase = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -28,23 +28,23 @@ const Highlight = ({ text, query, disabled }) => {
     }
     patterns.push(...words)
     
-    if (patterns.length === 0) return <span>{text}</span>
+    if (patterns.length === 0) return <>{text}</>
 
     const pattern = new RegExp(`(${patterns.join('|')})`, 'gi')
     const matchPattern = new RegExp(`^(${patterns.join('|')})$`, 'i')
     const parts = text.split(pattern)
     
     return (
-      <span>
+      <>
         {parts.map((part, i) => 
           matchPattern.test(part)
             ? <span key={i} className="text-[var(--text-accent)]">{part}</span> 
-            : <span key={i}>{part}</span>
+            : <React.Fragment key={i}>{part}</React.Fragment>
         )}
-      </span>
+      </>
     )
   } catch (e) {
-    return <span>{text}</span>
+    return <>{text}</>
   }
 }
 

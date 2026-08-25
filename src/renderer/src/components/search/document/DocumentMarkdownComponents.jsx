@@ -308,7 +308,7 @@ export const cleanMarkdownComponents = {
     )
   },
   blockquote: ({node, ...props}) => (
-    <blockquote className="border-l-[3.5px] border-[var(--text-accent)] bg-[var(--text-accent)]/10 pl-4 py-2 pr-4 rounded-r-[4px] text-[var(--text-main)] italic my-4 break-words shadow-sm has-[.callout-box]:border-0 has-[.callout-box]:bg-transparent has-[.callout-box]:p-0 has-[.callout-box]:m-0 has-[.callout-box]:shadow-none" {...props} />
+    <blockquote className="border-l-[0.5px] border-white/20 bg-white/[0.03] pl-4 py-2 pr-4 rounded-[4px] text-[var(--text-muted)] italic my-4 break-words shadow-sm has-[.callout-box]:border-0 has-[.callout-box]:bg-transparent has-[.callout-box]:p-0 has-[.callout-box]:m-0 has-[.callout-box]:shadow-none" {...props} />
   ),
   a: ({node, href, children, ...props}) => {
     if (href && href.startsWith('#')) {
