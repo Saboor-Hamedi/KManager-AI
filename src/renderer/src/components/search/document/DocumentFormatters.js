@@ -78,9 +78,9 @@ export const formatMarkdownText = (text) => {
       const prefix = boldPrefix || plainPrefix || ''
       const tags = [...tagsPart.matchAll(/\[\[([^\]]+)\]\]/g)].map(m => m[1])
       
-      let out = `<span class="flex flex-col items-start gap-[2px] mt-1.5 mb-3 w-full">`
-      if (prefix) out += `<span class="mb-0.5">${prefix.trim()}</span>`
-      out += tags.map(t => `<span class="leading-none">\`wikilink:${t}\`</span>`).join('')
+      let out = `<span class="flex flex-col items-start gap-2.5 mt-2 mb-4 w-full">`
+      if (prefix) out += `<span class="mb-1 leading-relaxed">${prefix.trim()}</span>`
+      out += tags.map(t => `<span class="leading-relaxed">\`wikilink:${t}\`</span>`).join('')
       out += `</span>`
       return out
     }

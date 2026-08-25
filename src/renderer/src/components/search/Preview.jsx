@@ -44,7 +44,14 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
   useEffect(() => {
     if (selectedPdf) {
       setIsReady(false)
-      const t = setTimeout(() => setIsReady(true), 50)
+      // Allow entrance animations (e.g. Spotlite opening) to finish completely (150ms)
+      // before we begin the heavy, synchronous markdown parsing.
+      // startTransition marks the heavy render as interruptible in React 18.
+      const t = setTimeout(() => {
+        React.startTransition(() => {
+          setIsReady(true)
+        })
+      }, 150)
       return () => clearTimeout(t)
     }
   }, [selectedPdf])
@@ -237,7 +244,7 @@ const Preview = ({ selectedPdf, fullText, loadingText, onClose, fileExists }) =>
           
           {/* Shared Loader Overlay (Visible while loadingText or !isReady is true) */}
           {(loadingText || !isReady) && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-app)]/95 animate-in fade-in duration-300">
               <PulseLoader text="Loading Document" size="md" />
             </div>
           )}

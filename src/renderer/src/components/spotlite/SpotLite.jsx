@@ -4,6 +4,7 @@ import SpotLitePreview from './SpotLitePreview'
 import ChatBot from '../ChatBot'
 import PulseLoader from '../PulseLoader'
 import SpotliteList from './SpotliteList'
+import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
 
 const SpotLite = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -17,6 +18,13 @@ const SpotLite = () => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [isPending, startTransition] = useTransition()
   const inputRef = useRef(null)
+
+  useKeyboardShortcuts({
+    onEscape: isOpen ? () => {
+      setIsOpen(false)
+      return true
+    } : null
+  })
 
   const handleModeSwitch = (newMode) => {
     startTransition(() => {
@@ -39,14 +47,13 @@ const SpotLite = () => {
           setIsOpen(true)
         }
       }
-      // Note: Escape key logic moved to React onKeyDown to respect event bubbling (modals closing on their own turn)
     }
     const handleOpen = () => setIsOpen(true)
     
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
     window.addEventListener('open-spotlite', handleOpen)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keydown', handleKeyDown, { capture: true })
       window.removeEventListener('open-spotlite', handleOpen)
     }
   }, [isOpen, mode])
@@ -219,12 +226,6 @@ const SpotLite = () => {
     <div 
       className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[10vh] animate-in fade-in duration-150 ease-out" 
       onClick={() => setIsOpen(false)}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation()
-          setIsOpen(false)
-        }
-      }}
       tabIndex={-1}
     >
       <div 

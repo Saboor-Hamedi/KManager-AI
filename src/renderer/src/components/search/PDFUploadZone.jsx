@@ -307,7 +307,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
         onConfirm={proceedQueue}
         onCancel={() => setConfirmQueue(null)}
       />
-      <div id="pdf-upload-zone-container" className="w-full h-full relative z-30 transition-all duration-200">
+      <div id="pdf-upload-zone-container" className="w-full h-full z-30 transition-all duration-200">
       {/* Flat Top Ingestion Bar - Always shows exact counts whether idle or busy */}
       <div className="w-full h-full flex items-center justify-between px-2 border-0 text-[12px] font-medium text-[var(--text-muted)] select-none transition-all shadow-none">
         <div className="flex items-center space-x-2.5 overflow-hidden pointer-events-none">
@@ -358,7 +358,7 @@ const PDFUploadZone = ({ onIngestComplete }) => {
 
       {/* Expanded Drop Zone & Queue Drawer - Structured Header/Body/Footer Layout */}
       {isExpanded && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-full max-w-[700px] mt-1.5 rounded-[6px] bg-[var(--bg-card)] border border-white/[0.05] shadow-2xl overflow-hidden animate-in fade-in duration-75">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl mt-1.5 rounded-[6px] bg-[var(--bg-card)] border border-white/[0.05] shadow-2xl overflow-hidden animate-in fade-in duration-75">
           
           {/* 1. HEADER: Progress Overview & File Statistics */}
           <div className="p-3.5 bg-[var(--bg-app)]/90 border-b border-white/[0.05] space-y-2.5">
