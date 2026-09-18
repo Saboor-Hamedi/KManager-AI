@@ -1,4 +1,5 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense } from 'react'
+import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -11,8 +12,6 @@ import DocumentAdaptiveCodeBlock from './DocumentAdaptiveCodeBlock'
 import { cleanMarkdownComponents, renderCalloutOrParagraph } from './DocumentMarkdownComponents'
 import Highlight from '../../spotlite/Highlight'
 import { useMetadata } from '../../../utils/useMetadata'
-
-const ReactMarkdown = lazy(() => import('react-markdown'))
 
 const DocumentRenderer = ({ content, category = 'DOCUMENT', fileTitle = '', vaultPath = '', results = null, className, maxLength = 150000, searchQuery = '', highlightsRemoved = false }) => {
   React.useEffect(() => {

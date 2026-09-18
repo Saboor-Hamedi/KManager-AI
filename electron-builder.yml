@@ -5,9 +5,19 @@ directories:
   buildResources: build
 files:
   - '!**/.vscode/*'
-  - '!src/*'
+  - '!src/**'
+  - '!test/**'
+  - '!test-results/**'
+  - '!scripts/**'
+  - '!assets/**'
+  - '!doc/**'
+  - '!brain/**'
+  - '!ui/**'
+  - '!search/**'
+  - '!system/**'
+  - '!*.{md,sql,py,db}'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,guide.md,error.md,suggestions.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!**/locales/*.pak'
   - '!**/swiftshader/**'
@@ -82,6 +92,10 @@ extraResources:
     to: schema.sql
   - from: brain
     to: brain
+    filter:
+      - "**/*"
+  - from: doc
+    to: doc
     filter:
       - "**/*"
 publish:

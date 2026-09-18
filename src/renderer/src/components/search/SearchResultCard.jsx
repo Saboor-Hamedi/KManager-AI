@@ -10,8 +10,7 @@ import rehypeRaw from 'rehype-raw'
 import Wrapper from '../code/Wrapper'
 import AutoResizeTextarea from './AutoResizeTextarea'
 import '../../assets/horizontal.css'
-
-const ReactMarkdown = lazy(() => import('react-markdown'))
+import ReactMarkdown from 'react-markdown'
 
 /**
  * Highlight query keywords inside a plain text string.

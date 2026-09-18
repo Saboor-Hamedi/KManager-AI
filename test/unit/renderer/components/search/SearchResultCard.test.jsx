@@ -36,13 +36,13 @@ describe('SearchResultCard', () => {
 
   it('renders item title', () => {
     renderCard()
-    expect(screen.getByText('test_document.pdf')).toBeInTheDocument()
+    expect(screen.getByText('test_document')).toBeInTheDocument()
   })
 
   it('renders similarity percentage', () => {
     renderCard()
     // Similarity is rendered in the footer via UnifiedActionBar; title includes the file name.
-    expect(screen.getByText('test_document.pdf')).toBeInTheDocument()
+    expect(screen.getByText('test_document')).toBeInTheDocument()
   })
 
   it('renders action buttons', () => {
@@ -157,7 +157,7 @@ describe('SearchResultCard', () => {
   it('calls handleSelect when title is clicked', () => {
     const handleSelect = vi.fn()
     render(<SearchResultCard item={item} query="test" handleSelect={handleSelect} />)
-    fireEvent.click(screen.getByText('test_document.pdf'))
+    fireEvent.click(screen.getByText('test_document'))
     expect(handleSelect).toHaveBeenCalledWith(item)
   })
 

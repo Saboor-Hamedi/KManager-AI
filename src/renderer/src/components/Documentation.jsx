@@ -5,12 +5,15 @@ import DocSidebar from './DocSidebar'
 import DocHeader from './DocHeader'
 
 // Statically bundle documentation markdown directly into the application package
-const docModules = import.meta.glob('../../../../brain/**/*.md', { query: '?raw', import: 'default', eager: true })
+const docModules = import.meta.glob([
+  '../../../../doc/**/*.md',
+  '../../../../brain/**/*.md'
+], { query: '?raw', import: 'default', eager: true })
 
 function buildDocs() {
   const categories = {}
   for (const [modulePath, rawContent] of Object.entries(docModules)) {
-    const normalized = modulePath.replace(/\\/g, '/').replace(/^.*\/brain\//, '')
+    const normalized = modulePath.replace(/\\/g, '/').replace(/^.*?\/(?:doc|brain)\//i, '')
     const parts = normalized.split('/')
     
     let category = 'GENERAL'
@@ -20,16 +23,41 @@ function buildDocs() {
       filename = parts[parts.length - 1]
     }
 
-    const title = filename.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    const titleMap = {
+      'ai.md': 'AI Integration',
+      'api.md': 'REST API',
+      'cli.md': 'CLI Guide',
+      'ltr.md': 'Learning to Rank (LTR)',
+      'rrf.md': 'Reciprocal Rank Fusion (RRF)',
+      'eval.md': 'Evaluation & Benchmarks',
+      'hybrid.md': 'Hybrid Search',
+      'keyword.md': 'Keyword Search (BM25)',
+      'semantic.md': 'Semantic Vector Search',
+      'scheme.md': 'Database Schema',
+      'system.md': 'System Architecture',
+      'text.md': 'Text Processing',
+      'flask.md': 'Flask Web UI',
+      'ingestion.md': 'Ingestion Pipeline',
+      'introduction.md': 'Introduction',
+      'architecture.md': 'Architecture Overview'
+    }
+
+    const title = titleMap[filename.toLowerCase()] || 
+      filename.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
     if (!categories[category]) {
       categories[category] = []
     }
-    categories[category].push({
-      title,
-      path: normalized,
-      content: rawContent,
-      type: 'md'
-    })
+
+    const existing = categories[category].find(d => d.title.toLowerCase() === title.toLowerCase())
+    if (!existing) {
+      categories[category].push({
+        title,
+        path: normalized,
+        content: rawContent,
+        type: 'md'
+      })
+    }
   }
   return categories
 }
@@ -40,7 +68,7 @@ const Documentation = ({ isOpen, onClose }) => {
   const [docs] = useState(COMPILED_DOCS)
   const [activeDoc, setActiveDoc] = useState(() => {
     if (COMPILED_DOCS['GENERAL'] && COMPILED_DOCS['GENERAL'].length > 0) {
-      const intro = COMPILED_DOCS['GENERAL'].find(d => d.title.toLowerCase() === 'introduction')
+      const intro = COMPILED_DOCS['GENERAL'].find(d => d.title.toLowerCase().includes('introduction'))
       return intro || COMPILED_DOCS['GENERAL'][0]
     }
     const firstCat = Object.keys(COMPILED_DOCS)[0]

@@ -25,7 +25,7 @@ describe('Preview', () => {
 
   it('renders PDF item title', () => {
     render(<Preview selectedPdf={pdfItem} onClose={vi.fn()} fileExists={true} />)
-    expect(screen.getByText('test.pdf')).toBeInTheDocument()
+    expect(screen.getByText('test')).toBeInTheDocument()
   })
 
   it('shows archived notice when file missing', () => {

@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 import { cn } from '../lib/utils'
-import iconPath from '../../../../build/icon.png'
+import iconPath from '../../../../resources/icon.png'
 
 const SidebarHeader = memo(({ collapsed }) => (
   <div className={cn(
