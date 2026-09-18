@@ -1,4 +1,4 @@
-import * as DeepSeek from './DeepSeek';
+import * as DeepSeek from './deepseek';
 import * as ChatGPT from './ChatGPT';
 import * as Gemini from './Gemini';
 import * as Grok from './Grok';
