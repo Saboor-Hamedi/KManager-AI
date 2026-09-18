@@ -257,13 +257,13 @@ export class PDFIngestionService {
     return chunks.map(c => c.text)
   }
 
-  /**
-   * Split a large section that exceeds maxChars into sentence-bounded chunks.
-   */
   splitLargeSection(section, maxChars, overlap = 0) {
     const text = (section.heading ? `## ${section.heading}\n\n` : '') + section.content.trim()
-    // Support Arabic (؟, ۔) and CJK (。, ！, ？) sentence boundaries
-    const sentences = text.match(/[^.!?؟۔。！？]+[.!?؟۔。！？]+(\s+|$)/g) || [text]
+    
+    // Use native V8 NLP sentence segmentation (Intl.Segmenter) for perfect context boundaries
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'sentence' })
+    const sentences = Array.from(segmenter.segment(text)).map(s => s.segment)
+    
     const chunks = []
     let subChunk = ''
     const headingTag = section.heading ? `## ${section.heading}\n\n` : ''
@@ -339,7 +339,8 @@ export class PDFIngestionService {
         }
 
         if (currentChunk.length > maxChars) {
-          const sentences = currentChunk.match(/[^.!?؟۔。！？]+[.!?؟۔。！？]+(\s+|$)/g) || [currentChunk]
+          const segmenter = new Intl.Segmenter(undefined, { granularity: 'sentence' })
+          const sentences = Array.from(segmenter.segment(currentChunk)).map(s => s.segment)
           let subChunk = ''
           for (const s of sentences) {
             const trimmedS = s.trim()

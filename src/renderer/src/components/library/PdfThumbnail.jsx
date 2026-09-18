@@ -1,7 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = ''
 
 const PdfThumbnail = ({ filePath, fallbackSnippet }) => {
   const canvasRef = useRef(null)
@@ -13,7 +10,8 @@ const PdfThumbnail = ({ filePath, fallbackSnippet }) => {
     const renderPdf = async () => {
       try {
         if (!filePath) throw new Error('No path')
-        if (!pdfjsLib) throw new Error('pdfjsLib not loaded')
+        const pdfjsLib = await import('pdfjs-dist')
+        pdfjsLib.GlobalWorkerOptions.workerSrc = ''
         
         // Load the file binary from main process to avoid CORS/file schema issues
         const buffer = await window.api.system.readFileBinary(filePath)

@@ -1,0 +1,59 @@
+name: Release & Publish Multi-Platform
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools libarchive-dev
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Compile Application (Vite Build)
+        run: npm run build
+
+      - name: Publish Windows Artifacts
+        if: runner.os == 'Windows'
+        run: npx electron-builder --win -p always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish macOS Artifacts
+        if: runner.os == 'macOS'
+        run: npx electron-builder --mac -p always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Linux Artifacts
+        if: runner.os == 'Linux'
+        run: npx electron-builder --linux -p always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

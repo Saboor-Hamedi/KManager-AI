@@ -1,20 +1,21 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import GlobalTitleBar from './components/GlobalTitleBar'
-import ChatBot from './components/ChatBot'
-import Setting from './components/settings/Setting'
-import ThemeModal from './components/theme/ThemeModal'
+import GlobalError from './components/GlobalError'
+import Toast from './components/ui/Toast'
+import DashboardSearch from './components/search/DashboardSearch'
+import SpotLite from './components/spotlite/SpotLite'
+import PulseLoader from './components/PulseLoader'
 import { useTheme } from './components/theme/useTheme'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts'
-import SpotLite from './components/spotlite/SpotLite'
 
-import DashboardSearch from './components/search/DashboardSearch'
-import Documentation from './components/Documentation'
-import GlobalError from './components/GlobalError'
-import AnalyticsModal from './components/analytics/AnalyticsModal'
-import MyLibrary from './components/library/MyLibrary'
-import Toast from './components/ui/Toast'
+const ChatBot = lazy(() => import('./components/ChatBot'))
+const Setting = lazy(() => import('./components/settings/Setting'))
+const ThemeModal = lazy(() => import('./components/theme/ThemeModal'))
+const Documentation = lazy(() => import('./components/Documentation'))
+const AnalyticsModal = lazy(() => import('./components/analytics/AnalyticsModal'))
+const MyLibrary = lazy(() => import('./components/library/MyLibrary'))
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -141,7 +142,9 @@ function App() {
         {/* ── Other views — lazy-conditional, padding/scroll handled here ── */}
         {activeTab === 'library' && (
           <GlobalError>
-            <MyLibrary />
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><PulseLoader text="Loading Library..." /></div>}>
+              <MyLibrary />
+            </Suspense>
           </GlobalError>
         )}
         {activeTab !== 'search' && activeTab !== 'library' && (
@@ -162,11 +165,39 @@ function App() {
         )}
         </div>
       </div>
-      <GlobalError><ChatBot /></GlobalError>
-      <GlobalError><Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} /></GlobalError>
-      <GlobalError><ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} /></GlobalError>
-      <GlobalError><Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} /></GlobalError>
-      <GlobalError><AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} /></GlobalError>
+      <GlobalError>
+        <Suspense fallback={null}>
+          <ChatBot />
+        </Suspense>
+      </GlobalError>
+      {isSettingsOpen && (
+        <GlobalError>
+          <Suspense fallback={null}>
+            <Setting isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+          </Suspense>
+        </GlobalError>
+      )}
+      {isThemeOpen && (
+        <GlobalError>
+          <Suspense fallback={null}>
+            <ThemeModal isOpen={isThemeOpen} onClose={() => setIsThemeOpen(false)} />
+          </Suspense>
+        </GlobalError>
+      )}
+      {isDocsOpen && (
+        <GlobalError>
+          <Suspense fallback={null}>
+            <Documentation isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />
+          </Suspense>
+        </GlobalError>
+      )}
+      {isAnalyticsOpen && (
+        <GlobalError>
+          <Suspense fallback={null}>
+            <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} />
+          </Suspense>
+        </GlobalError>
+      )}
       <SpotLite />
     </div>
   )

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useTransition } from 'react'
 import { Search, Bot, FileText, ArrowRight, Sparkles } from 'lucide-react'
 import SpotLitePreview from './SpotLitePreview'
-import ChatBot from '../ChatBot'
+const ChatBot = React.lazy(() => import('../ChatBot'))
 import PulseLoader from '../PulseLoader'
 import SpotliteList from './SpotliteList'
 import { useKeyboardShortcuts } from '../../../../utils/useKeyboardShortcuts'
@@ -167,6 +167,12 @@ const SpotLite = () => {
   }, [searchTriggerQuery, searchNonce, mode, isOpen])
 
   const handleInputKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      setIsOpen(false)
+      return
+    }
+
     if (mode !== 'search') return
 
     if (e.key === 'Enter') {
@@ -355,7 +361,11 @@ const SpotLite = () => {
           </div>
           
           <div className={`w-full h-full relative ${mode === 'ai' ? 'block' : 'hidden'}`}>
-             <ChatBot inline={true} initialQuery="" />
+            {mode === 'ai' && (
+              <React.Suspense fallback={<div className="w-full h-full flex items-center justify-center"><PulseLoader text="Loading AI Assistant..." /></div>}>
+                <ChatBot inline={true} initialQuery="" />
+              </React.Suspense>
+            )}
           </div>
         </div>
 

@@ -5,48 +5,61 @@ import { cleanMetadata, stripMarkdown } from '../../utils/useMetadata'
 export const getSuggestion = (content, queryStr) => {
   if (!content || !queryStr) return { text: '', matchIdx: -1 }
   // Strip all metadata, HTML tags, and markdown symbols down to clean plain text
-  const cleanContent = stripMarkdown(cleanMetadata(content))
+  const cleanContent = stripMarkdown(cleanMetadata(content)).replace(/\s+/g, ' ').trim()
+  
+  // Try exact match first
   const escapedQuery = queryStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  let match = cleanContent.match(new RegExp(`\\b${escapedQuery}`, 'i')) || cleanContent.match(new RegExp(escapedQuery, 'i'))
   
-  // Look for word boundary match first
-  let regex = new RegExp(`\\b${escapedQuery}`, 'i')
-  let match = cleanContent.match(regex)
-  
-  // Fallback to substring match if word boundary fails
-  if (!match) {
-    regex = new RegExp(escapedQuery, 'i')
-    match = cleanContent.match(regex)
+  // If no exact match, try to find the longest matching word from the query
+  let matchIdx = match ? match.index : -1
+  let matchLen = queryStr.length
+
+  if (matchIdx === -1) {
+    const queryWords = queryStr.split(/\s+/).filter(w => w.length > 2)
+    for (const word of queryWords) {
+      const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const wordMatch = cleanContent.match(new RegExp(`\\b${escapedWord}`, 'i')) || cleanContent.match(new RegExp(escapedWord, 'i'))
+      if (wordMatch) {
+        matchIdx = wordMatch.index
+        matchLen = word.length
+        break
+      }
+    }
   }
 
-  if (!match) return { text: cleanContent.substring(0, 50).trim() + '...', matchIdx: -1 }
+  // If absolutely no words match (e.g. pure semantic similarity), fallback gracefully
+  if (matchIdx === -1) {
+    const fallbackText = cleanContent.length > 90 
+      ? cleanContent.substring(0, 90).replace(/\s+\S*$/, '') + '...' 
+      : cleanContent
+    return { text: fallbackText, matchIdx: -1, matchLen: 0 }
+  }
   
-  const matchIdx = match.index
-  
-  // Find start of the sentence or phrase (trace back up to 3 words max)
+  // Find start of the sentence or phrase (trace back ~4 words max)
   let start = matchIdx
   let spaceCountBack = 0
-  while (start > 0 && spaceCountBack < 3) {
+  while (start > 0 && spaceCountBack < 4) {
     start--
     if (cleanContent[start] === ' ') spaceCountBack++
     if (['.', '!', '?', ':'].includes(cleanContent[start])) { start += 2; break }
   }
   
-  // Find end of phrase (approx 6-8 words forward)
-  let end = matchIdx + queryStr.length
+  // Find end of phrase (trace forward ~8 words max)
+  let end = matchIdx + matchLen
   let spaceCountFwd = 0
-  while (end < cleanContent.length && spaceCountFwd < 6) {
+  while (end < cleanContent.length && spaceCountFwd < 8) {
     if (cleanContent[end] === ' ') spaceCountFwd++
     if (['.', '!', '?', '\n'].includes(cleanContent[end])) { end++; break }
     end++
   }
   
-  const suggestionText = cleanContent.substring(start, end).replace(/\s+/g, ' ').trim()
+  const suggestionText = cleanContent.substring(start, end).trim()
   
   // Recalculate matchIdx relative to the extracted snippet
-  const relativeMatch = suggestionText.match(regex)
-  const relativeMatchIdx = relativeMatch ? relativeMatch.index : suggestionText.toLowerCase().indexOf(queryStr.toLowerCase())
+  const relativeMatchIdx = matchIdx - start
   
-  return { text: suggestionText, matchIdx: relativeMatchIdx }
+  return { text: suggestionText, matchIdx: relativeMatchIdx, matchLen }
 }
 
 const Autocompletion = ({ results, visible, query, onSelect, selectedIndex, onClose }) => {
@@ -87,24 +100,23 @@ const Autocompletion = ({ results, visible, query, onSelect, selectedIndex, onCl
     <div className="absolute bottom-full left-0 right-0 w-full bg-[var(--bg-card)] rounded-t-[5px] border-b border-[var(--border-subtle)]/30 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] overflow-hidden animate-in fade-in duration-100 z-50">
       <div ref={containerRef} className="flex flex-col py-1 max-h-[300px] min-h-[40px] overflow-y-auto custom-scrollbar">
         {results.map((res, idx) => {
+          const qLower = (query || '').toLowerCase().trim()
           const suggestionObj = res.suggestionText !== undefined 
-            ? { text: res.suggestionText, matchIdx: res.suggestionMatchIdx } 
+            ? { text: res.suggestionText, matchIdx: res.suggestionMatchIdx, matchLen: qLower.length } 
             : getSuggestion(res.content, query)
           const suggestionText = suggestionObj.text || ''
           const matchIdx = suggestionObj.matchIdx
-          
-          // Bold the matching part of the suggestion
-          const qLower = (query || '').toLowerCase().trim()
+          const matchLen = suggestionObj.matchLen || qLower.length
           
           let highlightedSnippet = suggestionText
-          if (matchIdx !== -1 && qLower.length > 0) {
+          if (matchIdx !== -1 && matchLen > 0) {
             highlightedSnippet = (
               <>
                 {suggestionText.substring(0, matchIdx)}
                 <span className="text-[var(--text-accent)] font-semibold">
-                  {suggestionText.substring(matchIdx, matchIdx + qLower.length)}
+                  {suggestionText.substring(matchIdx, matchIdx + matchLen)}
                 </span>
-                {suggestionText.substring(matchIdx + qLower.length)}
+                {suggestionText.substring(matchIdx + matchLen)}
               </>
             )
           }

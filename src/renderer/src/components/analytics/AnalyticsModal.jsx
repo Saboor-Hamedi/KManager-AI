@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Loader2, RefreshCw, X, LayoutDashboard, BarChart2, List, Activity, Settings2, Database, PanelLeftClose, PanelLeft } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import AnalyticsCards from './AnalyticsCards'
-import AnalyticsFigures from './AnalyticsFigures'
+const AnalyticsFigures = React.lazy(() => import('./AnalyticsFigures'))
 import AnalyticsTable from './AnalyticsTable'
 import AnalyticsActivityFeed from './AnalyticsActivityFeed'
 import AnalyticsDatabase from './AnalyticsDatabase'
@@ -193,7 +193,11 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
               ) : (
                 <div className="flex flex-col gap-10 animate-in fade-in duration-300">
                   {activeSection === 'cards' && <AnalyticsCards data={data} />}
-                  {activeSection === 'figures' && <AnalyticsFigures data={data} />}
+                  {activeSection === 'figures' && (
+                    <React.Suspense fallback={<div className="py-12 flex justify-center"><PulseLoader text="Preparing Charts..." size="md" /></div>}>
+                      <AnalyticsFigures data={data} />
+                    </React.Suspense>
+                  )}
                   {activeSection === 'database' && <AnalyticsDatabase data={data} />}
                   {activeSection === 'table' && <AnalyticsTable data={data} />}
                   {activeSection === 'feed' && <AnalyticsActivityFeed data={data} />}
