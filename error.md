@@ -1,56 +1,30 @@
-here is the data:
-| Retry Rate | Retrieval Failure Rate | 
-| **Robustness** | Fallback Rate | Out-of-Domain Query Handling | 
-| **Output Quality** | Hallucination Score | Generation Quality | 
- 
----
+npm run publish
+npm warn cli npm v12.0.2 does not support Node.js v22.21.0. This version of npm supports the following node versions: `^22.22.2 || ^24.15.0 || >=26.0.0`. You can find the latest version at https://nodejs.org/.
+npm notice run kmanager@1.0.7 publish
+npm notice run node scripts/publish.js
 
-## Testing Framework
+═════════════════════════════════════════════════════════════════
+  KManager AI - Automated Multi-Platform Release & Publish
+═════════════════════════════════════════════════════════════════
 
-## Testing Framework 
- 
-```python
+Current version:  1.0.7
+New release tag:  v1.0.8 (version 1.0.8)
 
-## RAG Pipeline Regression Test Suite
+✔ Updated package.json to 1.0.8
 
-# RAG Pipeline Regression Test Suite 
- 
-test_cases = [ 
- { 
- "query": "What is RAG?", 
- "expected_topics": ["retrieval", "generation"], 
- }, 
- { 
- "query": "Python list comprehension", 
- "expected_docs": ["python_basics"], 
- }, 
-] 
- 
-for case in test_cases: 
- results = pipeline.query(case["query"]) 
- 
- # Validate expected topics if defined 
- if "expected_topics" in case: 
- assert topics_match(results, case["expected_topics"]), ( 
- f"Topic mismatch for query: '{case['query']}'" 
- ) 
- 
- # Validate expected source documents if defined 
- if "expected_docs" in case: 
- assert docs_match(results, case["expected_docs"]), ( 
- f"Document mismatch for query: '{case['query']}'" 
- ) 
- 
-print("All regression tests passed successfully!") 
- 
-```
+Staging and committing release changes...
+> git add -A
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+> git commit -m "chore(release): v1.0.8"
+[improve-search 8f92616] chore(release): v1.0.8
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-## Related Knowledge Base Notes
+Creating Git tag v1.0.8...
+> git tag -a "v1.0.8" -m "Release v1.0.8"
 
-## Related Knowledge Base Notes 
- 
-* [[Advanced RAG Patterns]] 
-* [[RAG Architecture]] 
-* [[Chunking Strategies]] 
-* [[Retrieval Strategies]] 
-* [[Evaluation of RAG Systems]]
+Compiling and publishing Windows installer with auto-updater metadata...
+> npm run build
+npm warn cli npm v12.0.2 does not support Node.js v22.21.0. This version of npm supports the following node versions: `^22.22.2 || ^24.15.0 || >=26.0.0`. You can find the latest version at https://nodejs.org/.
+npm notice run kmanager@1.0.8 build
+npm notice run electron-vite build
+vite v7.3.6 building ssr environment for production...

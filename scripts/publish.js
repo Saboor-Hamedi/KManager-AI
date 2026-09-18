@@ -69,20 +69,15 @@ async function main() {
     console.log(`Tag ${newTag} already exists locally.`)
   }
 
-  // 4. Build and Publish Windows Artifacts with -p always
-  console.log('\n\x1b[36mCompiling and publishing Windows installer with auto-updater metadata...\x1b[0m')
-  run('npm run build')
-  run('npx electron-builder --win -p always')
-
-  // 5. Push commit and tag to GitHub to trigger multi-platform CI (macOS & Linux)
-  console.log('\n\x1b[36mPushing commits and tags to GitHub remote...\x1b[0m')
+  // 4. Push commit and tag to GitHub to trigger multi-platform CI (Windows, macOS, Linux)
+  console.log('\n\x1b[36mPushing release commits and tag directly to GitHub...\x1b[0m')
   const currentBranch = runSilent('git branch --show-current') || 'main'
   try {
     run(`git push origin ${currentBranch}`)
     run(`git push origin ${newTag}`)
-    console.log(`\n\x1b[32m✔ Successfully published Windows and pushed ${newTag} to GitHub!\x1b[0m`)
-    console.log('\x1b[35mGitHub Actions is now automatically building & publishing macOS and Linux artifacts for this release.\x1b[0m')
-    console.log(`Track progress at: \x1b[4mhttps://github.com/Saboor-Hamedi/KManager-AI/actions\x1b[0m\n`)
+    console.log(`\n\x1b[32m✔ Successfully pushed ${newTag} to GitHub!\x1b[0m`)
+    console.log('\x1b[35mGitHub Actions is now running in parallel to compile & publish Windows, macOS, and Linux releases.\x1b[0m')
+    console.log(`Track live builds at: \x1b[4mhttps://github.com/Saboor-Hamedi/KManager-AI/actions\x1b[0m\n`)
   } catch (err) {
     console.error('\x1b[31mFailed to push to GitHub remote. Ensure your git remote credentials are valid.\x1b[0m')
   }
