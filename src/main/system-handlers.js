@@ -115,8 +115,14 @@ export function setupSystemHandlers() {
 
   ipcMain.handle('system:read-brain-docs', async () => {
     try {
-      const brainPath = path.join(app.getAppPath(), 'brain')
-      if (!fs.existsSync(brainPath)) {
+      const candidates = [
+        path.join(process.resourcesPath, 'brain'),
+        path.join(app.getAppPath(), 'brain'),
+        path.join(process.cwd(), 'brain')
+      ]
+      const brainPath = candidates.find(p => fs.existsSync(p))
+      if (!brainPath) {
+        log.warn('Documentation brain folder not found in candidate paths:', candidates)
         return { GENERAL: [{ title: 'No Documentation', path: '', type: 'md' }] }
       }
 
@@ -156,9 +162,28 @@ export function setupSystemHandlers() {
 
   ipcMain.handle('system:read-file-content', async (_event, filePath) => {
     try {
-      if (!filePath || !fs.existsSync(filePath)) return null
+      if (!filePath) return null
+
+      let targetPath = filePath
+      if (!fs.existsSync(targetPath)) {
+        const candidates = [
+          path.join(process.resourcesPath, filePath),
+          path.join(app.getAppPath(), filePath),
+          path.join(process.resourcesPath, 'brain', path.basename(filePath))
+        ]
+        const found = candidates.find(p => fs.existsSync(p))
+        if (found) targetPath = found
+      }
+
+      if (!fs.existsSync(targetPath)) return null
+
+      const ext = path.extname(targetPath).toLowerCase()
+      if (['.md', '.txt', '.json', '.yml', '.yaml', '.sql', '.js', '.jsx', '.ts', '.tsx'].includes(ext)) {
+        return await fs.promises.readFile(targetPath, 'utf8')
+      }
+
       // Use the advanced ingestion service to parse PDFs, Excel, Word, and text files natively
-      const content = await pdfIngestionService.extractText(filePath)
+      const content = await pdfIngestionService.extractText(targetPath)
       return content
     } catch (err) {
       console.error('Failed to read file:', err)

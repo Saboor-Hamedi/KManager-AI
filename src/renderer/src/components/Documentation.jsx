@@ -1,64 +1,66 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { BookOpen } from 'lucide-react'
 import DocumentRenderer from './search/document/DocumentRenderer'
 import DocSidebar from './DocSidebar'
 import DocHeader from './DocHeader'
 
+// Statically bundle documentation markdown directly into the application package
+const docModules = import.meta.glob('../../../../brain/**/*.md', { query: '?raw', import: 'default', eager: true })
+
+function buildDocs() {
+  const categories = {}
+  for (const [modulePath, rawContent] of Object.entries(docModules)) {
+    const normalized = modulePath.replace(/\\/g, '/').replace(/^.*\/brain\//, '')
+    const parts = normalized.split('/')
+    
+    let category = 'GENERAL'
+    let filename = parts[0]
+    if (parts.length > 1) {
+      category = parts[0].toUpperCase()
+      filename = parts[parts.length - 1]
+    }
+
+    const title = filename.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    if (!categories[category]) {
+      categories[category] = []
+    }
+    categories[category].push({
+      title,
+      path: normalized,
+      content: rawContent,
+      type: 'md'
+    })
+  }
+  return categories
+}
+
+const COMPILED_DOCS = buildDocs()
+
 const Documentation = ({ isOpen, onClose }) => {
-  const [docs, setDocs] = useState({})
-  const [activeDoc, setActiveDoc] = useState(null)
-  const [docContent, setDocContent] = useState('')
+  const [docs] = useState(COMPILED_DOCS)
+  const [activeDoc, setActiveDoc] = useState(() => {
+    if (COMPILED_DOCS['GENERAL'] && COMPILED_DOCS['GENERAL'].length > 0) {
+      const intro = COMPILED_DOCS['GENERAL'].find(d => d.title.toLowerCase() === 'introduction')
+      return intro || COMPILED_DOCS['GENERAL'][0]
+    }
+    const firstCat = Object.keys(COMPILED_DOCS)[0]
+    return firstCat ? COMPILED_DOCS[firstCat][0] : null
+  })
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
-  // Fetch docs tree when modal opens
+  const docContent = useMemo(() => {
+    return activeDoc?.content || '# No Document Selected\nPlease choose a guide from the sidebar.'
+  }, [activeDoc])
+
+  // Register escape key with main process
   useEffect(() => {
     if (isOpen) {
-      const fetchDocs = async () => {
-        try {
-          const result = await window.api.system.readBrainDocs()
-          setDocs(result)
-          
-          // Select 'Introduction' from 'GENERAL' by default if it exists
-          if (result['GENERAL'] && result['GENERAL'].length > 0) {
-            const introDoc = result['GENERAL'].find(d => d.title.toLowerCase() === 'introduction')
-            if (introDoc) {
-              setActiveDoc(introDoc)
-            } else {
-              setActiveDoc(result['GENERAL'][0])
-            }
-          }
-        } catch (err) {
-          console.error('Failed to load docs tree:', err)
-        }
-      }
-      fetchDocs()
-      
-      // Register escape key
-      window.api.system.registerEscape()
+      window.api?.system?.registerEscape?.()
     } else {
-      window.api.system.unregisterEscape()
+      window.api?.system?.unregisterEscape?.()
     }
   }, [isOpen])
-
-  // Fetch doc content when activeDoc changes
-  useEffect(() => {
-    if (activeDoc) {
-      const fetchContent = async () => {
-        setIsLoading(true)
-        try {
-          const content = await window.api.system.readFileContent(activeDoc.path)
-          setDocContent(content || '# Error\nCould not load document content.')
-        } catch (err) {
-          setDocContent('# Error\nFailed to load document content.')
-        } finally {
-          setIsLoading(false)
-        }
-      }
-      fetchContent()
-    }
-  }, [activeDoc])
 
   // Handle Escape key directly via keydown for robust closing
   useEffect(() => {
@@ -165,12 +167,7 @@ const Documentation = ({ isOpen, onClose }) => {
             <div className="flex-1 overflow-y-auto px-6 py-6 md:px-10 lg:px-16 custom-scrollbar scroll-smooth" onClick={handleContentClick}>
               <div className="max-w-3xl mx-auto w-full h-full relative">
                 
-                {isLoading ? (
-                  <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-3 animate-pulse">
-                    <div className="w-8 h-8 rounded-full border-2 border-[var(--text-accent)] border-t-transparent animate-spin" />
-                    <span className="text-xs font-medium text-[var(--text-muted)]">Loading document...</span>
-                  </div>
-                ) : activeDoc ? (
+                {activeDoc ? (
                   <div key={activeDoc.path} className="animate-in slide-in-from-bottom-3 fade-in duration-300">
                     <DocumentRenderer content={docContent} fileTitle={activeDoc.title} onNavigate={handleNavigate} />
                     {(prev || next) && (
