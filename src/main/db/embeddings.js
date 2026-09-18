@@ -1,17 +1,32 @@
 import { pipeline, env } from '@xenova/transformers'
 import path from 'path'
+import fs from 'fs'
 import { app } from 'electron'
 
 const isProd = app.isPackaged;
-const modelsDir = isProd
+const bundledModelsDir = isProd
   ? path.join(process.resourcesPath, 'assets/models')
   : path.join(app.getAppPath(), 'assets/models');
 
-// Configure transformers.js environment for fully offline use
-env.allowRemoteModels = false; // Never hit the internet
-env.allowLocalModels = true;   // Read from local bundle
-env.useBrowserCache = false;   // Disable browser cache in Node.js environment
-env.localModelPath = modelsDir;
+const defaultModel = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
+const hasBundled = fs.existsSync(path.join(bundledModelsDir, defaultModel, 'tokenizer.json'));
+
+if (hasBundled) {
+  // Fully offline use from local bundle
+  env.allowRemoteModels = false;
+  env.allowLocalModels = true;
+  env.useBrowserCache = false;
+  env.localModelPath = bundledModelsDir;
+} else {
+  // Graceful fallback: download once to user AppData and use offline thereafter
+  console.warn('[EmbeddingService] Bundled model missing at', bundledModelsDir, '- using local cache fallback.');
+  const userCache = path.join(app.getPath('userData'), 'models');
+  env.allowRemoteModels = true;
+  env.allowLocalModels = true;
+  env.useBrowserCache = false;
+  env.localModelPath = userCache;
+  env.cacheDir = userCache;
+}
 
 class EmbeddingService {
   constructor() {

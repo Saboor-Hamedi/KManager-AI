@@ -52,6 +52,9 @@ jobs:
       - name: Install Node Dependencies
         run: npm install
 
+      - name: Ensure Offline AI Models are Downloaded
+        run: node scripts/download-models.js
+
       - name: Compile Application (Vite Build)
         run: npm run build
 

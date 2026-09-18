@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow, Menu, ipcMain, protocol, net, Tray, nativeImage } from 'electron'
+import { app, shell, BrowserWindow, Menu, ipcMain, protocol, net, Tray, nativeImage, globalShortcut } from 'electron'
 import { join } from 'path'
+import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { setupAutoUpdater } from './update.js'
@@ -51,7 +52,11 @@ function createWindow() {
     autoHideMenuBar: true,
     icon: icon,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: [
+        join(__dirname, '../preload/index.js'),
+        join(__dirname, '../preload/index.mjs'),
+        join(__dirname, '../preload/index.cjs')
+      ].find((p) => fs.existsSync(p)) || join(__dirname, '../preload/index.js'),
       sandbox: false,
       plugins: true,
       webSecurity: false,
@@ -60,7 +65,6 @@ function createWindow() {
   })
 
   // ── Global Escape Catcher ──
-  const { globalShortcut } = require('electron')
   
   ipcMain.handle('system:register-escape', () => {
     globalShortcut.register('Escape', () => {
@@ -110,7 +114,6 @@ app.whenReady().then(() => {
   tray.setContextMenu(contextMenu)
   tray.on('click', () => { if (mainWindow) mainWindow.show() })
 
-  const { globalShortcut } = require('electron')
   globalShortcut.register('CommandOrControl+K', () => {
     if (mainWindow) {
       mainWindow.show()

@@ -15,7 +15,7 @@ const GlobalTitleBar = () => {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await window.api.db.status()
+        const res = await window.api?.db?.status?.()
         setDbConnected(res?.connected || false)
       } catch {
         setDbConnected(false)
@@ -28,11 +28,13 @@ const GlobalTitleBar = () => {
   }, [])
 
   useEffect(() => {
-    window.api.app.version().then(v => setCurrentVersion(v)).catch(() => {})
+    window.api?.app?.version?.()?.then?.(v => setCurrentVersion(v))?.catch?.(() => {})
   }, [])
 
   // Listen to electron-updater events forwarded from the main process
   useEffect(() => {
+    if (!window.api?.update) return
+
     const unsubAvailable = window.api.update?.onUpdateAvailable?.((info) => {
       setUpdateVersion(info.version)
       setUpdateState(prev => (prev === 'downloaded' || prev === 'downloading') ? prev : 'available')
@@ -97,7 +99,7 @@ const GlobalTitleBar = () => {
   const handleDownload = useCallback(() => {
     setUpdateState('downloading')
     setDownloadProgress(0)
-    window.api.update.download().catch((err) => {
+    window.api?.update?.download?.()?.catch?.((err) => {
       console.error('Failed to start download:', err)
       setUpdateState('available')
       window.dispatchEvent(new CustomEvent('toast', { detail: { message: `Failed to start download: ${err.message}`, type: 'error' } }))
@@ -105,7 +107,7 @@ const GlobalTitleBar = () => {
   }, [])
 
   const handleInstall = useCallback(() => {
-    window.api.update.install()
+    window.api?.update?.install?.()
   }, [])
 
   const handleMinimize = () => {

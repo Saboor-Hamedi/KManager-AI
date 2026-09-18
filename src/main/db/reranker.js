@@ -1,5 +1,6 @@
 import { pipeline, env } from '@xenova/transformers'
 import path from 'path'
+import fs from 'fs'
 import { app } from 'electron'
 
 const isProd = app.isPackaged;
@@ -7,10 +8,23 @@ const modelsDir = isProd
   ? path.join(process.resourcesPath, 'assets/models')
   : path.join(app.getAppPath(), 'assets/models');
 
-env.allowRemoteModels = false;
-env.allowLocalModels = true;
-env.useBrowserCache = false;
-env.localModelPath = modelsDir;
+const defaultModel = 'Xenova/ms-marco-MiniLM-L-6-v2';
+const hasBundled = fs.existsSync(path.join(modelsDir, defaultModel, 'tokenizer.json'));
+
+if (hasBundled) {
+  env.allowRemoteModels = false;
+  env.allowLocalModels = true;
+  env.useBrowserCache = false;
+  env.localModelPath = modelsDir;
+} else {
+  console.warn('[ReRankerService] Bundled model missing at', modelsDir, '- using local cache fallback.');
+  const userCache = path.join(app.getPath('userData'), 'models');
+  env.allowRemoteModels = true;
+  env.allowLocalModels = true;
+  env.useBrowserCache = false;
+  env.localModelPath = userCache;
+  env.cacheDir = userCache;
+}
 
 class ReRankerService {
   constructor() {
